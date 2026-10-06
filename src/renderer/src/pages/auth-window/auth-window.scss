@@ -1,0 +1,9 @@
+@use "../../scss/globals.scss";
+
+.auth-window {
+  height: 100vh;
+  box-sizing: border-box;
+  border: 1px solid globals.$border-color;
+  background-color: globals.$dark-background-color;
+  overflow: hidden;
+}
