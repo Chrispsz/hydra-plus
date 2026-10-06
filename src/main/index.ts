@@ -48,8 +48,8 @@ const { autoUpdater } = updater;
 
 autoUpdater.setFeedURL({
   provider: "github",
-  owner: "hydralauncher",
-  repo: "hydra",
+  owner: import.meta.env.MAIN_VITE_UPDATE_OWNER ?? "hydra-plus-fork",
+  repo: import.meta.env.MAIN_VITE_UPDATE_REPO ?? "hydra-plus",
 });
 
 autoUpdater.logger = logger;
@@ -100,7 +100,7 @@ if (process.defaultApp) {
 
 const initializeApp = async () => {
   refreshPortableShortcutLauncher();
-  electronApp.setAppUserModelId("gg.hydralauncher.hydra");
+  electronApp.setAppUserModelId("gg.hydraplus.launcher");
 
   logger.info("Crash dumps directory", app.getPath("crashDumps"));
 

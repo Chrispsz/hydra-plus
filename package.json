@@ -1,12 +1,12 @@
 {
-  "name": "hydralauncher",
+  "name": "hydra-plus",
   "version": "4.1.4",
-  "description": "Hydra",
+  "description": "Hydra Plus — minimalist Hydra fork with personal Google Drive cloud saves",
   "main": "./out/main/index.js",
-  "author": "Los Broxas",
+  "author": "Hydra Plus contributors (fork of Hydra by Los Broxas)",
   "repository": {
     "type": "git",
-    "url": "https://github.com/hydralauncher/hydra.git"
+    "url": "https://github.com/hydra-plus-fork/hydra-plus.git"
   },
   "type": "module",
   "engines": {
