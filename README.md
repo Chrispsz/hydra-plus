@@ -1,50 +1,37 @@
 <div align="center">
 
-[<img src="https://raw.githubusercontent.com/hydralauncher/hydra/refs/heads/main/resources/icon.png" width="144"/>](https://help.hydralauncher.gg)
+# Hydra Plus
 
-  <h1 align="center">Hydra Launcher</h1>
+**Fork minimalista do [Hydra Launcher](https://github.com/hydralauncher/hydra) com nuvem pessoal no Google Drive.**
 
-  <p align="center">
-    <strong>Hydra Launcher is an open-source gaming platform created to be the single tool that you need in order to manage your gaming library. Hydra is written in Node.js (Electron, React, Typescript) and Rust, with libtorrent providing the torrent engine.</strong>
-  </p>
-
-[![build](https://img.shields.io/github/actions/workflow/status/hydralauncher/hydra/build.yml)](https://github.com/hydralauncher/hydra/actions)
-[![release](https://img.shields.io/github/package-json/v/hydralauncher/hydra)](https://github.com/hydralauncher/hydra/releases)
-[![chocolatey](https://img.shields.io/chocolatey/v/hydralauncher.svg)](https://community.chocolatey.org/packages/hydralauncher)
-
-![Hydra Launcher Home Page](./docs/screenshot.png)
+Baixe e inicie jogos em Windows e Linux, com os saves sincronizados **no seu próprio Drive** — grátis, organizado e sob seu controle. Ou continue usando a nuvem oficial da Hydra, se preferir.
 
 </div>
 
-## Features
+---
 
-- Add games that you own to your library
-- Have a nice profile that shows what you are playing to your friends
-- Save your game progress in the cloud with Hydra Cloud
-- Unlock achievements
-- Navigate through a rich catalogue with a powerful suggestion algorithm
-- Discover new games that you haven't played before
+## Destaques
 
-## Build from source and contributing
+- ☁️ **Cloud saves dual-provider**: escolha entre a nuvem oficial da Hydra (assinatura) e o **Google Drive pessoal** (grátis, 15 GB, pasta `Hydra Plus Saves/` organizada por jogo, dedup por SHA-256).
+- 🔐 **Privacidade**: sem Sentry, sem SDKs de telemetria, sem scripts remotos — login Hydra apenas quando você escolher usar os serviços deles.
+- 🔑 **Login Hydra intacto**: biblioteca, amigos de download-sources e a nuvem oficial funcionam normalmente para quem já é assinante.
+- 🛠️ **CI completo**: GitHub Actions com workflow reutilizável (Windows/Linux), smoke test pós-build, provenance de build e canal de auto-update próprio.
+- 📄 Licença MIT, herdada do upstream. Projeto **não afiliado** à Hydra / Los Broxas.
 
-Please, refer to our Documentation pages: [docs.hydralauncher.gg](https://docs.hydralauncher.gg/getting-started)
+## Status
 
-### Local development requirements
+Veja o roadmap detalhado em [`docs/FORK.md`](docs/FORK.md) e o funcionamento da nuvem no Drive em [`docs/google-drive-cloud.md`](docs/google-drive-cloud.md).
 
-- Node.js + Yarn
-- Rust toolchain (for `hydra-native`)
-- Git and a C++ toolchain (Visual Studio C++ Build Tools on Windows, GCC/Clang on Linux, Xcode command-line tools on macOS). The native build obtains CMake and CTest automatically through vcpkg.
+## Build
 
-After installing dependencies, `postinstall` now builds the Rust native addon automatically (`hydra-native/hydra-native.node`).
+```bash
+yarn install          # requer yarn 1.19+ e Rust stable (addon nativo)
+cp .env.example .env  # MAIN_VITE_API_URL + MAIN_VITE_AUTH_URL (login Hydra)
+                      # MAIN_VITE_GOOGLE_CLIENT_ID (nuvem Google, opcional)
+yarn dev
+yarn build:win | yarn build:linux
+```
 
-The native build includes a Rust wrapper around pinned libtorrent. Development and packaged torrenting no longer require Python.
+## Créditos
 
-## Contributors
-
-<a href="https://github.com/hydralauncher/hydra/graphs/contributors">
-  <img src="https://contrib.rocks/image?repo=hydralauncher/hydra" />
-</a>
-
-## License
-
-Hydra is licensed under the [MIT License](LICENSE).
+Baseado no [Hydra Launcher](https://github.com/hydralauncher/hydra) por Los Broxas e contribuidores (MIT).
