@@ -97,7 +97,9 @@ function listDistArtifacts(distDir) {
 }
 
 function main() {
-  console.log(`Smoke test for ${EXPECTED_PACKAGE_NAME} (cwd: ${process.cwd()})`);
+  console.log(
+    `Smoke test for ${EXPECTED_PACKAGE_NAME} (cwd: ${process.cwd()})`
+  );
 
   // (a) electron-vite output bundles must exist
   for (const file of OUT_FILES) {
@@ -136,7 +138,11 @@ function main() {
   }
 
   if (!distIsDir) {
-    check("dist/ contains at least one artifact (.exe/.zip/.deb/.rpm/.tar.gz/.AppImage)", false, "dist/ directory does not exist");
+    check(
+      "dist/ contains at least one artifact (.exe/.zip/.deb/.rpm/.tar.gz/.AppImage)",
+      false,
+      "dist/ directory does not exist"
+    );
   } else {
     const artifacts = listDistArtifacts(path.resolve("dist"));
     check(
@@ -176,7 +182,9 @@ function main() {
     process.exit(1);
   }
 
-  console.log("\nSmoke test PASSED: bundles, updater feed, artifacts and package.json are OK.");
+  console.log(
+    "\nSmoke test PASSED: bundles, updater feed, artifacts and package.json are OK."
+  );
   process.exit(0);
 }
 

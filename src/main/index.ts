@@ -48,7 +48,7 @@ const { autoUpdater } = updater;
 
 autoUpdater.setFeedURL({
   provider: "github",
-  owner: import.meta.env.MAIN_VITE_UPDATE_OWNER ?? "hydra-plus-fork",
+  owner: import.meta.env.MAIN_VITE_UPDATE_OWNER ?? "Chrispsz",
   repo: import.meta.env.MAIN_VITE_UPDATE_REPO ?? "hydra-plus",
 });
 
