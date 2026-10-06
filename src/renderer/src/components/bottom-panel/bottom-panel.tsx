@@ -225,10 +225,7 @@ export function BottomPanel() {
       </div>
 
       <div className="bottom-panel__right">
-        <button
-          data-open-workwonders-changelog-mini
-          className="bottom-panel__version-button"
-        >
+        <button type="button" className="bottom-panel__version-button">
           <small>
             {sessionHash ? `${sessionHash} -` : ""} v{version}
           </small>

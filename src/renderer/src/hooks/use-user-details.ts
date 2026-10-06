@@ -64,7 +64,6 @@ export function useUserDetails() {
         ...response,
         username: userDetails?.username || "",
         subscription: userDetails?.subscription || null,
-        workwondersJwt: userDetails?.workwondersJwt || "",
         karma: userDetails?.karma || 0,
         allowCloudGifts:
           response.allowCloudGifts ?? userDetails?.allowCloudGifts ?? true,
@@ -74,7 +73,6 @@ export function useUserDetails() {
       updateUserDetails,
       userDetails?.username,
       userDetails?.subscription,
-      userDetails?.workwondersJwt,
       userDetails?.karma,
       userDetails?.allowCloudGifts,
     ]

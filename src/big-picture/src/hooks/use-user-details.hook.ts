@@ -26,7 +26,6 @@ function mergeUserProfileIntoDetails(
       true,
     souvenirsVisibility: updatedProfile.souvenirsVisibility,
     bio: updatedProfile.bio,
-    workwondersJwt: currentUserDetails?.workwondersJwt ?? "",
     subscription: currentUserDetails?.subscription ?? null,
     karma: currentUserDetails?.karma ?? 0,
     quirks: updatedProfile.quirks,

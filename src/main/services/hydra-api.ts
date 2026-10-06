@@ -95,7 +95,7 @@ export class HydraApi {
     const decodedBase64 = atob(payload as string);
     const jsonData = JSON.parse(decodedBase64);
 
-    const { accessToken, expiresIn, refreshToken, workwondersJwt } = jsonData;
+    const { accessToken, expiresIn, refreshToken } = jsonData;
 
     const now = new Date();
 
@@ -129,7 +129,6 @@ export class HydraApi {
         accessToken,
         refreshToken,
         tokenExpirationTimestamp,
-        workwondersJwt,
       },
       { valueEncoding: "json" }
     );
