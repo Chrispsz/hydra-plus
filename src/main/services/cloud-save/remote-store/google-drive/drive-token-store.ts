@@ -54,10 +54,10 @@ const decryptSecret = (payload: string, plaintextFallback: boolean): string =>
 
 const readTokens = async (): Promise<GoogleDriveTokensRecord | null> =>
   db
-    .get<string, GoogleDriveTokensRecord | null>(
-      levelKeys.googleDriveOAuth,
-      { valueEncoding: "json" }
-    )
+    .get<
+      string,
+      GoogleDriveTokensRecord | null
+    >(levelKeys.googleDriveOAuth, { valueEncoding: "json" })
     .catch(() => null);
 
 export const isGoogleDriveLinked = async (): Promise<boolean> => {
@@ -101,7 +101,7 @@ export const getGoogleDriveRefreshToken = async (): Promise<string | null> => {
 };
 
 export const clearGoogleDriveTokens = async (): Promise<void> => {
-  await db.delete(levelKeys.googleDriveOAuth).catch(() => {});
+  await db.del(levelKeys.googleDriveOAuth).catch(() => {});
 };
 
 let refreshInFlight: Promise<string> | null = null;
@@ -114,7 +114,10 @@ const requestFreshAccessToken = async (): Promise<string> => {
     throw new Error("google_drive_not_linked");
   }
 
-  const { data } = await axios.post<{ access_token: string; expires_in: number }>(
+  const { data } = await axios.post<{
+    access_token: string;
+    expires_in: number;
+  }>(
     TOKEN_ENDPOINT,
     new URLSearchParams({
       client_id: getGoogleClientId(),

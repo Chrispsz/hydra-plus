@@ -1,4 +1,8 @@
-import { isAxiosError, type AxiosRequestConfig, type AxiosResponse } from "axios";
+import axios, {
+  isAxiosError,
+  type AxiosRequestConfig,
+  type AxiosResponse,
+} from "axios";
 import fs from "node:fs";
 import path from "node:path";
 import { pipeline } from "node:stream/promises";
@@ -25,7 +29,9 @@ export const HYDRA_PLUS_ROOT_FOLDER_NAME = "Hydra Plus Saves";
 
 const escapeDriveQuery = (value: string) => value.replace(/'/g, "\\'");
 
-const authedRequest = async (config: AxiosRequestConfig): Promise<AxiosResponse> => {
+const authedRequest = async (
+  config: AxiosRequestConfig
+): Promise<AxiosResponse> => {
   const token = await getValidGoogleDriveAccessToken();
 
   try {
@@ -53,9 +59,11 @@ const authedRequest = async (config: AxiosRequestConfig): Promise<AxiosResponse>
 
 const toDriveError = (error: unknown): Error => {
   if (isAxiosError(error)) {
-    const reason = (error.response?.data as
-      | { error?: { errors?: Array<{ reason?: string }> } }
-      | undefined)?.error?.errors?.[0]?.reason;
+    const reason = (
+      error.response?.data as
+        | { error?: { errors?: Array<{ reason?: string }> } }
+        | undefined
+    )?.error?.errors?.[0]?.reason;
 
     if (reason === "storageQuotaExceeded") {
       return new Error("google_drive_quota_exceeded");

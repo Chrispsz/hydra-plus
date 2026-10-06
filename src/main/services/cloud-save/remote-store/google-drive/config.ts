@@ -9,5 +9,4 @@
 export const getGoogleClientId = (): string =>
   import.meta.env.MAIN_VITE_GOOGLE_CLIENT_ID ?? "";
 
-export const hasGoogleClientId = (): boolean =>
-  getGoogleClientId().length > 0;
+export const hasGoogleClientId = (): boolean => getGoogleClientId().length > 0;

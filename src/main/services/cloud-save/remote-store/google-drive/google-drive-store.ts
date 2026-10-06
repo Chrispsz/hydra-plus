@@ -3,7 +3,6 @@ import path from "node:path";
 import { SystemPath } from "@main/services/system-path";
 import { logger } from "@main/services/logger";
 import type {
-  CloudSaveUploadProgress,
   CommitSnapshotResponse,
   DownloadedRestoreFile,
   RemoteSnapshotSummary,
@@ -11,10 +10,13 @@ import type {
   SnapshotFile,
 } from "@types";
 
-import { cloudSaveFileKey, validateRestoreManifest } from "./../cloud-save-contract";
-import { mapWithConcurrency } from "./../map-with-concurrency";
-import { buildCloudSaveAggregateHash } from "./../snapshot-aggregate-hash";
-import { assertCloudSaveUploadWithinLimits } from "./../upload-limits";
+import {
+  cloudSaveFileKey,
+  validateRestoreManifest,
+} from "./../../cloud-save-contract";
+import { mapWithConcurrency } from "./../../map-with-concurrency";
+import { buildCloudSaveAggregateHash } from "./../../snapshot-aggregate-hash";
+import { assertCloudSaveUploadWithinLimits } from "./../../upload-limits";
 import type {
   CloudSaveRemoteStore,
   CreateSnapshotInput,
@@ -189,7 +191,6 @@ export const googleDriveStore: CloudSaveRemoteStore = {
       completedFiles += blob.coveredFiles;
       completedBytes += blob.file.sizeBytes;
       input.onProgress?.({
-        gameId: input.gameId,
         completedFiles: Math.min(completedFiles, totalFiles),
         totalFiles,
         completedBytes: Math.min(completedBytes, totalBytes),
@@ -336,14 +337,9 @@ export const googleDriveStore: CloudSaveRemoteStore = {
         await downloadFileToFile(blobEntry.id, destinationPath);
 
         processedFiles += group.length;
-        input.onProgress?.(
-          Math.min(processedFiles, totalFiles),
-          totalFiles
-        );
+        input.onProgress?.(Math.min(processedFiles, totalFiles), totalFiles);
 
-        return group.map(
-          (file) => ({ ...file, tempPath: destinationPath })
-        );
+        return group.map((file) => ({ ...file, tempPath: destinationPath }));
       }
     );
 

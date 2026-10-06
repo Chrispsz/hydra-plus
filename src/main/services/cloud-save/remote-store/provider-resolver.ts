@@ -21,17 +21,18 @@ let cachedStore: {
   store: CloudSaveRemoteStore;
 } | null = null;
 
-export const getPreferredCloudProvider = async (): Promise<CloudStorageProvider> => {
-  try {
-    const userPreferences = await db.get<string, UserPreferences | null>(
-      levelKeys.userPreferences,
-      { valueEncoding: "json" }
-    );
-    return userPreferences?.cloudProvider ?? "hydra";
-  } catch {
-    return "hydra";
-  }
-};
+export const getPreferredCloudProvider =
+  async (): Promise<CloudStorageProvider> => {
+    try {
+      const userPreferences = await db.get<string, UserPreferences | null>(
+        levelKeys.userPreferences,
+        { valueEncoding: "json" }
+      );
+      return userPreferences?.cloudProvider ?? "hydra";
+    } catch {
+      return "hydra";
+    }
+  };
 
 export const isGoogleDriveCloudLinked = async (): Promise<boolean> => {
   const { isGoogleDriveLinked } = await import(
@@ -53,21 +54,22 @@ export const invalidateRemoteStoreCache = () => {
   cachedStore = null;
 };
 
-export const getCloudSaveRemoteStore = async (): Promise<CloudSaveRemoteStore> => {
-  const preferred = await getPreferredCloudProvider();
-  const provider =
-    preferred === "google-drive" && (await isGoogleDriveCloudLinked())
-      ? "google-drive"
-      : "hydra";
+export const getCloudSaveRemoteStore =
+  async (): Promise<CloudSaveRemoteStore> => {
+    const preferred = await getPreferredCloudProvider();
+    const provider =
+      preferred === "google-drive" && (await isGoogleDriveCloudLinked())
+        ? "google-drive"
+        : "hydra";
 
-  if (!cachedStore || cachedStore.provider !== provider) {
-    if (provider === "google-drive") {
-      const { googleDriveStore } = await import("./google-drive");
-      cachedStore = { provider, store: googleDriveStore };
-    } else {
-      cachedStore = { provider, store: hydraApiStore };
+    if (!cachedStore || cachedStore.provider !== provider) {
+      if (provider === "google-drive") {
+        const { googleDriveStore } = await import("./google-drive");
+        cachedStore = { provider, store: googleDriveStore };
+      } else {
+        cachedStore = { provider, store: hydraApiStore };
+      }
     }
-  }
 
-  return cachedStore.store;
-};
+    return cachedStore.store;
+  };

@@ -36,9 +36,7 @@ export interface CloudSaveRemoteStore {
   createSnapshot(input: CreateSnapshotInput): Promise<CommitSnapshotResponse>;
 
   /** Fetches the restore manifest of the active snapshot. */
-  getRestoreManifest(
-    gameId: CloudSaveGameId
-  ): Promise<RestoreManifestResponse>;
+  getRestoreManifest(gameId: CloudSaveGameId): Promise<RestoreManifestResponse>;
 
   /**
    * Downloads the blobs referenced by (a subset of) a restore manifest into

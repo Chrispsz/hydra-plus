@@ -108,8 +108,7 @@ export const startGoogleDriveAuth = async (): Promise<{ linked: true }> => {
   });
 
   const address = server.address();
-  const port =
-    address && typeof address === "object" ? address.port : 0;
+  const port = address && typeof address === "object" ? address.port : 0;
   const redirectUri = `http://127.0.0.1:${port}`;
 
   const authorizationUrl = new URL(AUTH_ENDPOINT);

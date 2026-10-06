@@ -1,9 +1,5 @@
 import { HydraApi } from "@main/services/hydra-api";
-import type {
-  CommitSnapshotResponse,
-  DownloadedRestoreFile,
-  RestoreManifestResponse,
-} from "@types";
+import type { CommitSnapshotResponse, DownloadedRestoreFile } from "@types";
 
 import { validateRestoreManifest } from "./../cloud-save-contract";
 import { buildDeleteGameCloudSaveSnapshotsUrl } from "./../delete-game-cloud-save-data-policy";
