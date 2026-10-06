@@ -1789,6 +1789,9 @@ contextBridge.exposeInMainWorld("electron", {
   signOut: () => ipcRenderer.invoke("signOut"),
   openAuthWindow: (page: AuthPage) =>
     ipcRenderer.invoke("openAuthWindow", page),
+  startGoogleAuth: () => ipcRenderer.invoke("startGoogleAuth"),
+  disconnectGoogleDrive: () =>
+    ipcRenderer.invoke("disconnectGoogleDrive"),
   minimizeAuthWindow: () => ipcRenderer.invoke("minimizeAuthWindow"),
   closeAuthWindow: () => ipcRenderer.invoke("closeAuthWindow"),
   getSessionHash: () => ipcRenderer.invoke("getSessionHash"),

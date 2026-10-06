@@ -5,6 +5,7 @@ export const levelKeys = {
   game: (shop: GameShop, objectId: string) => `${shop}:${objectId}`,
   user: "user",
   auth: "auth",
+  googleDriveOAuth: "google-drive-oauth",
   themes: "themes",
   gameShopAssets: "gameShopAssets",
   artworkSelection: "artworkSelection",

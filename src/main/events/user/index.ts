@@ -6,6 +6,8 @@ import "./get-retroachievements-achievements";
 import "./reset-retroachievements-achievements";
 import "./start-steam-oauth";
 import "./disconnect-steam";
+import "./start-google-auth";
+import "./disconnect-google-drive";
 import "./start-steam-sync";
 import "./cancel-steam-sync";
 import "./get-steam-sync-state";
