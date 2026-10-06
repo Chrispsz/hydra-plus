@@ -1,0 +1,56 @@
+name: Nightly
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+on:
+  schedule:
+    - cron: "0 5 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    uses: ./.github/workflows/reusable-build.yml
+    with:
+      flavor: nightly
+    secrets: inherit
+
+  cleanup:
+    needs: build
+    runs-on: ubuntu-latest
+
+    permissions:
+      actions: write
+
+    steps:
+      - name: Remove old nightly artifacts
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          RUN_ID: ${{ github.run_id }}
+        run: |
+          set -euo pipefail
+
+          # There is no official actions/remove-artifacts action, so use a simple
+          # gh api loop: delete every "hydra-plus-nightly-*" artifact that was not
+          # produced by this run (artifacts of the current run are kept).
+          deleted=0
+          for artifact_id in $(gh api --paginate \
+            "repos/${REPO}/actions/artifacts?per_page=100" \
+            --jq '.artifacts[]
+                  | select(.name | startswith("hydra-plus-nightly-"))
+                  | select(.workflow_run.id != '"${RUN_ID}"')
+                  | .id'); do
+            if gh api -X DELETE "repos/${REPO}/actions/artifacts/${artifact_id}"; then
+              echo "Deleted old nightly artifact ${artifact_id}"
+              deleted=$((deleted + 1))
+            else
+              echo "::warning::Failed to delete artifact ${artifact_id}"
+            fi
+          done
+
+          echo "Removed ${deleted} old nightly artifact(s)."

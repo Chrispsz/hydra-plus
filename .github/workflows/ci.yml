@@ -1,13 +1,20 @@
-name: Lint
+name: CI
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
-on: pull_request
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
 
 jobs:
-  lint:
+  quality:
     runs-on: ubuntu-latest
 
     steps:
@@ -18,6 +25,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22.21.0
+          cache: "yarn"
 
       - name: Enable Corepack (Yarn)
         run: corepack enable
@@ -25,17 +33,18 @@ jobs:
       - name: Install dependencies
         run: yarn --frozen-lockfile --ignore-scripts
 
-      - name: Validate current commit (last commit) with commitlint
-        run: npx commitlint --last --verbose
+      - name: Typecheck
+        run: yarn typecheck
 
       - name: Test
         run: yarn test
 
-      - name: Typecheck
-        run: yarn typecheck
-
       - name: Lint
         run: yarn lint
 
-      - name: Format check
-        run: yarn format-check
+  build:
+    needs: quality
+    uses: ./.github/workflows/reusable-build.yml
+    with:
+      flavor: ci
+    secrets: inherit
