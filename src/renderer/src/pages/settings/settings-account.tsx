@@ -1,20 +1,9 @@
-import {
-  Avatar,
-  Button,
-  CheckboxField,
-  SelectField,
-} from "@renderer/components";
+import { Button, CheckboxField, SelectField } from "@renderer/components";
 import { Controller, useForm } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 import { useDate, useToast, useUserDetails } from "@renderer/hooks";
-import { useCallback, useContext, useEffect, useState } from "react";
-import {
-  CloudIcon,
-  KeyIcon,
-  MailIcon,
-  XCircleFillIcon,
-} from "@primer/octicons-react";
-import { settingsContext } from "@renderer/context";
+import { useEffect } from "react";
+import { CloudIcon, KeyIcon, MailIcon } from "@primer/octicons-react";
 import { AuthPage } from "@shared";
 import "./settings-account.scss";
 import type { ProfileVisibility } from "@types";
@@ -28,11 +17,7 @@ interface FormValues {
 export function SettingsAccount() {
   const { t } = useTranslation("settings");
 
-  const [isUnblocking, setIsUnblocking] = useState(false);
-
   const { showSuccessToast } = useToast();
-
-  const { blockedUsers, fetchBlockedUsers } = useContext(settingsContext);
 
   const { formatDate } = useDate();
 
@@ -54,7 +39,6 @@ export function SettingsAccount() {
     patchUser,
     fetchUserDetails,
     updateUserDetails,
-    unblockUser,
   } = useUserDetails();
 
   useEffect(() => {
@@ -82,7 +66,15 @@ export function SettingsAccount() {
     };
   }, [fetchUserDetails, updateUserDetails, t, showSuccessToast]);
 
-  const visibilityOptions = [
+  // FRIENDS visibility is a legacy server-side value: profiles stored with it
+  // stay reachable only to the owner from the UI, so it is no longer offered
+  // for new selections. Souvenirs keep it while the souvenir feature exists.
+  const profileVisibilityOptions = [
+    { value: "PUBLIC", label: t("public") },
+    { value: "PRIVATE", label: t("private") },
+  ];
+
+  const souvenirsVisibilityOptions = [
     { value: "PUBLIC", label: t("public") },
     { value: "FRIENDS", label: t("friends_only") },
     { value: "PRIVATE", label: t("private") },
@@ -92,22 +84,6 @@ export function SettingsAccount() {
     await patchUser(values);
     showSuccessToast(t("changes_saved"));
   };
-
-  const handleUnblockClick = useCallback(
-    (id: string) => {
-      setIsUnblocking(true);
-
-      unblockUser(id)
-        .then(() => {
-          fetchBlockedUsers();
-          showSuccessToast(t("user_unblocked"));
-        })
-        .finally(() => {
-          setIsUnblocking(false);
-        });
-    },
-    [unblockUser, fetchBlockedUsers, t, showSuccessToast]
-  );
 
   const getHydraCloudSectionContent = () => {
     const hasSubscribedBefore = Boolean(userDetails?.subscription?.expiresAt);
@@ -178,7 +154,7 @@ export function SettingsAccount() {
                 label={t("profile_visibility")}
                 value={field.value}
                 onChange={handleChange}
-                options={visibilityOptions.map((visiblity) => ({
+                options={profileVisibilityOptions.map((visiblity) => ({
                   key: visiblity.value,
                   value: visiblity.value,
                   label: visiblity.label,
@@ -207,7 +183,7 @@ export function SettingsAccount() {
                 label={t("souvenirs_visibility")}
                 value={field.value}
                 onChange={handleChange}
-                options={visibilityOptions.map((visibility) => ({
+                options={souvenirsVisibilityOptions.map((visibility) => ({
                   key: visibility.value,
                   value: visibility.value,
                   label: visibility.label,
@@ -281,41 +257,6 @@ export function SettingsAccount() {
           </section>
         )}
       />
-
-      <section className="settings-account__section">
-        <h3>{t("blocked_users")}</h3>
-
-        {blockedUsers.length > 0 ? (
-          <ul className="settings-account__blocked-users">
-            {blockedUsers.map((user) => {
-              return (
-                <li key={user.id} className="settings-account__blocked-user">
-                  <div className="settings-account__user-info">
-                    <Avatar
-                      className="settings-account__user-avatar"
-                      size={32}
-                      src={user.profileImageUrl}
-                      alt={user.displayName}
-                    />
-                    <span>{user.displayName}</span>
-                  </div>
-
-                  <button
-                    type="button"
-                    className="settings-account__unblock-button"
-                    onClick={() => handleUnblockClick(user.id)}
-                    disabled={isUnblocking}
-                  >
-                    <XCircleFillIcon />
-                  </button>
-                </li>
-              );
-            })}
-          </ul>
-        ) : (
-          <small>{t("no_users_blocked")}</small>
-        )}
-      </section>
     </form>
   );
 }

@@ -16,8 +16,6 @@ import type {
   OpenCheckoutOptions,
   GameStats,
   UserDetails,
-  FriendRequestSync,
-  FriendPresenceSync,
   NotificationSync,
   GameArtifact,
   LudusaviBackup,
@@ -1249,9 +1247,6 @@ declare global {
         rotation?: number;
       }
     ) => Promise<{ imagePath: string }>;
-    onSyncFriendRequests: (
-      cb: (friendRequests: FriendRequestSync) => void
-    ) => () => Electron.IpcRenderer;
     onSyncNotificationCount: (
       cb: (notification: NotificationSync) => void
     ) => () => Electron.IpcRenderer;
@@ -1259,7 +1254,6 @@ declare global {
       cb: (giftId: string) => void
     ) => () => Electron.IpcRenderer;
     notifyCloudGiftResolved: (giftId: string) => Promise<void>;
-    syncFriendRequests: (friendRequestCount: number) => Promise<void>;
 
     /* Notifications */
     publishNewRepacksNotification: (newRepacksCount: number) => Promise<void>;
@@ -1314,17 +1308,6 @@ declare global {
     isMainWindowMaximized: () => Promise<boolean>;
     onWindowMaximizeChange: (cb: (isMaximized: boolean) => void) => () => void;
 
-    /* Friends Window */
-    openFriendsWindow: () => Promise<void>;
-    minimizeFriendsWindow: () => Promise<void>;
-    closeFriendsWindow: () => Promise<void>;
-    openFriendProfileInMainWindow: (userId: string) => Promise<void>;
-    openAddFriendModalInMainWindow: () => Promise<void>;
-    onOpenAddFriendModal: (cb: () => void) => () => Electron.IpcRenderer;
-    onFriendsUpdated: (cb: () => void) => () => Electron.IpcRenderer;
-    onFriendPresence: (
-      cb: (presence: FriendPresenceSync) => void
-    ) => () => Electron.IpcRenderer;
     onProfileUpdated: (cb: () => void) => () => Electron.IpcRenderer;
     onNavigate: (cb: (path: string) => void) => () => Electron.IpcRenderer;
 

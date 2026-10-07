@@ -39,7 +39,6 @@ import Notifications from "./pages/notifications/notifications";
 import { AchievementNotification } from "./pages/achievements/notification/achievement-notification";
 import { AchievementNotificationOverlay } from "./components/achievements/notification/achievement-notification-overlay";
 import GameLauncher from "./pages/game-launcher/game-launcher";
-import FriendsWindow from "./pages/friends-window/friends-window";
 import AuthWindow from "./pages/auth-window/auth-window";
 import RetroAchievementsConnectionWindow from "./pages/retroachievements-connection-window/retroachievements-connection-window";
 
@@ -91,7 +90,7 @@ i18n.on("languageChanged", syncDocumentLanguage);
 
 // Every BrowserWindow runs its own renderer with its own i18n instance, so a
 // language change must be applied per-window. Subscribe here (the shared entry
-// for all routes) so detached windows — friends, game-launcher, etc. — react
+// for all routes) so detached windows — game-launcher, auth, etc. — react
 // too, not just the routes mounted under <App />.
 globalThis.electron.onUserPreferencesUpdated((preferences) => {
   if (preferences?.language && preferences.language !== i18n.language) {
@@ -130,7 +129,6 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
                   element={<AchievementNotification />}
                 />
                 <Route path="/game-launcher" element={<GameLauncher />} />
-                <Route path="/friends-window" element={<FriendsWindow />} />
                 <Route path="/auth-window" element={<AuthWindow />} />
                 <Route
                   path="/retroachievements-connection"

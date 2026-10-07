@@ -2,7 +2,6 @@ import { useNavigate } from "react-router-dom";
 import {
   BellIcon,
   ChevronDownIcon,
-  PeopleIcon,
   PersonIcon,
   SignOutIcon,
 } from "@primer/octicons-react";
@@ -17,15 +16,11 @@ import { logger } from "@renderer/logger";
 import type {
   NotificationCountResponse,
   NotificationsChangedDetail,
-  ProfileFriends,
 } from "@types";
-import { useDispatch } from "react-redux";
-import { setFriendRequestCount } from "@renderer/features/user-details-slice";
 import "./sidebar-profile.scss";
 
 export function SidebarProfile() {
   const navigate = useNavigate();
-  const dispatch = useDispatch();
 
   const { t } = useTranslation(["sidebar", "user_profile"]);
 
@@ -35,7 +30,6 @@ export function SidebarProfile() {
   const { gameRunning } = useAppSelector((state) => state.gameRunning);
 
   const [notificationCount, setNotificationCount] = useState(0);
-  const [onlineFriendsCount, setOnlineFriendsCount] = useState(0);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [isDropdownClosing, setIsDropdownClosing] = useState(false);
   const [isSigningOut, setIsSigningOut] = useState(false);
@@ -124,61 +118,6 @@ export function SidebarProfile() {
     return () => unsubscribe();
   }, [fetchLocalNotificationCount]);
 
-  const updateOnlineFriendsCount = useCallback(async () => {
-    if (!userDetails) {
-      setOnlineFriendsCount(0);
-      return;
-    }
-    try {
-      const response =
-        await globalThis.window.electron.hydraApi.get<ProfileFriends>(
-          "/profile/friends",
-          { params: { take: 5, skip: 0 } }
-        );
-      setOnlineFriendsCount(response.onlineFriends);
-    } catch {
-      // ignore transient errors
-    }
-  }, [userDetails]);
-
-  useEffect(() => {
-    updateOnlineFriendsCount();
-
-    const unsubscribeFriends = globalThis.window.electron.onFriendsUpdated(
-      () => {
-        updateOnlineFriendsCount();
-      }
-    );
-
-    let interval: ReturnType<typeof setInterval> | null = null;
-    const unsubscribePresence =
-      typeof globalThis.window.electron.onFriendPresence === "function"
-        ? globalThis.window.electron.onFriendPresence(() => {
-            updateOnlineFriendsCount();
-          })
-        : () => {
-            if (interval) clearInterval(interval);
-          };
-
-    if (typeof globalThis.window.electron.onFriendPresence !== "function") {
-      interval = setInterval(updateOnlineFriendsCount, 30_000);
-    }
-
-    return () => {
-      unsubscribeFriends();
-      unsubscribePresence();
-    };
-  }, [updateOnlineFriendsCount]);
-
-  useEffect(() => {
-    const unsubscribe = globalThis.window.electron.onSyncFriendRequests(
-      (result) => {
-        dispatch(setFriendRequestCount(result.friendRequestCount));
-      }
-    );
-    return () => unsubscribe();
-  }, [dispatch]);
-
   useEffect(() => {
     if (!dropdownOpen) return;
     const handleClickOutside = (event: MouseEvent) => {
@@ -222,11 +161,6 @@ export function SidebarProfile() {
   const handleNotificationsClick = () => {
     closeDropdown();
     navigate("/notifications");
-  };
-
-  const handleFriendsClick = () => {
-    closeDropdown();
-    globalThis.window.electron.openFriendsWindow();
   };
 
   const handleSignOutClick = () => {
@@ -323,20 +257,6 @@ export function SidebarProfile() {
             {notificationCount > 0 && (
               <small className="sidebar-profile__dropdown-badge">
                 {notificationCount > 99 ? "99+" : notificationCount}
-              </small>
-            )}
-          </button>
-
-          <button
-            type="button"
-            className="sidebar-profile__dropdown-item"
-            onClick={handleFriendsClick}
-          >
-            <PeopleIcon size={16} />
-            <span>{t("friends")}</span>
-            {onlineFriendsCount > 0 && (
-              <small className="sidebar-profile__dropdown-badge sidebar-profile__dropdown-badge--online">
-                {onlineFriendsCount}
               </small>
             )}
           </button>

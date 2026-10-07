@@ -34,25 +34,6 @@ const getCacheDir = () => {
   return path.join(SystemPath.getPath("userData"), "image-cache", "processed");
 };
 
-let hasRemovedLegacyCache = false;
-
-const removeLegacyCacheDir = async () => {
-  if (hasRemovedLegacyCache) return;
-  hasRemovedLegacyCache = true;
-
-  const legacyCacheDir = path.join(
-    SystemPath.getPath("userData"),
-    "image-cache",
-    "friends"
-  );
-
-  try {
-    await fs.promises.rm(legacyCacheDir, { recursive: true, force: true });
-  } catch (error) {
-    logger.error("Failed to remove legacy friend image cache", error);
-  }
-};
-
 const getCacheKey = (
   imageUrl: string,
   options: Required<ProcessedImageOptions>
@@ -106,7 +87,6 @@ const processAndCacheImage = async (
 ) => {
   const cacheDir = getCacheDir();
   await fs.promises.mkdir(cacheDir, { recursive: true });
-  void removeLegacyCacheDir();
 
   const cacheKey = getCacheKey(imageUrl, options);
   const outputBase = path.join(cacheDir, cacheKey);

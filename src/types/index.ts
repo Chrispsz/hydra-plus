@@ -10,7 +10,6 @@ import type { GameShop, UnlockedAchievement } from "./game.types";
 import type { ArtworkAssetType } from "./artwork.types";
 import type { GameContentWarning } from "./souvenir.types";
 
-export type FriendRequestAction = "ACCEPTED" | "REFUSED" | "CANCEL";
 export * from "./download-contract";
 
 export type HydraCloudFeature =
@@ -168,59 +167,8 @@ export interface StartGameDownloadPayload {
   selectedFilesSize?: number | null;
 }
 
-export interface UserFriend {
-  id: string;
-  displayName: string;
-  profileImageUrl: string | null;
-  backgroundImageUrl?: string | null;
-  currentGame:
-    | (ShopAssets & {
-        sessionDurationInSeconds: number;
-      })
-    | null;
-  isOnline?: boolean;
-}
-
-export interface UserFriends {
-  totalFriends: number;
-  friends: UserFriend[];
-}
-
-export interface ProfileFriends {
-  totalFriends: number;
-  onlineFriends: number;
-  friends: UserFriend[];
-}
-
-export interface UserBlocks {
-  totalBlocks: number;
-  blocks: UserFriend[];
-}
-
-export interface FriendRequestSync {
-  friendRequestCount: number;
-}
-
-export interface FriendPresenceSync {
-  friendId: string;
-  isOnline: boolean;
-}
-
 export interface NotificationSync {
   notificationCount: number;
-}
-
-export interface FriendRequest {
-  id: string;
-  displayName: string;
-  profileImageUrl: string | null;
-  type: "SENT" | "RECEIVED";
-}
-
-export interface UserRelation {
-  AId: string;
-  BId: string;
-  status: "ACCEPTED" | "PENDING";
 }
 
 export type UserProfileCurrentGame = GameRunning &
@@ -330,9 +278,6 @@ export interface UserProfile {
   souvenirsVisibility: ProfileVisibility;
   libraryGames: UserGame[];
   recentGames: UserGame[];
-  friends: UserFriend[];
-  totalFriends: number;
-  relation: UserRelation | null;
   currentGame: UserProfileCurrentGame | null;
   bio: string;
   hasActiveSubscription: boolean;
@@ -437,7 +382,6 @@ export interface UserStatsPercentile {
 
 export interface UserStats {
   libraryCount: number;
-  friendsCount: number;
   totalPlayTimeInSeconds: UserStatsPercentile;
   achievementsPointsEarnedSum?: UserStatsPercentile;
   unlockedAchievementSum?: number;
@@ -535,8 +479,6 @@ export interface LegacySaveExportIpcProgress extends LegacySaveExportProgress {
 }
 
 export type NotificationType =
-  | "FRIEND_REQUEST_RECEIVED"
-  | "FRIEND_REQUEST_ACCEPTED"
   | "BADGE_RECEIVED"
   | "REVIEW_UPVOTE"
   | "REVIEW_ANSWER"
@@ -702,13 +644,6 @@ export type UserGameDetails = ShopAssets & {
   lastTimePlayed: Date | null;
   isDeleted: boolean;
   isFavorite: boolean;
-  friendsWhoPlayed: {
-    id: string;
-    displayName: string;
-    profileImageUrl: string | null;
-    lastTimePlayed: Date | null;
-    playTimeInSeconds: number;
-  }[];
 };
 
 export * from "./game.types";

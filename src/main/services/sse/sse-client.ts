@@ -1,9 +1,6 @@
 import { UserNotLoggedInError } from "@shared";
 import { HydraApi } from "../hydra-api";
 import { logger } from "../logger";
-import { friendRequestEvent } from "./events/friend-request";
-import { friendGameSessionEvent } from "./events/friend-game-session";
-import { friendPresenceEvent } from "./events/friend-presence";
 import { notificationEvent } from "./events/notification";
 import { resyncAfterEventFailure, resyncAfterReconnect } from "./resync";
 import {
@@ -11,27 +8,13 @@ import {
   type RealtimeEnvelope,
   type RealtimeToken,
 } from "./websocket-client";
-import type {
-  FriendGameSession,
-  FriendPresence,
-  FriendRequest,
-  Notification,
-} from "./types";
+import type { Notification } from "./types";
 
 const dispatchEvent = async (
   { event, payload }: RealtimeEnvelope,
   signal: AbortSignal
 ) => {
   switch (event) {
-    case "friendRequest":
-      await friendRequestEvent(payload satisfies FriendRequest, signal);
-      break;
-    case "friendGameSession":
-      await friendGameSessionEvent(payload satisfies FriendGameSession, signal);
-      break;
-    case "friendPresence":
-      friendPresenceEvent(payload satisfies FriendPresence, signal);
-      break;
     case "notification":
       await notificationEvent(payload satisfies Notification, signal);
       break;

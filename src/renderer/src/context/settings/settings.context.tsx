@@ -1,9 +1,9 @@
-import { createContext, useCallback, useEffect, useState } from "react";
+import { createContext, useEffect, useState } from "react";
 
 import { setUserPreferences } from "@renderer/features";
 import { useAppDispatch } from "@renderer/hooks";
 import { levelDBService } from "@renderer/services/leveldb.service";
-import type { UserBlocks, UserPreferences } from "@types";
+import type { UserPreferences } from "@types";
 import { useSearchParams } from "react-router-dom";
 
 import { SETTINGS_CATEGORY_STORAGE_KEY } from "@renderer/session-state";
@@ -50,8 +50,6 @@ export interface SettingsContext {
   clearSourceUrl: () => void;
   sourceUrl: string | null;
   currentCategoryId: SettingsCategoryId;
-  blockedUsers: UserBlocks["blocks"];
-  fetchBlockedUsers: () => Promise<void>;
 }
 
 export const settingsContext = createContext<SettingsContext>({
@@ -60,8 +58,6 @@ export const settingsContext = createContext<SettingsContext>({
   clearSourceUrl: () => {},
   sourceUrl: null,
   currentCategoryId: "general",
-  blockedUsers: [],
-  fetchBlockedUsers: async () => {},
 });
 
 const { Provider } = settingsContext;
@@ -81,7 +77,6 @@ export function SettingsContextProvider({
       const stored = localStorage.getItem(SETTINGS_CATEGORY_STORAGE_KEY);
       return stored && isSettingsCategoryId(stored) ? stored : "general";
     });
-  const [blockedUsers, setBlockedUsers] = useState<UserBlocks["blocks"]>([]);
 
   const [searchParams] = useSearchParams();
   const defaultSourceUrl = searchParams.get("urls");
@@ -115,21 +110,6 @@ export function SettingsContextProvider({
     }
   }, [defaultTab]);
 
-  const fetchBlockedUsers = useCallback(async () => {
-    const blockedUsers = await window.electron.hydraApi
-      .get<UserBlocks>("/profile/blocks", {
-        params: { take: 12, skip: 0 },
-      })
-      .catch(() => {
-        return { blocks: [] };
-      });
-    setBlockedUsers(blockedUsers.blocks);
-  }, []);
-
-  useEffect(() => {
-    fetchBlockedUsers();
-  }, [fetchBlockedUsers]);
-
   const clearSourceUrl = () => setSourceUrl(null);
 
   const updateUserPreferences = async (values: Partial<UserPreferences>) => {
@@ -147,10 +127,8 @@ export function SettingsContextProvider({
         updateUserPreferences,
         setCurrentCategoryId,
         clearSourceUrl,
-        fetchBlockedUsers,
         currentCategoryId,
         sourceUrl,
-        blockedUsers,
       }}
     >
       {children}

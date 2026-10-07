@@ -139,48 +139,23 @@ describe("realtime WebSocket helpers", () => {
     );
     assert.equal(parseRealtimeEnvelope('{"v":2}'), null);
     assert.equal(parseRealtimeEnvelope("not json"), null);
-
-    assert.notEqual(
-      parseRealtimeEnvelope(
-        JSON.stringify({
-          v: 1,
-          eventId: "friend-request-invalidation",
-          event: "friendRequest",
-          payload: { invalidate: "friendRequests", senderId: "sender-1" },
-          publishedAt: Date.now(),
-        })
-      ),
-      null
-    );
-    assert.notEqual(
-      parseRealtimeEnvelope(
-        JSON.stringify({
-          v: 1,
-          eventId: "presence",
-          event: "friendPresence",
-          payload: { friendId: "friend-1", isOnline: true, version: 1 },
-          publishedAt: Date.now(),
-        })
-      ),
-      null
-    );
   });
 
   it("rejects unknown events and malformed event payloads", () => {
     const invalidMessages = [
       { event: "unknown", payload: {} },
-      { event: "friendRequest", payload: { invalidate: "notifications" } },
+      // Removed social events must keep being treated as unknown wire events.
+      {
+        event: "friendRequest",
+        payload: { invalidate: "friendRequests", senderId: "sender-1" },
+      },
       {
         event: "friendGameSession",
-        payload: { objectId: "1", shop: "steam" },
+        payload: { objectId: "1", shop: "steam", friendId: "1" },
       },
       {
         event: "friendPresence",
-        payload: { friendId: "1", isOnline: "yes", version: 1 },
-      },
-      {
-        event: "friendPresence",
-        payload: { friendId: "1", isOnline: true, version: 0 },
+        payload: { friendId: "1", isOnline: true, version: 1 },
       },
       { event: "notification", payload: { invalidate: "friendRequests" } },
     ];
@@ -415,48 +390,6 @@ describe("RealtimeWebSocketClient", () => {
     await tick();
     assert.equal(attempts, 2);
     client.close();
-  });
-
-  it("rejects stale friend presence versions and clears versions on close", async () => {
-    const harness = makeHarness();
-    harness.client.connect();
-    await tick();
-    harness.sockets[0].open();
-
-    for (const [eventId, version] of [
-      ["presence-2", 2],
-      ["presence-1", 1],
-      ["presence-3", 3],
-    ] as const) {
-      harness.sockets[0].message({
-        v: 1,
-        eventId,
-        event: "friendPresence",
-        payload: { friendId: "friend-1", isOnline: true, version },
-        publishedAt: Date.now(),
-      });
-    }
-    await tick();
-    assert.deepEqual(harness.events, ["presence-2", "presence-3"]);
-
-    harness.client.close();
-    harness.client.connect();
-    await tick();
-    harness.sockets[1].open();
-    harness.sockets[1].message({
-      v: 1,
-      eventId: "new-session-presence-1",
-      event: "friendPresence",
-      payload: { friendId: "friend-1", isOnline: false, version: 1 },
-      publishedAt: Date.now(),
-    });
-    await tick();
-    assert.deepEqual(harness.events, [
-      "presence-2",
-      "presence-3",
-      "new-session-presence-1",
-    ]);
-    harness.client.close();
   });
 
   it("aborts an in-flight event handler before its side effect", async () => {

@@ -51,7 +51,6 @@ export class WindowManager {
   private static mainWindowInstance: Electron.BrowserWindow | null = null;
   private static gameLauncherWindowInstance: Electron.BrowserWindow | null =
     null;
-  private static friendsWindow: Electron.BrowserWindow | null = null;
   private static authWindow: Electron.BrowserWindow | null = null;
   private static retroAchievementsConnectionWindow: Electron.BrowserWindow | null =
     null;
@@ -155,7 +154,7 @@ export class WindowManager {
   }
 
   public static sendToAppWindows(channel: string, ...args: unknown[]) {
-    const windows = [this.mainWindow, this.friendsWindow];
+    const windows = [this.mainWindow];
 
     for (const window of windows) {
       if (!window || window.isDestroyed()) continue;
@@ -385,63 +384,6 @@ export class WindowManager {
     });
   }
 
-  public static async openFriendsWindow() {
-    if (this.friendsWindow) {
-      if (this.friendsWindow.isMinimized()) {
-        this.friendsWindow.restore();
-      }
-      this.friendsWindow.focus();
-      return;
-    }
-
-    this.friendsWindow = new BrowserWindow({
-      width: 420,
-      height: 780,
-      minWidth: 420,
-      maxWidth: 420,
-      minHeight: 560,
-      maximizable: false,
-      backgroundColor: "#1c1c1c",
-      // No native frame/controls — the renderer draws its own minimize and
-      // close buttons in the title bar (see friends-window.tsx).
-      frame: false,
-      icon,
-      webPreferences: {
-        preload: path.join(__dirname, "../preload/index.mjs"),
-        sandbox: false,
-      },
-      show: false,
-    });
-
-    this.friendsWindow.removeMenu();
-
-    this.loadWindowURL(this.friendsWindow, "friends-window");
-
-    this.friendsWindow.once("ready-to-show", () => {
-      this.friendsWindow?.show();
-      if (!app.isPackaged || isStaging) {
-        this.friendsWindow?.webContents.openDevTools();
-      }
-    });
-
-    this.friendsWindow.on("closed", () => {
-      this.friendsWindow = null;
-    });
-  }
-
-  public static minimizeFriendsWindow() {
-    if (this.friendsWindow && !this.friendsWindow.isDestroyed()) {
-      this.friendsWindow.minimize();
-    }
-  }
-
-  public static closeFriendsWindow() {
-    if (this.friendsWindow && !this.friendsWindow.isDestroyed()) {
-      this.friendsWindow.close();
-    }
-    this.friendsWindow = null;
-  }
-
   public static minimizeMainWindow() {
     if (this.mainWindow && !this.mainWindow.isDestroyed()) {
       this.mainWindow.minimize();
@@ -481,11 +423,6 @@ export class WindowManager {
   public static focusMainWindowAndNavigate(path: string) {
     this.focusMainWindow();
     this.mainWindow?.webContents.send("on-navigate", path);
-  }
-
-  public static openAddFriendModalInMainWindow() {
-    this.focusMainWindow();
-    this.mainWindow?.webContents.send("on-open-add-friend-modal");
   }
 
   private static bindAuthNavigation(

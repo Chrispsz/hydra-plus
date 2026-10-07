@@ -3,21 +3,16 @@ import { useAppDispatch, useAppSelector } from "./redux";
 import {
   setProfileBackground,
   setUserDetails,
-  setFriendRequests,
   clearCollections,
 } from "@renderer/features";
-import type {
-  FriendRequestAction,
-  UpdateProfileRequest,
-  UserDetails,
-  FriendRequest,
-} from "@types";
+import type { UpdateProfileRequest, UserDetails } from "@types";
 
 export function useUserDetails() {
   const dispatch = useAppDispatch();
 
-  const { userDetails, profileBackground, friendRequests, friendRequestCount } =
-    useAppSelector((state) => state.userDetails);
+  const { userDetails, profileBackground } = useAppSelector(
+    (state) => state.userDetails
+  );
 
   const clearUserDetails = useCallback(async () => {
     dispatch(setUserDetails(null));
@@ -78,80 +73,6 @@ export function useUserDetails() {
     ]
   );
 
-  const fetchFriendRequests = useCallback(async () => {
-    return globalThis.window.electron.hydraApi
-      .get<FriendRequest[]>("/profile/friend-requests")
-      .then((friendRequests) => {
-        dispatch(setFriendRequests(friendRequests));
-        return friendRequests;
-      })
-      .catch(() => null);
-  }, [dispatch]);
-
-  // After a local accept/refuse/cancel/send, the API has already mutated the
-  // request server-side but only the *other* user gets a WS push. Fan the new
-  // state out to every app window (main, friends) so their request
-  // badges and notification lists refresh without a manual reload.
-  const broadcastFriendRequestSync = useCallback(
-    (requests: FriendRequest[] | null) => {
-      if (!requests) return;
-
-      const receivedCount = requests.filter(
-        (request) => request.type === "RECEIVED"
-      ).length;
-
-      const { syncFriendRequests } = globalThis.window.electron;
-      if (typeof syncFriendRequests !== "function") return;
-
-      syncFriendRequests(receivedCount).catch(() => {});
-    },
-    []
-  );
-
-  const sendFriendRequest = useCallback(
-    async (userId: string) => {
-      return globalThis.window.electron.hydraApi
-        .post("/profile/friend-requests", {
-          data: { friendCode: userId },
-        })
-        .then(() => fetchFriendRequests())
-        .then(broadcastFriendRequestSync);
-    },
-    [fetchFriendRequests, broadcastFriendRequestSync]
-  );
-
-  const updateFriendRequestState = useCallback(
-    async (userId: string, action: FriendRequestAction) => {
-      if (action === "CANCEL") {
-        return globalThis.window.electron.hydraApi
-          .delete(`/profile/friend-requests/${userId}`)
-          .then(() => fetchFriendRequests())
-          .then(broadcastFriendRequestSync);
-      }
-
-      return globalThis.window.electron.hydraApi
-        .patch(`/profile/friend-requests/${userId}`, {
-          data: {
-            requestState: action,
-          },
-        })
-        .then(() => fetchFriendRequests())
-        .then(broadcastFriendRequestSync);
-    },
-    [fetchFriendRequests, broadcastFriendRequestSync]
-  );
-
-  const undoFriendship = (userId: string) =>
-    globalThis.window.electron.hydraApi.delete(
-      `/profile/friend-requests/${userId}`
-    );
-
-  const blockUser = (userId: string) =>
-    globalThis.window.electron.hydraApi.post(`/users/${userId}/block`);
-
-  const unblockUser = (userId: string) =>
-    globalThis.window.electron.hydraApi.post(`/users/${userId}/unblock`);
-
   const hasActiveSubscription = useMemo(() => {
     const expiresAt = new Date(userDetails?.subscription?.expiresAt ?? 0);
     return expiresAt > new Date();
@@ -160,19 +81,11 @@ export function useUserDetails() {
   return {
     userDetails,
     profileBackground,
-    friendRequests,
-    friendRequestCount,
     hasActiveSubscription,
     fetchUserDetails,
     signOut,
     clearUserDetails,
     updateUserDetails,
     patchUser,
-    sendFriendRequest,
-    fetchFriendRequests,
-    updateFriendRequestState,
-    blockUser,
-    unblockUser,
-    undoFriendship,
   };
 }

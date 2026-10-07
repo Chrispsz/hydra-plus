@@ -10,7 +10,7 @@ import icon from "@resources/icon.png?asset";
 import { NotificationOptions, toXmlString } from "./xml";
 import { logger } from "../logger";
 import { WindowManager } from "../window-manager";
-import type { Game, UserPreferences, UserProfile } from "@types";
+import type { Game, UserPreferences } from "@types";
 import { db, levelKeys } from "@main/level";
 import { restartAndInstallUpdate } from "@main/events/autoupdater/restart-and-install-update";
 import { SystemPath } from "../system-path";
@@ -184,60 +184,6 @@ export const publishNotificationUpdateReadyToInstall = async (
     title,
     body
   );
-};
-
-export const publishNewFriendRequestNotification = async (
-  user: UserProfile,
-  signal?: AbortSignal
-) => {
-  if (signal?.aborted) return;
-  const userPreferences = await db.get<string, UserPreferences | null>(
-    levelKeys.userPreferences,
-    {
-      valueEncoding: "json",
-    }
-  );
-
-  if (signal?.aborted) return;
-  if (!userPreferences?.friendRequestNotificationsEnabled) return;
-
-  const notificationIcon =
-    (user?.profileImageUrl
-      ? await downloadImage(user.profileImageUrl, signal)
-      : undefined) ?? trayIcon;
-  if (signal?.aborted) return;
-
-  new Notification({
-    title: t("new_friend_request_title", {
-      ns: "notifications",
-    }),
-    body: t("new_friend_request_description", {
-      ns: "notifications",
-      displayName: user.displayName,
-    }),
-    icon: notificationIcon,
-  }).show();
-};
-
-export const publishFriendStartedPlayingGameNotification = async (
-  friend: UserProfile,
-  signal?: AbortSignal
-) => {
-  if (signal?.aborted) return;
-  const notificationIcon =
-    (friend?.profileImageUrl
-      ? await downloadImage(friend.profileImageUrl, signal)
-      : undefined) ?? trayIcon;
-  if (signal?.aborted) return;
-
-  new Notification({
-    title: t("friend_started_playing_game", {
-      ns: "notifications",
-      displayName: friend.displayName,
-    }),
-    body: friend?.currentGame?.title,
-    icon: notificationIcon,
-  }).show();
 };
 
 export const publishCombinedNewAchievementNotification = async (

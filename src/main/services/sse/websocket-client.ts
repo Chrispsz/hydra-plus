@@ -7,25 +7,10 @@ interface RealtimeEnvelopeBase {
   publishedAt: number | string;
 }
 
-export type RealtimeEnvelope = RealtimeEnvelopeBase &
-  (
-    | {
-        event: "friendRequest";
-        payload: { invalidate: "friendRequests"; senderId?: string };
-      }
-    | {
-        event: "friendGameSession";
-        payload: { objectId: string; shop: string; friendId: string };
-      }
-    | {
-        event: "friendPresence";
-        payload: { friendId: string; isOnline: boolean; version: number };
-      }
-    | {
-        event: "notification";
-        payload: { invalidate: "notifications" };
-      }
-  );
+export type RealtimeEnvelope = RealtimeEnvelopeBase & {
+  event: "notification";
+  payload: { invalidate: "notifications" };
+};
 
 export interface RealtimeToken {
   token: string;
@@ -127,25 +112,6 @@ const isValidEnvelopePayload = (
   payload: Record<string, unknown>
 ) => {
   switch (event) {
-    case "friendRequest":
-      return (
-        payload.invalidate === "friendRequests" &&
-        (payload.senderId === undefined || typeof payload.senderId === "string")
-      );
-    case "friendGameSession":
-      return (
-        typeof payload.objectId === "string" &&
-        typeof payload.shop === "string" &&
-        typeof payload.friendId === "string"
-      );
-    case "friendPresence":
-      return (
-        typeof payload.friendId === "string" &&
-        typeof payload.isOnline === "boolean" &&
-        typeof payload.version === "number" &&
-        Number.isInteger(payload.version) &&
-        payload.version > 0
-      );
     case "notification":
       return payload.invalidate === "notifications";
     default:
@@ -222,7 +188,6 @@ export class RealtimeWebSocketClient {
   } | null = null;
   private readonly seenEventIds = new Set<string>();
   private readonly pendingEventIds = new Set<string>();
-  private readonly highestPresenceVersion = new Map<string, number>();
   private readonly random: () => number;
   private readonly now: () => number;
   private readonly createSocket: NonNullable<
@@ -275,7 +240,6 @@ export class RealtimeWebSocketClient {
     if (clearSession) {
       this.cachedToken = null;
       this.seenEventIds.clear();
-      this.highestPresenceVersion.clear();
     }
   }
 
@@ -500,15 +464,6 @@ export class RealtimeWebSocketClient {
         if (!envelope) {
           this.log.warn("Ignored malformed realtime WebSocket message");
           return;
-        }
-        if (envelope.event === "friendPresence") {
-          const highestVersion =
-            this.highestPresenceVersion.get(envelope.payload.friendId) ?? 0;
-          if (envelope.payload.version <= highestVersion) return;
-          this.highestPresenceVersion.set(
-            envelope.payload.friendId,
-            envelope.payload.version
-          );
         }
         if (
           this.seenEventIds.has(envelope.eventId) ||

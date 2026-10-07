@@ -33,7 +33,6 @@ import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useSubscription } from "./hooks/use-subscription";
 import { ArchiveDeletionModal } from "./pages/downloads/archive-deletion-error-modal";
 import { CloudSubscriptionModal } from "./pages/shared-modals/hydra-cloud/cloud-subscription-modal";
-import { AddFriendModal } from "./pages/profile/profile-content/add-friend-modal";
 import { CloudGiftNotificationModal } from "./pages/shared-modals/cloud-gift-notification-modal";
 
 import type { UserPreferences } from "@types";
@@ -82,7 +81,6 @@ export function App() {
   const [showArchiveDeletionModal, setShowArchiveDeletionModal] =
     useState(false);
   const [archivePaths, setArchivePaths] = useState<string[]>([]);
-  const [showAddFriendModal, setShowAddFriendModal] = useState(false);
 
   useEffect(() => {
     Promise.all([
@@ -333,14 +331,6 @@ export function App() {
     return () => unsubscribe();
   }, [navigate]);
 
-  useEffect(() => {
-    const unsubscribe = globalThis.electron.onOpenAddFriendModal(() => {
-      setShowAddFriendModal(true);
-    });
-
-    return () => unsubscribe();
-  }, []);
-
   const playAudio = useCallback(async () => {
     const soundUrl = await getAchievementSoundUrl();
     const volume = await getAchievementSoundVolume();
@@ -471,11 +461,6 @@ export function App() {
         visible={showArchiveDeletionModal}
         archivePaths={archivePaths}
         onClose={() => setShowArchiveDeletionModal(false)}
-      />
-
-      <AddFriendModal
-        visible={showAddFriendModal}
-        onClose={() => setShowAddFriendModal(false)}
       />
 
       <main>

@@ -79,8 +79,8 @@ const updateProfile = async (
 
   const updatedProfile = await patchUserProfile(payload);
 
-  // Notify every window (e.g. the friends window, which has its own store) so
-  // they can re-fetch the signed-in user's details after a profile change.
+  // Notify every window so they can re-fetch the signed-in user's details
+  // after a profile change.
   WindowManager.sendToAppWindows("on-profile-updated");
 
   return updatedProfile;

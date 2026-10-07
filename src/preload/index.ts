@@ -13,8 +13,6 @@ import type {
   UpdateProfileRequest,
   SeedingStatus,
   UserAchievement,
-  FriendRequestSync,
-  FriendPresenceSync,
   NotificationSync,
   ShortcutLocation,
   CreateSteamShortcutOptions,
@@ -1156,15 +1154,6 @@ contextBridge.exposeInMainWorld("electron", {
       rotation?: number;
     }
   ) => ipcRenderer.invoke("cropProfileImage", imagePath, params),
-  onSyncFriendRequests: (cb: (friendRequests: FriendRequestSync) => void) => {
-    const listener = (
-      _event: Electron.IpcRendererEvent,
-      friendRequests: FriendRequestSync
-    ) => cb(friendRequests);
-    ipcRenderer.on("on-sync-friend-requests", listener);
-    return () =>
-      ipcRenderer.removeListener("on-sync-friend-requests", listener);
-  },
   onSyncNotificationCount: (cb: (notification: NotificationSync) => void) => {
     const listener = (
       _event: Electron.IpcRendererEvent,
@@ -1174,9 +1163,6 @@ contextBridge.exposeInMainWorld("electron", {
     return () =>
       ipcRenderer.removeListener("on-sync-notification-count", listener);
   },
-  syncFriendRequests: (friendRequestCount: number) =>
-    ipcRenderer.invoke("syncFriendRequests", friendRequestCount),
-
   onCloudGiftResolved: (cb: (giftId: string) => void) => {
     const listener = (_event: Electron.IpcRendererEvent, giftId: string) =>
       cb(giftId);
@@ -1412,33 +1398,6 @@ contextBridge.exposeInMainWorld("electron", {
       ipcRenderer.removeListener("on-window-maximize-change", listener);
   },
 
-  /* Friends */
-  openFriendsWindow: () => ipcRenderer.invoke("openFriendsWindow"),
-  minimizeFriendsWindow: () => ipcRenderer.invoke("minimizeFriendsWindow"),
-  closeFriendsWindow: () => ipcRenderer.invoke("closeFriendsWindow"),
-  openFriendProfileInMainWindow: (userId: string) =>
-    ipcRenderer.invoke("openFriendProfileInMainWindow", userId),
-  openAddFriendModalInMainWindow: () =>
-    ipcRenderer.invoke("openAddFriendModalInMainWindow"),
-  onOpenAddFriendModal: (cb: () => void) => {
-    const listener = () => cb();
-    ipcRenderer.on("on-open-add-friend-modal", listener);
-    return () =>
-      ipcRenderer.removeListener("on-open-add-friend-modal", listener);
-  },
-  onFriendsUpdated: (cb: () => void) => {
-    const listener = () => cb();
-    ipcRenderer.on("on-friends-updated", listener);
-    return () => ipcRenderer.removeListener("on-friends-updated", listener);
-  },
-  onFriendPresence: (cb: (presence: FriendPresenceSync) => void) => {
-    const listener = (
-      _event: Electron.IpcRendererEvent,
-      presence: FriendPresenceSync
-    ) => cb(presence);
-    ipcRenderer.on("on-friend-presence", listener);
-    return () => ipcRenderer.removeListener("on-friend-presence", listener);
-  },
   onProfileUpdated: (cb: () => void) => {
     const listener = () => cb();
     ipcRenderer.on("on-profile-updated", listener);

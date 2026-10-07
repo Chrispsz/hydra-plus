@@ -1,16 +1,6 @@
 import { useCallback, useContext, useMemo, useState } from "react";
 import { userProfileContext } from "@renderer/context";
-import {
-  BlockedIcon,
-  CheckCircleFillIcon,
-  CopyIcon,
-  GiftIcon,
-  PencilIcon,
-  PersonAddIcon,
-  SignOutIcon,
-  XCircleFillIcon,
-  XCircleIcon,
-} from "@primer/octicons-react";
+import { GiftIcon, PencilIcon, SignOutIcon } from "@primer/octicons-react";
 import { buildGameDetailsPath } from "@renderer/helpers";
 import {
   Avatar,
@@ -28,45 +18,30 @@ import {
 } from "@renderer/hooks";
 import { addSeconds } from "date-fns";
 import { useNavigate } from "react-router-dom";
-import { motion } from "framer-motion";
 import { AuthPage } from "@shared";
 import { GameVisibilityBadge } from "@renderer/components/game-visibility-badge/game-visibility-badge";
 
-import type { FriendRequestAction } from "@types";
 import { EditProfileModal } from "../edit-profile-modal/edit-profile-modal";
 import Skeleton from "react-loading-skeleton";
 import { UploadBackgroundImageButton } from "../upload-background-image-button/upload-background-image-button";
 import "./profile-hero.scss";
-
-type FriendAction =
-  | FriendRequestAction
-  | ("BLOCK" | "UNDO_FRIENDSHIP" | "SEND");
 
 export function ProfileHero() {
   const [showEditProfileModal, setShowEditProfileModal] = useState(false);
   const [showFullscreenAvatar, setShowFullscreenAvatar] = useState(false);
   const [isPerformingAction, setIsPerformingAction] = useState(false);
   const [showSignOutModal, setShowSignOutModal] = useState(false);
-  const [isCopyButtonHovered, setIsCopyButtonHovered] = useState(false);
-  const [isCopied, setIsCopied] = useState(false);
 
-  const { isMe, getUserProfile, userProfile, heroBackground, backgroundImage } =
+  const { isMe, userProfile, heroBackground, backgroundImage } =
     useContext(userProfileContext);
-  const {
-    signOut,
-    updateFriendRequestState,
-    sendFriendRequest,
-    undoFriendship,
-    blockUser,
-    userDetails,
-  } = useUserDetails();
+  const { signOut, userDetails } = useUserDetails();
 
   const { gameRunning } = useAppSelector((state) => state.gameRunning);
 
   const { t } = useTranslation("user_profile");
   const { formatDistance } = useDate();
 
-  const { showSuccessToast, showErrorToast } = useToast();
+  const { showSuccessToast } = useToast();
 
   const navigate = useNavigate();
 
@@ -83,59 +58,6 @@ export function ProfileHero() {
     }
     navigate("/");
   }, [navigate, signOut, showSuccessToast, t]);
-
-  const handleFriendAction = useCallback(
-    async (userId: string, action: FriendAction) => {
-      if (!userProfile) return;
-
-      if (!userDetails) {
-        window.electron.openAuthWindow(AuthPage.SignIn);
-        return;
-      }
-
-      setIsPerformingAction(true);
-
-      try {
-        if (action === "UNDO_FRIENDSHIP") {
-          await undoFriendship(userId).then(getUserProfile);
-          return;
-        }
-
-        if (action === "BLOCK") {
-          await blockUser(userId).then(() => {
-            showSuccessToast(t("user_blocked_successfully"));
-            navigate(-1);
-          });
-
-          return;
-        }
-
-        if (action === "SEND") {
-          await sendFriendRequest(userProfile.id).then(getUserProfile);
-          return;
-        }
-
-        await updateFriendRequestState(userId, action).then(getUserProfile);
-      } catch (err) {
-        showErrorToast(t("try_again"));
-      } finally {
-        setIsPerformingAction(false);
-      }
-    },
-    [
-      undoFriendship,
-      blockUser,
-      sendFriendRequest,
-      updateFriendRequestState,
-      t,
-      showErrorToast,
-      getUserProfile,
-      navigate,
-      showSuccessToast,
-      userProfile,
-      userDetails,
-    ]
-  );
 
   const giftAction = useMemo(() => {
     if (!userProfile || isMe || !userProfile.canReceiveCloudGift) return null;
@@ -163,123 +85,31 @@ export function ProfileHero() {
   }, [isMe, isPerformingAction, t, userDetails, userProfile]);
 
   const profileActions = useMemo(() => {
-    if (!userProfile) return null;
-
-    if (isMe) {
-      return (
-        <>
-          <Button
-            theme="outline"
-            onClick={() => setShowEditProfileModal(true)}
-            disabled={isPerformingAction}
-            className="profile-hero__button--outline"
-          >
-            <PencilIcon />
-            {t("edit_profile")}
-          </Button>
-
-          <Button
-            theme="danger"
-            onClick={() => setShowSignOutModal(true)}
-            disabled={isPerformingAction}
-          >
-            <SignOutIcon />
-            {t("sign_out")}
-          </Button>
-        </>
-      );
-    }
-
-    if (userProfile.relation == null) {
-      return (
-        <>
-          <Button
-            theme="outline"
-            onClick={() => handleFriendAction(userProfile.id, "SEND")}
-            disabled={isPerformingAction}
-            className="profile-hero__button--outline"
-          >
-            <PersonAddIcon />
-            {t("add_friend")}
-          </Button>
-
-          <Button
-            theme="danger"
-            onClick={() => handleFriendAction(userProfile.id, "BLOCK")}
-            disabled={isPerformingAction}
-          >
-            <BlockedIcon />
-            {t("block_user")}
-          </Button>
-        </>
-      );
-    }
-
-    if (userProfile.relation.status === "ACCEPTED") {
-      return (
-        <>
-          <Button
-            theme="danger"
-            onClick={() =>
-              handleFriendAction(userProfile.id, "UNDO_FRIENDSHIP")
-            }
-            disabled={isPerformingAction}
-          >
-            <XCircleIcon />
-            {t("undo_friendship")}
-          </Button>
-
-          <Button
-            theme="danger"
-            onClick={() => handleFriendAction(userProfile.id, "BLOCK")}
-            disabled={isPerformingAction}
-          >
-            <BlockedIcon />
-            {t("block_user")}
-          </Button>
-        </>
-      );
-    }
-
-    if (userProfile.relation.BId === userProfile.id) {
-      return (
-        <Button
-          theme="outline"
-          onClick={() =>
-            handleFriendAction(userProfile.relation!.BId, "CANCEL")
-          }
-          disabled={isPerformingAction}
-          className="profile-hero__button--outline"
-        >
-          <XCircleFillIcon /> {t("cancel_request")}
-        </Button>
-      );
-    }
+    if (!userProfile || !isMe) return null;
 
     return (
       <>
         <Button
           theme="outline"
-          onClick={() =>
-            handleFriendAction(userProfile.relation!.AId, "ACCEPTED")
-          }
+          onClick={() => setShowEditProfileModal(true)}
           disabled={isPerformingAction}
           className="profile-hero__button--outline"
         >
-          <CheckCircleFillIcon /> {t("accept_request")}
+          <PencilIcon />
+          {t("edit_profile")}
         </Button>
+
         <Button
           theme="danger"
-          onClick={() =>
-            handleFriendAction(userProfile.relation!.AId, "REFUSED")
-          }
+          onClick={() => setShowSignOutModal(true)}
           disabled={isPerformingAction}
         >
-          <XCircleFillIcon /> {t("ignore_request")}
+          <SignOutIcon />
+          {t("sign_out")}
         </Button>
       </>
     );
-  }, [handleFriendAction, isMe, t, isPerformingAction, userProfile]);
+  }, [isMe, t, isPerformingAction, userProfile]);
 
   const handleAvatarClick = useCallback(() => {
     if (userProfile?.profileImageUrl) {
@@ -288,27 +118,6 @@ export function ProfileHero() {
       setShowEditProfileModal(true);
     }
   }, [isMe, userProfile?.profileImageUrl]);
-
-  const copyFriendCode = useCallback(() => {
-    if (userProfile?.id) {
-      globalThis.window.electron.clipboard.writeText(userProfile.id);
-      setIsCopied(true);
-
-      const startTime = performance.now();
-      const duration = 1200; // 1.2 seconds
-
-      const animate = (currentTime: number) => {
-        const elapsed = currentTime - startTime;
-        if (elapsed < duration) {
-          requestAnimationFrame(animate);
-        } else {
-          setIsCopied(false);
-        }
-      };
-
-      requestAnimationFrame(animate);
-    }
-  }, [userProfile]);
 
   const currentGame = useMemo(() => {
     if (isMe) {
@@ -388,38 +197,9 @@ export function ProfileHero() {
 
             <div className="profile-hero__information">
               {userProfile ? (
-                <div className="profile-hero__display-name-container">
-                  <h2 className="profile-hero__display-name">
-                    {userProfile?.displayName}
-                  </h2>
-
-                  <motion.button
-                    type="button"
-                    className="profile-hero__copy-button"
-                    onClick={copyFriendCode}
-                    title={t("copy_friend_code")}
-                    onMouseEnter={() => setIsCopyButtonHovered(true)}
-                    onMouseLeave={() => setIsCopyButtonHovered(false)}
-                    initial={{ width: 28 }}
-                    animate={{
-                      width: isCopyButtonHovered || isCopied ? 105 : 28,
-                    }}
-                    transition={{ duration: 0.2, ease: "easeInOut" }}
-                  >
-                    <motion.span
-                      className="profile-hero__friend-code"
-                      initial={{ opacity: 0, marginRight: 0 }}
-                      animate={{
-                        opacity: isCopyButtonHovered || isCopied ? 1 : 0,
-                        marginRight: isCopyButtonHovered || isCopied ? 8 : 0,
-                      }}
-                      transition={{ duration: 0.2, ease: "easeInOut" }}
-                    >
-                      {isCopied ? t("copied") : userProfile?.id}
-                    </motion.span>
-                    <CopyIcon size={16} />
-                  </motion.button>
-                </div>
+                <h2 className="profile-hero__display-name">
+                  {userProfile?.displayName}
+                </h2>
               ) : (
                 <Skeleton width={150} height={28} />
               )}

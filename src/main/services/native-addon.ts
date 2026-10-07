@@ -358,7 +358,7 @@ export class NativeAddon {
         isAnimated: normalizedIsAnimated,
       };
     } catch (error) {
-      logger.error("Failed to process friend image via native addon", error);
+      logger.error("Failed to process image via native addon", error);
       throw error;
     }
   }

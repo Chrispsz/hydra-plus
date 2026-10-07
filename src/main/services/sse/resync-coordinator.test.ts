@@ -8,7 +8,7 @@ describe("ResyncCoordinator", () => {
   it("coalesces bursts and serializes work", async () => {
     const runs: string[][] = [];
     const resolvers: Array<() => void> = [];
-    const coordinator = new ResyncCoordinator<"friends" | "notifications">(
+    const coordinator = new ResyncCoordinator<"downloads" | "notifications">(
       (scopes) =>
         new Promise<void>((resolve) => {
           runs.push([...scopes]);
@@ -17,24 +17,24 @@ describe("ResyncCoordinator", () => {
     );
     const signal = new AbortController().signal;
 
-    const first = coordinator.request(["friends"], signal);
+    const first = coordinator.request(["downloads"], signal);
     const second = coordinator.request(["notifications"], signal);
     await tick();
-    assert.deepEqual(runs, [["friends", "notifications"]]);
+    assert.deepEqual(runs, [["downloads", "notifications"]]);
 
-    const third = coordinator.request(["friends"], signal);
+    const third = coordinator.request(["downloads"], signal);
     await tick();
     assert.equal(runs.length, 1);
     resolvers[0]();
     await tick();
-    assert.deepEqual(runs, [["friends", "notifications"], ["friends"]]);
+    assert.deepEqual(runs, [["downloads", "notifications"], ["downloads"]]);
     resolvers[1]();
     await Promise.all([first, second, third]);
   });
 
   it("aborts shared work only after every requester aborts", async () => {
     let runSignal: AbortSignal | undefined;
-    const coordinator = new ResyncCoordinator<"friends">(
+    const coordinator = new ResyncCoordinator<"downloads">(
       async (_scopes, signal) => {
         runSignal = signal;
         await new Promise<void>((resolve) => {
@@ -46,8 +46,8 @@ describe("ResyncCoordinator", () => {
     const second = new AbortController();
 
     const requests = [
-      coordinator.request(["friends"], first.signal),
-      coordinator.request(["friends"], second.signal),
+      coordinator.request(["downloads"], first.signal),
+      coordinator.request(["downloads"], second.signal),
     ];
     await tick();
     first.abort();

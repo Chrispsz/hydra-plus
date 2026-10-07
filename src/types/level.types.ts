@@ -173,8 +173,6 @@ export interface UserPreferences {
   achievementCustomNotificationsEnabled?: boolean;
   achievementCustomNotificationPosition?: AchievementCustomNotificationPosition;
   achievementSoundVolume?: number;
-  friendRequestNotificationsEnabled?: boolean;
-  friendStartGameNotificationsEnabled?: boolean;
   showDownloadSpeedInMegabytes?: boolean;
   extractFilesByDefault?: boolean;
   deleteArchiveFilesAfterExtractionByDefault?: boolean;

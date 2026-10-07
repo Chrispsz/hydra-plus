@@ -109,12 +109,6 @@
     color: rgba(255, 255, 255, 0.5);
   }
 
-  &__actions {
-    display: flex;
-    gap: globals.$spacing-unit;
-    flex-shrink: 0;
-  }
-
   &__dismiss {
     position: absolute;
     top: calc(globals.$spacing-unit / 2);

@@ -1,17 +1,13 @@
-import type { FriendRequest, NotificationCountResponse } from "@types";
+import type { NotificationCountResponse } from "@types";
 import { randomInt } from "node:crypto";
 import { HydraApi } from "@main/services/hydra-api";
 import { WindowManager } from "@main/services/window-manager";
 import { logger } from "@main/services/logger";
 import { ResyncCoordinator } from "./resync-coordinator";
 
-type ResyncScope = "friends" | "friendRequests" | "notifications";
+type ResyncScope = "notifications";
 
-const ALL_SCOPES: ResyncScope[] = [
-  "friends",
-  "friendRequests",
-  "notifications",
-];
+const ALL_SCOPES: ResyncScope[] = ["notifications"];
 const RESYNC_JITTER_MS = 15_000;
 
 const sleep = (ms: number, signal: AbortSignal) =>
@@ -28,24 +24,6 @@ const sleep = (ms: number, signal: AbortSignal) =>
     }, ms);
     signal.addEventListener("abort", onAbort, { once: true });
   });
-
-const broadcastFriendsUpdate = async () => {
-  WindowManager.sendToAppWindows("on-friends-updated");
-};
-
-const syncFriendRequestCount = async (signal: AbortSignal) => {
-  const friendRequests = await HydraApi.get<FriendRequest[]>(
-    "/profile/friend-requests",
-    undefined,
-    { signal }
-  );
-  if (signal.aborted) return;
-  WindowManager.sendToAppWindows("on-sync-friend-requests", {
-    friendRequestCount: friendRequests.filter(
-      (friendRequest) => friendRequest.type === "RECEIVED"
-    ).length,
-  });
-};
 
 const syncNotificationCount = async (signal: AbortSignal) => {
   const { count } = await HydraApi.get<NotificationCountResponse>(
@@ -66,14 +44,6 @@ const SCOPE_TASKS: Record<
     task: (signal: AbortSignal) => Promise<void>;
   }
 > = {
-  friends: {
-    errorMessage: "Failed to broadcast friends update after reconnect:",
-    task: broadcastFriendsUpdate,
-  },
-  friendRequests: {
-    errorMessage: "Failed to resync friend requests:",
-    task: syncFriendRequestCount,
-  },
   notifications: {
     errorMessage: "Failed to resync notification count:",
     task: syncNotificationCount,
@@ -112,9 +82,6 @@ export const resyncAfterReconnect = (signal: AbortSignal) =>
 
 export const resyncAfterEventFailure = (signal: AbortSignal) =>
   coordinator.request(ALL_SCOPES, signal);
-
-export const resyncFriendRequests = (signal: AbortSignal) =>
-  coordinator.request(["friendRequests"], signal);
 
 export const resyncNotifications = (signal: AbortSignal) =>
   coordinator.request(["notifications"], signal);

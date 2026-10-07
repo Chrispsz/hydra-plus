@@ -24,10 +24,6 @@ const buildForm = (preferences: UserPreferences | null) => ({
     preferences?.downloadNotificationsEnabled ?? false,
   repackUpdatesNotificationsEnabled:
     preferences?.repackUpdatesNotificationsEnabled ?? false,
-  friendRequestNotificationsEnabled:
-    preferences?.friendRequestNotificationsEnabled ?? false,
-  friendStartGameNotificationsEnabled:
-    preferences?.friendStartGameNotificationsEnabled ?? true,
   achievementNotificationsEnabled:
     preferences?.achievementNotificationsEnabled ?? true,
   achievementCustomNotificationsEnabled:
@@ -132,28 +128,6 @@ export function SettingsContextNotifications() {
             handleChange({
               repackUpdatesNotificationsEnabled:
                 !form.repackUpdatesNotificationsEnabled,
-            })
-          }
-        />
-
-        <CheckboxField
-          label={t("enable_friend_request_notifications")}
-          checked={form.friendRequestNotificationsEnabled}
-          onChange={() =>
-            handleChange({
-              friendRequestNotificationsEnabled:
-                !form.friendRequestNotificationsEnabled,
-            })
-          }
-        />
-
-        <CheckboxField
-          label={t("enable_friend_start_game_notifications")}
-          checked={form.friendStartGameNotificationsEnabled}
-          onChange={() =>
-            handleChange({
-              friendStartGameNotificationsEnabled:
-                !form.friendStartGameNotificationsEnabled,
             })
           }
         />

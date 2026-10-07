@@ -145,17 +145,6 @@ export default function Notifications() {
     return () => unsubscribe();
   }, []);
 
-  // Accepting/refusing a friend request in another window (e.g. the friends
-  // window) deletes its FRIEND_REQUEST_RECEIVED notification server-side. Refetch
-  // so the stale entry disappears here instead of lingering until reload.
-  useEffect(() => {
-    const unsubscribe = window.electron.onSyncFriendRequests(() => {
-      if (userDetails) fetchApiNotifications(0, false, filter);
-    });
-
-    return () => unsubscribe();
-  }, [userDetails, fetchApiNotifications, filter]);
-
   // Cleanup timeouts on unmount
   useEffect(() => {
     return () => {
@@ -396,14 +385,6 @@ export default function Notifications() {
     [filter]
   );
 
-  const handleAcceptFriendRequest = useCallback(() => {
-    showSuccessToast(t("friend_request_accepted"));
-  }, [showSuccessToast, t]);
-
-  const handleRefuseFriendRequest = useCallback(() => {
-    showSuccessToast(t("friend_request_refused"));
-  }, [showSuccessToast, t]);
-
   const renderNotification = (notification: MergedNotification) => {
     const key =
       notification.source === "local"
@@ -434,8 +415,6 @@ export default function Notifications() {
             badges={badges}
             onDismiss={(id) => handleDismiss(id, "api")}
             onMarkAsRead={(id) => handleMarkAsRead(id, "api")}
-            onAcceptFriendRequest={handleAcceptFriendRequest}
-            onRefuseFriendRequest={handleRefuseFriendRequest}
           />
         )}
       </motion.div>
