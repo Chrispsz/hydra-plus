@@ -120,11 +120,6 @@ export class AchievementNotificationPresenter {
     this.ensureHost();
   }
 
-  public notifyThemeUpdated(): void {
-    if (!this.host || this.host.isDestroyed()) return;
-    this.host.send("on-custom-theme-updated");
-  }
-
   public handleRendererEvent(
     senderId: number,
     event: AchievementNotificationRendererEvent

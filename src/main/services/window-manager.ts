@@ -68,8 +68,6 @@ export class WindowManager {
     );
   }
 
-  private static readonly editorWindows: Map<string, BrowserWindow> = new Map();
-
   public static get mainWindow(): Electron.BrowserWindow | null {
     return this.mainWindowInstance;
   }
@@ -718,78 +716,6 @@ export class WindowManager {
     }
 
     return false;
-  }
-
-  public static openEditorWindow(themeId: string) {
-    if (this.mainWindow) {
-      const existingWindow = this.editorWindows.get(themeId);
-      if (existingWindow) {
-        if (existingWindow.isMinimized()) {
-          existingWindow.restore();
-        }
-        existingWindow.focus();
-        return;
-      }
-
-      const editorWindow = new BrowserWindow({
-        width: 720,
-        height: 720,
-        minWidth: 600,
-        minHeight: 540,
-        backgroundColor: "#1c1c1c",
-        titleBarStyle: process.platform === "linux" ? "default" : "hidden",
-        icon,
-        trafficLightPosition: { x: 16, y: 16 },
-        titleBarOverlay: {
-          symbolColor: "#DADBE1",
-          color: "#151515",
-          height: 34,
-        },
-        webPreferences: {
-          preload: path.join(__dirname, "../preload/index.mjs"),
-          sandbox: false,
-        },
-        show: false,
-      });
-
-      this.editorWindows.set(themeId, editorWindow);
-
-      editorWindow.removeMenu();
-
-      this.loadWindowURL(editorWindow, `theme-editor?themeId=${themeId}`);
-
-      editorWindow.once("ready-to-show", () => {
-        editorWindow.show();
-        this.mainWindow?.webContents.openDevTools();
-        if (!app.isPackaged || isStaging) {
-          editorWindow.webContents.openDevTools();
-        }
-      });
-
-      editorWindow.webContents.on("before-input-event", (_event, input) => {
-        if (input.key === "F12") {
-          this.mainWindow?.webContents.toggleDevTools();
-        }
-      });
-
-      editorWindow.on("close", () => {
-        this.mainWindow?.webContents.closeDevTools();
-        this.editorWindows.delete(themeId);
-      });
-    }
-  }
-
-  public static closeEditorWindow(themeId?: string) {
-    if (themeId) {
-      const editorWindow = this.editorWindows.get(themeId);
-      if (editorWindow) {
-        editorWindow.close();
-      }
-    } else {
-      this.editorWindows.forEach((editorWindow) => {
-        editorWindow.close();
-      });
-    }
   }
 
   private static readonly GAME_LAUNCHER_WINDOW_WIDTH = 550;

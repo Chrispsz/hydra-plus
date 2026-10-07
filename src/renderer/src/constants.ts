@@ -28,5 +28,3 @@ export const REVIEW_PROMPT_DISMISS_TTL_IN_MS = 7 * 24 * 60 * 60 * 1000;
 export const REVIEW_BANNER_IMAGE_SIZE = { width: 960, height: 140 };
 
 export const MAX_DOWNLOAD_SPEED_HISTORY = 300;
-
-export const THEME_WEB_STORE_URL = "https://hydrathemes.shop";

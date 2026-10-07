@@ -17,7 +17,6 @@ import {
   prepareDefaultDownloadPathSync,
   replaceSavedDownloadDirectoryAndSetDefault,
 } from "@shared";
-import { SettingsAppearance } from "./appearance/settings-appearance";
 import { DownloadDirectoryReplacementModal } from "./download-directory-replacement-modal";
 
 interface LanguageOption {
@@ -33,14 +32,6 @@ const LANGUAGE_OPTIONS: LanguageOption[] = orderBy(
   ["nativeName"],
   "asc"
 );
-
-interface SettingsContextGeneralProps {
-  appearance: {
-    theme: string | null;
-    authorId: string | null;
-    authorName: string | null;
-  };
-}
 
 interface DownloadDirectoryReplacementState {
   nextPath: string;
@@ -74,9 +65,7 @@ const buildForm = (
   enableAutoInstall: preferences?.enableAutoInstall ?? false,
 });
 
-export function SettingsContextGeneral({
-  appearance,
-}: Readonly<SettingsContextGeneralProps>) {
+export function SettingsContextGeneral() {
   const { t } = useTranslation("settings");
   const { updateUserPreferences } = useContext(settingsContext);
 
@@ -283,11 +272,6 @@ export function SettingsContextGeneral({
           />
         </div>
       )}
-
-      <div className="settings-context-panel__group">
-        <h3>{t("appearance")}</h3>
-        <SettingsAppearance appearance={appearance} />
-      </div>
 
       <DownloadDirectoryReplacementModal
         visible={downloadDirectoryReplacement !== null}

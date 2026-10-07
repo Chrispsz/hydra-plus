@@ -300,20 +300,6 @@ const handleDeepLinkPath = (uri?: string) => {
       return;
     }
 
-    if (url.host === "install-theme") {
-      const themeName = url.searchParams.get("theme");
-      const authorId = url.searchParams.get("authorId");
-      const authorName = url.searchParams.get("authorName");
-
-      if (themeName && authorId && authorName) {
-        WindowManager.redirect(
-          `settings?theme=${themeName}&authorId=${authorId}&authorName=${authorName}`
-        );
-      }
-
-      return;
-    }
-
     if (url.host === "steam-connected") {
       closeSteamOpenIdWindow();
       const result = parseSteamOpenIdReturn(uri);

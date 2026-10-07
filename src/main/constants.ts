@@ -56,8 +56,6 @@ export const appVersion = app.getVersion() + (isStaging ? "-staging" : "");
 
 export const ASSETS_PATH = path.join(SystemPath.getPath("userData"), "Assets");
 
-export const THEMES_PATH = path.join(SystemPath.getPath("userData"), "themes");
-
 export const INTERVALS = {
   processWatcher: 2_000,
   downloadWatcher: 2_000,

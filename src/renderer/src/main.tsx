@@ -34,7 +34,6 @@ import GameDetails from "./pages/game-details/game-details";
 import Settings from "./pages/settings/settings";
 import Profile from "./pages/profile/profile";
 import Achievements from "./pages/achievements/achievements";
-import ThemeEditor from "./pages/theme-editor/theme-editor";
 import Library from "./pages/library/library";
 import Notifications from "./pages/notifications/notifications";
 import { AchievementNotification } from "./pages/achievements/notification/achievement-notification";
@@ -126,7 +125,6 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
                   <Route path="/notifications" element={<Notifications />} />
                 </Route>
 
-                <Route path="/theme-editor" element={<ThemeEditor />} />
                 <Route
                   path="/achievement-notification"
                   element={<AchievementNotification />}

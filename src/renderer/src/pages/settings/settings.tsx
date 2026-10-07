@@ -89,7 +89,7 @@ export default function Settings() {
   return (
     <SettingsContextProvider>
       <SettingsContextConsumer>
-        {({ currentCategoryId, setCurrentCategoryId, appearance }) => {
+        {({ currentCategoryId, setCurrentCategoryId }) => {
           const currentCategory =
             categories.find((category) => category.id === currentCategoryId) ??
             categories[0];
@@ -97,7 +97,7 @@ export default function Settings() {
 
           const renderCategory = () => {
             if (selectedCategoryId === "general") {
-              return <SettingsContextGeneral appearance={appearance} />;
+              return <SettingsContextGeneral />;
             }
 
             if (selectedCategoryId === "downloads") {

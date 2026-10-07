@@ -26,7 +26,6 @@ import type {
   LibraryGame,
   GameRunning,
   TorBoxUser,
-  Theme,
   Auth,
   ShortcutLocation,
   Ps2MemcardScanInput,
@@ -1301,33 +1300,6 @@ declare global {
     ) => Promise<void>;
     updateAchievementCustomNotificationWindow: () => Promise<void>;
     showAchievementTestNotification: () => Promise<void>;
-
-    /* Themes */
-    addCustomTheme: (theme: Theme) => Promise<void>;
-    getAllCustomThemes: () => Promise<Theme[]>;
-    deleteAllCustomThemes: () => Promise<void>;
-    deleteCustomTheme: (themeId: string) => Promise<void>;
-    updateCustomTheme: (themeId: string, code: string) => Promise<void>;
-    getCustomThemeById: (themeId: string) => Promise<Theme | null>;
-    getActiveCustomTheme: () => Promise<Theme | null>;
-    toggleCustomTheme: (themeId: string, isActive: boolean) => Promise<void>;
-    copyThemeAchievementSound: (
-      themeId: string,
-      sourcePath: string
-    ) => Promise<void>;
-    removeThemeAchievementSound: (themeId: string) => Promise<void>;
-    getThemeSoundPath: (themeId: string) => Promise<string | null>;
-    getThemeSoundDataUrl: (themeId: string) => Promise<string | null>;
-    importThemeSoundFromStore: (
-      themeId: string,
-      themeName: string,
-      storeUrl: string
-    ) => Promise<void>;
-
-    /* Editor */
-    openEditorWindow: (themeId: string) => Promise<void>;
-    onCustomThemeUpdated: (cb: () => void) => () => Electron.IpcRenderer;
-    closeEditorWindow: (themeId?: string) => Promise<void>;
 
     /* Game Launcher Window */
     showGameLauncherWindow: () => Promise<void>;

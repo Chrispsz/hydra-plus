@@ -6,7 +6,6 @@ export const levelKeys = {
   user: "user",
   auth: "auth",
   googleDriveOAuth: "google-drive-oauth",
-  themes: "themes",
   gameShopAssets: "gameShopAssets",
   artworkSelection: "artworkSelection",
   gameStatsCache: "gameStatsAssets",

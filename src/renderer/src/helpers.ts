@@ -5,7 +5,6 @@ import { getDisplayedPlayTimeInMilliseconds } from "@shared";
 import Color from "color";
 import i18next from "i18next";
 import { v4 as uuidv4 } from "uuid";
-import { THEME_WEB_STORE_URL } from "./constants";
 import { levelDBService } from "./services/leveldb.service";
 import { logger } from "./logger";
 import type { SortOption } from "./pages/library/filter-options";
@@ -109,36 +108,6 @@ export const buildGameAchievementPath = (
 export const darkenColor = (color: string, amount: number, alpha: number = 1) =>
   new Color(color).darken(amount).alpha(alpha).toString();
 
-export const injectCustomCss = (
-  css: string,
-  target: HTMLElement = document.head
-) => {
-  try {
-    target.querySelector("#custom-css")?.remove();
-
-    if (css.startsWith(THEME_WEB_STORE_URL)) {
-      const link = document.createElement("link");
-      link.id = "custom-css";
-      link.rel = "stylesheet";
-      link.href = css;
-      target.appendChild(link);
-    } else {
-      const style = document.createElement("style");
-      style.id = "custom-css";
-      style.textContent = `
-        ${css}
-      `;
-      target.appendChild(style);
-    }
-  } catch (error) {
-    console.error("failed to inject custom css:", error);
-  }
-};
-
-export const removeCustomCss = (target: HTMLElement = document.head) => {
-  target.querySelector("#custom-css")?.remove();
-};
-
 export const formatNumber = (num: number): string => {
   const locale = i18next.resolvedLanguage || i18next.language || undefined;
 
@@ -160,26 +129,6 @@ export const generateUUID = (): string => {
 export const getAchievementSoundUrl = async (): Promise<string> => {
   const defaultSound = (await import("@renderer/assets/audio/achievement.wav"))
     .default;
-
-  try {
-    const allThemes = (await levelDBService.values("themes")) as {
-      id: string;
-      isActive?: boolean;
-      hasCustomSound?: boolean;
-    }[];
-    const activeTheme = allThemes.find((theme) => theme.isActive);
-
-    if (activeTheme?.hasCustomSound) {
-      const soundDataUrl = await window.electron.getThemeSoundDataUrl(
-        activeTheme.id
-      );
-      if (soundDataUrl) {
-        return soundDataUrl;
-      }
-    }
-  } catch (error) {
-    console.error("Failed to get theme sound", error);
-  }
 
   return defaultSound;
 };

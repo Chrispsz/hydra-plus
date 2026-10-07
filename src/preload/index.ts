@@ -13,7 +13,6 @@ import type {
   UpdateProfileRequest,
   SeedingStatus,
   UserAchievement,
-  Theme,
   FriendRequestSync,
   FriendPresenceSync,
   NotificationSync,
@@ -1384,48 +1383,6 @@ contextBridge.exposeInMainWorld("electron", {
   showAchievementTestNotification: () =>
     ipcRenderer.invoke("showAchievementTestNotification"),
 
-  /* Themes */
-  addCustomTheme: (theme: Theme) => ipcRenderer.invoke("addCustomTheme", theme),
-  getAllCustomThemes: () => ipcRenderer.invoke("getAllCustomThemes"),
-  deleteAllCustomThemes: () => ipcRenderer.invoke("deleteAllCustomThemes"),
-  deleteCustomTheme: (themeId: string) =>
-    ipcRenderer.invoke("deleteCustomTheme", themeId),
-  updateCustomTheme: (themeId: string, code: string) =>
-    ipcRenderer.invoke("updateCustomTheme", themeId, code),
-  getCustomThemeById: (themeId: string) =>
-    ipcRenderer.invoke("getCustomThemeById", themeId),
-  getActiveCustomTheme: () => ipcRenderer.invoke("getActiveCustomTheme"),
-  toggleCustomTheme: (themeId: string, isActive: boolean) =>
-    ipcRenderer.invoke("toggleCustomTheme", themeId, isActive),
-  copyThemeAchievementSound: (themeId: string, sourcePath: string) =>
-    ipcRenderer.invoke("copyThemeAchievementSound", themeId, sourcePath),
-  removeThemeAchievementSound: (themeId: string) =>
-    ipcRenderer.invoke("removeThemeAchievementSound", themeId),
-  getThemeSoundPath: (themeId: string) =>
-    ipcRenderer.invoke("getThemeSoundPath", themeId),
-  getThemeSoundDataUrl: (themeId: string) =>
-    ipcRenderer.invoke("getThemeSoundDataUrl", themeId),
-  importThemeSoundFromStore: (
-    themeId: string,
-    themeName: string,
-    storeUrl: string
-  ) =>
-    ipcRenderer.invoke(
-      "importThemeSoundFromStore",
-      themeId,
-      themeName,
-      storeUrl
-    ),
-
-  /* Editor */
-  openEditorWindow: (themeId: string) =>
-    ipcRenderer.invoke("openEditorWindow", themeId),
-  onCustomThemeUpdated: (cb: () => void) => {
-    const listener = (_event: Electron.IpcRendererEvent) => cb();
-    ipcRenderer.on("on-custom-theme-updated", listener);
-    return () =>
-      ipcRenderer.removeListener("on-custom-theme-updated", listener);
-  },
   onNewDownloadOptions: (
     cb: (gamesWithNewOptions: { gameId: string; count: number }[]) => void
   ) => {
@@ -1437,8 +1394,6 @@ contextBridge.exposeInMainWorld("electron", {
     return () =>
       ipcRenderer.removeListener("on-new-download-options", listener);
   },
-  closeEditorWindow: (themeId?: string) =>
-    ipcRenderer.invoke("closeEditorWindow", themeId),
 
   /* Main Window Controls */
   minimizeMainWindow: () => ipcRenderer.invoke("minimizeMainWindow"),

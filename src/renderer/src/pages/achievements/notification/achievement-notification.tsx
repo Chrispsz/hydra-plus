@@ -11,13 +11,10 @@ import type {
   AchievementNotificationRequest,
 } from "@types";
 import {
-  injectCustomCss,
-  removeCustomCss,
   getAchievementSoundUrl,
   getAchievementSoundVolume,
 } from "@renderer/helpers";
 import { AchievementNotificationItem } from "@renderer/components/achievements/notification/achievement-notification";
-import { levelDBService } from "@renderer/services/leveldb.service";
 import HydraIconUrl from "@renderer/assets/icons/hydra.svg?url";
 import app from "../../../app.scss?inline";
 import styles from "../../../components/achievements/notification/achievement-notification.scss?inline";
@@ -151,55 +148,25 @@ export function AchievementNotification() {
     }
   }, []);
 
-  const loadAndApplyTheme = useCallback(async () => {
-    if (!shadowRootRef) return;
-    const allThemes = (await levelDBService.values("themes")) as {
-      isActive?: boolean;
-      code?: string;
-    }[];
-    const activeTheme = allThemes.find((theme) => theme.isActive);
-    if (activeTheme?.code) {
-      injectCustomCss(activeTheme.code, shadowRootRef);
-    } else {
-      removeCustomCss(shadowRootRef);
-    }
-  }, [shadowRootRef]);
-
   useEffect(() => {
     if (!shadowRootRef || hostReadyReported.current) return;
 
     let cancelled = false;
-    void loadAndApplyTheme()
-      .then(async () => {
-        if (cancelled || hostReadyReported.current) return;
-        hostReadyReported.current = true;
-        await window.electron.achievementNotificationHostReady();
-      })
-      .catch((error) => {
-        if (cancelled) return;
-        void window.electron.achievementNotificationFailed(
-          undefined,
-          `Failed to initialise notification renderer: ${getErrorMessage(error)}`
-        );
-      });
+
+    hostReadyReported.current = true;
+
+    window.electron.achievementNotificationHostReady().catch((error) => {
+      if (cancelled) return;
+      void window.electron.achievementNotificationFailed(
+        undefined,
+        `Failed to initialise notification renderer: ${getErrorMessage(error)}`
+      );
+    });
 
     return () => {
       cancelled = true;
     };
-  }, [loadAndApplyTheme, shadowRootRef]);
-
-  useEffect(() => {
-    const unsubscribe = window.electron.onCustomThemeUpdated(() => {
-      void loadAndApplyTheme().catch((error) => {
-        void window.electron.achievementNotificationFailed(
-          requestRef.current?.id,
-          `Failed to update notification theme: ${getErrorMessage(error)}`
-        );
-      });
-    });
-
-    return () => unsubscribe();
-  }, [loadAndApplyTheme]);
+  }, [shadowRootRef]);
 
   useEffect(() => {
     const unsubscribe = window.electron.onPrepareAchievementNotification(
