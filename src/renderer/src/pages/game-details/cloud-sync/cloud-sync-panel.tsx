@@ -109,7 +109,9 @@ export function CloudSyncPanel({
   }, [objectId, shop]);
 
   useEffect(() => {
-    if (!hasActiveSubscription && !isDriveCloudActive) return;
+    // Legacy artifact backups are a Hydra Cloud feature. Google Drive
+    // users only get the modern v2 sync, so skip the fetch entirely.
+    if (!hasActiveSubscription) return;
 
     getGameBackupPreview();
     getGameArtifacts();
@@ -192,6 +194,16 @@ export function CloudSyncPanel({
     uploadingBackup || restoringBackup || deletingArtifact || freezingArtifact;
 
   if (!hasActiveSubscription) {
+    if (isDriveCloudActive) {
+      // Google Drive handles the modern sync (v2). The legacy artifact
+      // backups in this panel are a Hydra Cloud only feature.
+      return (
+        <div className="cloud-sync-panel__upgrade">
+          <p>{t("google_drive_legacy_unavailable")}</p>
+        </div>
+      );
+    }
+
     return (
       <div className="cloud-sync-panel__upgrade">
         <p>{tHydraCloud("hydra_cloud_feature_found")}</p>

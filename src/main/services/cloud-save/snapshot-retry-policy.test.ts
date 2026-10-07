@@ -81,6 +81,16 @@ describe("Cloud Save snapshot retry policy", () => {
     assert.equal(shouldRetryCloudSaveConflict(realAxiosError(429), 0), false);
   });
 
+  it("retries once on the Google Drive version conflict error", () => {
+    const conflictError = new Error("cloud_save_snapshot_version_conflict");
+    assert.equal(shouldRetryCloudSaveConflict(conflictError, 0), true);
+    assert.equal(shouldRetryCloudSaveConflict(conflictError, 1), false);
+    assert.equal(
+      shouldRetryCloudSaveConflict(new Error("something else"), 0),
+      false
+    );
+  });
+
   it("allows only one retry after the analyzed state changes", () => {
     assert.equal(shouldRetryCloudSaveStateChange(0), true);
     assert.equal(shouldRetryCloudSaveStateChange(1), false);

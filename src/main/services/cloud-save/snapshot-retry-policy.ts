@@ -25,7 +25,13 @@ export const shouldReprepareCloudSaveSnapshot = (error: unknown) => {
 };
 
 export const shouldRetryCloudSaveConflict = (error: unknown, attempt: number) =>
-  attempt === 0 && isAxiosError(error) && error.response?.status === 409;
+  attempt === 0 &&
+  ((isAxiosError(error) && error.response?.status === 409) ||
+    // Hydra Plus: the Google Drive store signals optimistic-versioning
+    // conflicts with a plain error — re-running the sync re-analyzes the
+    // newer remote snapshot and lets the three-way merge resolve it.
+    (error instanceof Error &&
+      error.message.includes("cloud_save_snapshot_version_conflict")));
 
 export const shouldRetryCloudSaveStateChange = (attempt: number) =>
   attempt === 0;
