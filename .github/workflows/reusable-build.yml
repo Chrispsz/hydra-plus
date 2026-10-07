@@ -118,11 +118,6 @@ jobs:
           compression-level: 0
           path: |
             dist/*-portable.exe
-            dist/*.exe
-            dist/*.zip
-            dist/*.deb
-            dist/*.rpm
-            dist/*.tar.gz
+            dist/*.AppImage
             dist/*.yml
             dist/*.blockmap
-            dist/*.AppImage
