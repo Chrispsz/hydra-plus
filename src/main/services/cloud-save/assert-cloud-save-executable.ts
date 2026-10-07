@@ -1,17 +1,11 @@
 import { access } from "node:fs/promises";
-import {
-  getCloudSaveEmulatorProvider,
-  hasRpcs3CloudSaveDisc,
-  isCloudSaveV2Eligible,
-} from "@shared";
+import { isCloudSaveV2Eligible } from "@shared";
 
 import { gamesSublevel, levelKeys } from "@main/level";
 
 import { logger } from "../logger";
 import { WindowManager } from "../window-manager";
 import { createCloudSaveExecutableGuard } from "./executable-path-guard";
-import { getCloudSaveGameContext } from "./cloud-save-game-context";
-import { CLOUD_SAVE_EXECUTABLE_MISSING_ERROR } from "./executable-path-guard";
 
 export const assertCloudSaveExecutableExists = createCloudSaveExecutableGuard({
   getGame: (objectId, shop) =>
@@ -52,33 +46,5 @@ export const assertCloudSaveRuntimeAvailable = async (
   shop: Parameters<typeof assertCloudSaveExecutableExists>[1]
 ) => {
   const game = await assertCloudSaveV2Eligible(objectId, shop);
-  if (
-    getCloudSaveEmulatorProvider(shop, game.platform) === "rpcs3" &&
-    !hasRpcs3CloudSaveDisc(game)
-  ) {
-    throw new Error("cloud_save_rpcs3_disc_missing");
-  }
-  if (getCloudSaveEmulatorProvider(shop, game.platform) === "retroarch") {
-    const { getSelectedRetroArchRom } = await import(
-      "./retroarch-save-provider"
-    );
-    if (!(await getSelectedRetroArchRom(game))) {
-      throw new Error("cloud_save_retroarch_rom_missing");
-    }
-  }
-  if (!getCloudSaveEmulatorProvider(shop, game?.platform)) {
-    return assertCloudSaveExecutableExists(objectId, shop);
-  }
-  const context = await getCloudSaveGameContext(objectId, shop);
-  if (!context.pathContext.executablePath) {
-    throw new Error(CLOUD_SAVE_EXECUTABLE_MISSING_ERROR);
-  }
-  await access(context.pathContext.executablePath).catch(() => {
-    throw new Error(CLOUD_SAVE_EXECUTABLE_MISSING_ERROR);
-  });
-  if (getCloudSaveEmulatorProvider(shop, game.platform) === "rpcs3") {
-    const { assertRpcs3DiscIdentity } = await import("./rpcs3-game-identity");
-    await assertRpcs3DiscIdentity(game);
-  }
-  return game;
+  return assertCloudSaveExecutableExists(objectId, shop).then(() => game);
 };

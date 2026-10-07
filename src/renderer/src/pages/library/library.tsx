@@ -21,7 +21,6 @@ import {
   TelescopeIcon,
   FileDirectoryIcon,
   SearchIcon,
-  SyncIcon,
 } from "@primer/octicons-react";
 import { useTranslation } from "react-i18next";
 import { AuthPage, removeDiacritics } from "@shared";
@@ -57,10 +56,6 @@ import {
   LIBRARY_PLATFORMS_STORAGE_KEY,
   LIBRARY_SOURCES_STORAGE_KEY,
 } from "@renderer/session-state";
-import {
-  ClassicsOnboardingModal,
-  hasDismissedClassicsOnboarding,
-} from "@renderer/components/classics-onboarding-modal/classics-onboarding-modal";
 import "./library.scss";
 
 const FAVORITES_COLLECTION_ID = "__favorites__";
@@ -206,12 +201,8 @@ export default function Library() {
   const [showInstalledOnly, setShowInstalledOnly] = useState<boolean>(
     () => localStorage.getItem(LIBRARY_INSTALLED_ONLY_STORAGE_KEY) === "true"
   );
-  const [isImportingClassics, setIsImportingClassics] = useState(false);
 
   const effectiveCategory: LibraryCategory = category;
-
-  const [showClassicsOnboarding, setShowClassicsOnboarding] = useState(false);
-  const classicsOnboardingTriggeredRef = useRef(false);
 
   const gamesScrollRef = useRef<HTMLDivElement>(null);
   const [containerWidth, setContainerWidth] = useState(0);
@@ -265,17 +256,6 @@ export default function Library() {
     ro.observe(el);
     return () => ro.disconnect();
   }, []);
-
-  useEffect(() => {
-    if (
-      effectiveCategory === "classics" &&
-      !classicsOnboardingTriggeredRef.current &&
-      !hasDismissedClassicsOnboarding()
-    ) {
-      classicsOnboardingTriggeredRef.current = true;
-      setShowClassicsOnboarding(true);
-    }
-  }, [effectiveCategory]);
 
   const handlePlatformsChange = useCallback((next: string[]) => {
     setSelectedPlatforms(next);
@@ -366,14 +346,6 @@ export default function Library() {
       void loadCollections();
     });
 
-    const unsubscribeClassicsImport = window.electron.onClassicsImportStatus(
-      (importing) => setIsImportingClassics(importing)
-    );
-
-    void window.electron
-      .getClassicsImportStatus()
-      .then((importing) => setIsImportingClassics(importing));
-
     window.electron
       .refreshLibraryAssets()
       .catch(() => {})
@@ -391,7 +363,6 @@ export default function Library() {
 
     return () => {
       unsubscribe();
-      unsubscribeClassicsImport();
     };
   }, [
     dispatch,
@@ -698,10 +669,6 @@ export default function Library() {
     Boolean(selectedCollectionId) &&
     !isFavoritesCollectionSelected &&
     hasNoFilteredGames;
-  const shouldShowClassicsImporting =
-    effectiveCategory === "classics" &&
-    isImportingClassics &&
-    hasNoFilteredGames;
   const shouldShowNoResultsEmptyState =
     hasGames &&
     hasNoFilteredGames &&
@@ -710,8 +677,7 @@ export default function Library() {
     !(
       isHiddenCollectionSelected &&
       (hiddenGamesLoadFailed || hiddenGamesLoading)
-    ) &&
-    !shouldShowClassicsImporting;
+    );
 
   return (
     <section
@@ -766,23 +732,13 @@ export default function Library() {
         </div>
       )}
 
-      {!hasGames && !shouldShowClassicsImporting && !isLibraryLoading && (
+      {!hasGames && !isLibraryLoading && (
         <div className="library__no-games">
           <div className="library__telescope-icon">
             <TelescopeIcon size={24} />
           </div>
           <h2>{t("no_games_title")}</h2>
           <p>{t("no_games_description")}</p>
-        </div>
-      )}
-
-      {shouldShowClassicsImporting && (
-        <div className="library__empty">
-          <div className="library__icon-container library__icon-container--spinning">
-            <SyncIcon size={24} />
-          </div>
-          <h2>{t("importing_classics_title")}</h2>
-          <p>{t("importing_classics_description")}</p>
         </div>
       )}
 
@@ -869,7 +825,6 @@ export default function Library() {
           hasGames &&
           !shouldShowFavoritesEmptyState &&
           !shouldShowCollectionEmptyState &&
-          !shouldShowClassicsImporting &&
           !shouldShowNoResultsEmptyState && (
             <div
               style={{
@@ -925,11 +880,6 @@ export default function Library() {
       <CreateCollectionModal
         visible={showCreateCollectionModal}
         onClose={() => setShowCreateCollectionModal(false)}
-      />
-
-      <ClassicsOnboardingModal
-        visible={showClassicsOnboarding}
-        onClose={() => setShowClassicsOnboarding(false)}
       />
     </section>
   );

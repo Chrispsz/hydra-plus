@@ -19,15 +19,13 @@ import {
   PowerSaveBlockerManager,
   DownloadOrchestrator,
   SSEClient,
-  emulators,
 } from "@main/services";
 import resources from "@locales";
 import { TorrentService } from "./services/torrent-service";
 import { db, gamesSublevel, levelKeys } from "./level";
 import { GameShop, UserPreferences } from "@types";
-import { launchGame, openClassicsGame } from "./helpers";
+import { launchGame } from "./helpers";
 import { refreshPortableShortcutLauncher } from "./helpers/shortcut-launch";
-import { lookupCachedPlatform } from "./events/library/get-library";
 import { loadState } from "./main";
 import {
   closeSteamOpenIdWindow,
@@ -254,18 +252,6 @@ const handleRunGame = async (shop: GameShop, objectId: string) => {
     WindowManager.createMainWindow();
   }
 
-  if (shop === "launchbox") {
-    if (!game.platform) {
-      const cachedPlatform = await lookupCachedPlatform(gameKey);
-      if (cachedPlatform) {
-        game.platform = cachedPlatform;
-        await gamesSublevel.put(gameKey, game).catch(() => {});
-      }
-    }
-    await openClassicsGame(shop, objectId);
-    return;
-  }
-
   if (!game.executablePath) {
     logger.error("Game has no executable path", { shop, objectId });
     return;
@@ -392,7 +378,6 @@ app.on("before-quit", async (e) => {
       Lock.releaseLock(),
       TorrentService.shutdown(),
       clearGamesPlaytime(),
-      emulators.stopAllEmulatorSouvenirCaptureSessions(),
     ]);
     for (const result of results) {
       if (result.status === "rejected") {

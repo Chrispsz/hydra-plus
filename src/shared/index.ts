@@ -37,7 +37,7 @@ export {
   mergeLocalAndRemotePlayTime,
 } from "./playtime";
 export * from "./cloud-save-access";
-export * from "./cloud-save-emulator-provider";
+export * from "./cloud-save-v2-eligibility";
 export * from "./controller-support";
 export * from "./artwork-resolver";
 export * from "./download-directories";
@@ -45,7 +45,6 @@ export * from "./html-sanitizer";
 export * from "./language-flags";
 export * from "./use-hls-video";
 export * from "./use-souvenir-content-warning";
-export * from "./retroarch-platform";
 export * from "./tracker-list";
 export * from "./souvenirs";
 export * from "./souvenir-sync";
@@ -349,4 +348,3 @@ export const generateAchievementCustomNotificationTest = (
     isPlatinum: options.isPlatinum ?? false,
   };
 };
-export * from "./emulator-systems";

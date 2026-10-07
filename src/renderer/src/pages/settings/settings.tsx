@@ -5,7 +5,7 @@ import {
 } from "@renderer/context";
 import { SettingsAccount } from "./settings-account";
 import { useUserDetails } from "@renderer/hooks";
-import { Fragment, useMemo } from "react";
+import { useMemo } from "react";
 import "./settings.scss";
 import {
   BellIcon,
@@ -16,7 +16,7 @@ import {
   PlayIcon,
   ShieldCheckIcon,
 } from "@primer/octicons-react";
-import { Gamepad2, Wrench } from "lucide-react";
+import { Wrench } from "lucide-react";
 import { SettingsContextGeneral } from "./settings-context-general";
 import { SettingsContextCloud } from "./settings-context-cloud";
 import { SettingsContextDownloads } from "./settings-context-downloads";
@@ -25,7 +25,6 @@ import { SettingsContextNotifications } from "./settings-context-notifications";
 import { SettingsContextContentGameplay } from "./settings-context-content-gameplay";
 import { SettingsContextIntegrations } from "./settings-context-integrations";
 import { SettingsContextCompatibility } from "./settings-context-compatibility";
-import { SettingsContextEmulation } from "./emulation/settings-context-emulation";
 
 export default function Settings() {
   const { t } = useTranslation("settings");
@@ -83,12 +82,6 @@ export default function Settings() {
             },
           ]
         : []),
-      {
-        id: "emulation" as const,
-        label: t("emulation"),
-        icon: <Gamepad2 size={16} />,
-        group: "classics" as const,
-      },
     ],
     [t, userDetails]
   );
@@ -135,10 +128,6 @@ export default function Settings() {
               return <SettingsContextCompatibility />;
             }
 
-            if (selectedCategoryId === "emulation") {
-              return <SettingsContextEmulation />;
-            }
-
             return <SettingsAccount />;
           };
 
@@ -146,52 +135,29 @@ export default function Settings() {
             <section className="settings__container">
               <div className="settings__content">
                 <aside className="settings__sidebar">
-                  {categories.map((category, index) => {
-                    const prevGroup =
-                      index > 0
-                        ? (categories[index - 1] as { group?: string }).group
-                        : undefined;
-                    const currentGroup = (category as { group?: string }).group;
-                    const showGroupHeader =
-                      currentGroup && currentGroup !== prevGroup;
-
-                    return (
-                      <Fragment key={category.id}>
-                        {showGroupHeader && (
-                          <div className="settings__sidebar-group">
-                            <div className="settings__sidebar-divider" />
-                            <span className="settings__sidebar-group-label">
-                              {currentGroup === "classics"
-                                ? t("classics_group")
-                                : currentGroup}
-                            </span>
-                          </div>
-                        )}
-                        <button
-                          type="button"
-                          className={`settings__sidebar-button ${
-                            currentCategory.id === category.id
-                              ? "settings__sidebar-button--active"
-                              : ""
-                          }`}
-                          onClick={() => setCurrentCategoryId(category.id)}
-                        >
-                          <span className="settings__sidebar-button-icon">
-                            {category.icon}
-                          </span>
-                          <span className="settings__sidebar-button-label">
-                            {category.label}
-                          </span>
-                        </button>
-                      </Fragment>
-                    );
-                  })}
+                  {categories.map((category) => (
+                    <button
+                      key={category.id}
+                      type="button"
+                      className={`settings__sidebar-button ${
+                        currentCategory.id === category.id
+                          ? "settings__sidebar-button--active"
+                          : ""
+                      }`}
+                      onClick={() => setCurrentCategoryId(category.id)}
+                    >
+                      <span className="settings__sidebar-button-icon">
+                        {category.icon}
+                      </span>
+                      <span className="settings__sidebar-button-label">
+                        {category.label}
+                      </span>
+                    </button>
+                  ))}
                 </aside>
 
                 <div className="settings__panel">
-                  {selectedCategoryId !== "emulation" && (
-                    <h2>{currentCategory.label}</h2>
-                  )}
+                  <h2>{currentCategory.label}</h2>
                   {renderCategory()}
                 </div>
               </div>

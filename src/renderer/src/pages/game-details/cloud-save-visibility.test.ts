@@ -19,47 +19,10 @@ describe("cloud save visibility", () => {
     });
   });
 
-  it("keeps legacy cloud saves for emulated games", () => {
-    assert.deepEqual(getCloudSaveVisibility("launchbox"), {
-      hero: "legacy",
-      settings: {
-        showV2: false,
-        showLegacy: true,
-        legacyPurpose: "active",
-      },
-    });
-  });
-
-  it("uses V2 and archives legacy saves for eligible emulator platforms", () => {
-    for (const platform of [
-      "Sony PlayStation 3",
-      "Nintendo Game Boy Advance",
-    ]) {
-      assert.deepEqual(getCloudSaveVisibility("launchbox", platform), {
-        hero: "v2",
-        settings: {
-          showV2: true,
-          showLegacy: true,
-          legacyPurpose: "archive",
-        },
-      });
-    }
-    assert.equal(
-      getCloudSaveVisibility("launchbox", "Unknown Console").hero,
-      "legacy"
-    );
-  });
-
-  it("keeps legacy active for the four unsupported emulator providers", () => {
-    for (const platform of [
-      "Sony PlayStation",
-      "Sony PlayStation 2",
-      "Sony PlayStation Portable",
-      "Nintendo GameCube",
-      "Nintendo Wii",
-    ]) {
-      assert.deepEqual(getCloudSaveVisibility("launchbox", platform), {
-        hero: "legacy",
+  it("keeps only legacy cloud saves for non-Steam games", () => {
+    for (const shop of ["custom"] as const) {
+      assert.deepEqual(getCloudSaveVisibility(shop), {
+        hero: null,
         settings: {
           showV2: false,
           showLegacy: true,
@@ -69,19 +32,26 @@ describe("cloud save visibility", () => {
     }
   });
 
-  it("preserves the main-branch behavior for custom games", () => {
-    assert.deepEqual(getCloudSaveVisibility("custom"), {
-      hero: null,
-      settings: {
-        showV2: false,
-        showLegacy: true,
-        legacyPurpose: "active",
-      },
-    });
+  it("ignores the platform when deciding visibility", () => {
+    for (const platform of [
+      "Sony PlayStation 3",
+      "Nintendo Game Boy Advance",
+      "Unknown Console",
+    ]) {
+      assert.deepEqual(getCloudSaveVisibility("steam", platform), {
+        hero: "v2",
+        settings: {
+          showV2: true,
+          showLegacy: true,
+          legacyPurpose: "archive",
+        },
+      });
+      assert.deepEqual(getCloudSaveVisibility("custom", platform).hero, null);
+    }
   });
 
   it("shows active legacy settings without requiring existing artifacts", () => {
-    const settings = getCloudSaveVisibility("launchbox").settings;
+    const settings = getCloudSaveVisibility("custom").settings;
 
     assert.equal(isLegacyCloudSaveSettingsAvailable(settings, false, 0), true);
   });
@@ -92,28 +62,5 @@ describe("cloud save visibility", () => {
     assert.equal(isLegacyCloudSaveSettingsAvailable(settings, false, 1), false);
     assert.equal(isLegacyCloudSaveSettingsAvailable(settings, true, 0), false);
     assert.equal(isLegacyCloudSaveSettingsAvailable(settings, true, 2), true);
-  });
-
-  it("keeps RPCS3 and RetroArch legacy archives available through existing game artifacts", () => {
-    for (const platform of [
-      "Sony PlayStation 3",
-      "Nintendo Entertainment System",
-      "Super Nintendo Entertainment System",
-      "Nintendo 64",
-      "Nintendo Game Boy",
-      "Nintendo Game Boy Color",
-      "Nintendo Game Boy Advance",
-    ]) {
-      const settings = getCloudSaveVisibility("launchbox", platform).settings;
-      assert.equal(isLegacyCloudSaveSettingsAvailable(settings, true, 1), true);
-      assert.equal(
-        isLegacyCloudSaveSettingsAvailable(settings, true, 0),
-        false
-      );
-      assert.equal(
-        isLegacyCloudSaveSettingsAvailable(settings, false, 1),
-        false
-      );
-    }
   });
 });

@@ -29,10 +29,6 @@ import {
   resolveRestoreDownloadSources,
   selectRestoreFiles,
 } from "./restore-replacements";
-import {
-  assertRetroArchRestoreSelectionUnchanged,
-  migrateRetroArchManifest,
-} from "./retroarch-snapshot-migration";
 import { getRestoreVersionDecision } from "./restore-version-policy";
 import {
   getRemoteSnapshotRestoreManifest,
@@ -45,8 +41,6 @@ import {
   registerCloudSaveCustomPaths,
 } from "./custom-path-store";
 import { inferCustomPathKind } from "./custom-path-kind";
-import { getEmulatorSaveProvider } from "./emulator-save-provider";
-import { assertRestorePlanUnchanged } from "./emulator-restore-plan";
 import {
   bindCloudSaveCustomPathToLocalPath,
   CLOUD_SAVE_CUSTOM_PATH_PREFIX,
@@ -219,52 +213,15 @@ export const restoreRemoteSnapshot = async (
     throw new Error("Restore snapshot does not belong to the requested game");
   }
 
-  let resolvedGameContext = await getCloudSaveGameContext(
+  const resolvedGameContext = await getCloudSaveGameContext(
     gameId.objectId,
     gameId.shop
   );
-  const retroArchGame =
-    resolvedGameContext.game &&
-    getEmulatorSaveProvider(resolvedGameContext.game) === "retroarch"
-      ? resolvedGameContext.game
-      : null;
-  const retroArchBindingStore = retroArchGame
-    ? await import("./retroarch-state-bindings")
-    : null;
-  const migration =
-    retroArchGame && retroArchBindingStore
-      ? migrateRetroArchManifest(
-          retroArchGame,
-          originalManifest,
-          (await retroArchBindingStore.loadRetroArchBindings(retroArchGame))
-            .selectedLegacyBatteryRawPath
-        )
-      : null;
-  if (migration?.conflicts.length) {
-    throw new Error("cloud_save_retroarch_legacy_battery_conflict");
-  }
-  const manifest = migration?.manifest ?? originalManifest;
+  const manifest = originalManifest;
   const selectedFiles = selectRestoreFiles(manifest.files, requestedEntryIds);
   const selectedIds = new Set(selectedFiles.map(cloudSaveFileKey));
-  if (getEmulatorSaveProvider(resolvedGameContext.game) === "rpcs3") {
-    const { ensureRpcs3ProfileBindingForAnalysis } = await import(
-      "./rpcs3-save-provider"
-    );
-    if (
-      await ensureRpcs3ProfileBindingForAnalysis(
-        resolvedGameContext.game!,
-        selectedFiles
-      )
-    ) {
-      resolvedGameContext = await getCloudSaveGameContext(
-        gameId.objectId,
-        gameId.shop
-      );
-    }
-  }
   if (
     suppliedContext &&
-    getEmulatorSaveProvider(resolvedGameContext.game) &&
     suppliedContext.environmentId !== resolvedGameContext.environmentId
   ) {
     throw new Error("cloud_save_restore_destination_changed");
@@ -295,10 +252,7 @@ export const restoreRemoteSnapshot = async (
     const downloadedFiles = await downloadRemoteSnapshotToTemp(
       snapshot.id,
       snapshot.version,
-      resolveRestoreDownloadSources(
-        restoreTargets,
-        migration?.sourceFilesByEntryId
-      ),
+      resolveRestoreDownloadSources(restoreTargets),
       (processedFiles, totalFiles) =>
         emitProgress("downloading", processedFiles, totalFiles),
       gameId
@@ -330,36 +284,9 @@ export const restoreRemoteSnapshot = async (
     }
 
     await assertEnvironmentCurrent?.();
-    if (getEmulatorSaveProvider(game)) {
-      const currentContext = await getCloudSaveGameContext(
-        gameId.objectId,
-        gameId.shop
-      );
-      if (currentContext.environmentId !== cloudSaveContext.environmentId) {
-        throw new Error("cloud_save_restore_destination_changed");
-      }
-      const currentPlan = await resolveRestoreManifestTargets(
-        selectedManifest,
-        currentContext.pathContext
-      );
-      assertRestorePlanUnchanged(plan, currentPlan);
-    }
-    if (retroArchGame && retroArchBindingStore && migration) {
-      const currentBindings =
-        await retroArchBindingStore.loadRetroArchBindings(retroArchGame);
-      assertRetroArchRestoreSelectionUnchanged(
-        migration,
-        migrateRetroArchManifest(
-          retroArchGame,
-          originalManifest,
-          currentBindings.selectedLegacyBatteryRawPath
-        )
-      );
-    }
     const replacements: ReplaceRestoreTarget[] = buildRestoreReplacements(
       plan.actions,
-      downloadedFiles,
-      migration?.sourceFilesByEntryId
+      downloadedFiles
     );
     emitProgress("applying_restore", 0, replacements.length);
     const result = await replaceRestoreTargets(replacements);
@@ -386,7 +313,6 @@ export const restoreRemoteSnapshot = async (
       replacements.length
     );
     if (restoreSucceeded) {
-      await assertEnvironmentCurrent?.();
       await assertEnvironmentCurrent?.();
       await registerRestoredCustomPaths(
         plan.actions,

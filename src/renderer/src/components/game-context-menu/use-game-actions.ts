@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import {
   useDownload,
@@ -7,10 +7,7 @@ import {
   useToast,
 } from "@renderer/hooks";
 import { useNavigate, useLocation } from "react-router-dom";
-import {
-  buildGameDetailsPath,
-  handleClassicsLaunchError,
-} from "@renderer/helpers";
+import { buildGameDetailsPath } from "@renderer/helpers";
 import { logger } from "@renderer/logger";
 import { useGameOptionsModal } from "@renderer/context/game-options-modal/game-options-modal.context";
 import type { GameSettingsCategoryId } from "@renderer/pages/game-details/modals/game-options-modal/types";
@@ -35,14 +32,8 @@ export function useGameActions(game: GameContextMenuGame) {
   const [creatingSteamShortcut, setCreatingSteamShortcut] = useState(false);
   const [creatingShortcut, setCreatingShortcut] = useState(false);
   const [isGameRunning, setIsGameRunning] = useState(false);
-  const [rpcs3ConfirmPending, setRpcs3ConfirmPending] = useState<{
-    discPath?: string;
-  } | null>(null);
 
-  const isClassics = game.shop === "launchbox";
-  const hasClassicsDiscs = (game.discs?.length ?? 0) > 0;
-  const canPlay =
-    Boolean(game.executablePath) || (isClassics && hasClassicsDiscs);
+  const canPlay = Boolean(game.executablePath);
   const isDeleting = isGameDeleting(game.id ?? "");
   const isGameDownloading =
     game.download?.status === "active" && lastPacket?.gameId === game.id;
@@ -61,41 +52,6 @@ export function useGameActions(game: GameContextMenuGame) {
     };
   }, [game?.id]);
 
-  const launchClassicsAttempt = useCallback(
-    async (discPath: string | undefined, force?: boolean): Promise<void> => {
-      try {
-        await globalThis.electron.openClassicsGame(
-          game.shop,
-          game.objectId,
-          discPath,
-          force
-        );
-      } catch (error) {
-        const shouldLog = handleClassicsLaunchError(error, {
-          t,
-          showErrorToast,
-          showSuccessToast,
-          navigate,
-          onEmulatorAlreadyRunning: () => setRpcs3ConfirmPending({ discPath }),
-        });
-        if (shouldLog) {
-          logger.error("Failed to start classics game", error);
-        }
-      }
-    },
-    [game.shop, game.objectId, navigate, showErrorToast, showSuccessToast, t]
-  );
-
-  const handleConfirmRpcs3Launch = useCallback(async () => {
-    const pending = rpcs3ConfirmPending;
-    setRpcs3ConfirmPending(null);
-    if (pending) await launchClassicsAttempt(pending.discPath, true);
-  }, [rpcs3ConfirmPending, launchClassicsAttempt]);
-
-  const handleCancelRpcs3Launch = useCallback(() => {
-    setRpcs3ConfirmPending(null);
-  }, []);
-
   const handlePlayGame = async () => {
     const detailsPath = buildGameDetailsPath({
       ...game,
@@ -106,30 +62,12 @@ export function useGameActions(game: GameContextMenuGame) {
       if (location.pathname !== detailsPath) {
         navigate(detailsPath, { state: { openRepacks: true } });
       }
+
       globalThis.dispatchEvent(
         new CustomEvent("hydra:openRepacks", {
           detail: { objectId: game.objectId },
         })
       );
-      return;
-    }
-
-    if (isClassics) {
-      const multipleDiscs = (game.discs?.length ?? 0) > 1;
-      const needsModal =
-        multipleDiscs && !(game.dontAskDiscSelection && game.selectedDiscPath);
-
-      if (needsModal) {
-        navigate(detailsPath, { state: { openDiscSelection: true } });
-        globalThis.dispatchEvent(
-          new CustomEvent("hydra:openDiscSelection", {
-            detail: { objectId: game.objectId },
-          })
-        );
-        return;
-      }
-
-      await launchClassicsAttempt(game.selectedDiscPath ?? undefined);
       return;
     }
 
@@ -372,7 +310,6 @@ export function useGameActions(game: GameContextMenuGame) {
     hasRepacks,
     creatingShortcut,
     creatingSteamShortcut,
-    rpcs3ConfirmPending,
     handlePlayGame,
     handleCloseGame,
     handleToggleFavorite,
@@ -385,7 +322,5 @@ export function useGameActions(game: GameContextMenuGame) {
     handleRemoveFromLibrary,
     handleRemoveFiles,
     handleOpenGameOptions,
-    handleConfirmRpcs3Launch,
-    handleCancelRpcs3Launch,
   };
 }

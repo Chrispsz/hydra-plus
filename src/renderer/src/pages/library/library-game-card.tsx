@@ -9,9 +9,7 @@ import {
   useAnimatedSourceWarmup,
 } from "@renderer/hooks";
 import {
-  CLASSICS_PS_PLATFORM_LABELS,
   isGameReadyToPlay,
-  resolveClassicsBadge,
   shouldShowSteamLibraryBadge,
 } from "@renderer/helpers";
 import { AchievementProgress, SteamLibraryBadge } from "@renderer/components";
@@ -24,10 +22,6 @@ import {
   ImageIcon,
   CheckCircleFillIcon,
 } from "@primer/octicons-react";
-import {
-  EMULATOR_ICONS,
-  RETROARCH_EMULATOR_ICON,
-} from "@renderer/pages/settings/emulation/emulator-icons";
 import "./library-game-card.scss";
 import { logger } from "@renderer/logger";
 
@@ -55,8 +49,6 @@ export const LibraryGameCard = memo(function LibraryGameCard({
   const hideBadges = userPreferences?.hideLibraryGameBadges ?? false;
   const hideReadySizeBadges =
     userPreferences?.hideLibraryReadySizeBadges ?? false;
-  const hideClassicsBadges =
-    userPreferences?.hideLibraryClassicsBadges ?? false;
   const showSteamLibraryBadge = shouldShowSteamLibraryBadge(
     game,
     userPreferences?.hideSteamLibraryBadges
@@ -132,19 +124,6 @@ export const LibraryGameCard = memo(function LibraryGameCard({
       ? resolveImageSource(coverPoster)
       : activeImageSource;
 
-  const { label: classicsPlatformLabel, icon: classicsEmulatorIcon } =
-    resolveClassicsBadge(
-      game.shop,
-      game.platform,
-      CLASSICS_PS_PLATFORM_LABELS,
-      {
-        emulatorIcons: EMULATOR_ICONS,
-        retroarchIcon: RETROARCH_EMULATOR_ICON,
-      }
-    );
-
-  const showPlatformBadge =
-    !hideClassicsBadges && Boolean(classicsPlatformLabel);
   const showReadyBadge = !hideReadySizeBadges && isInstalled;
 
   const handleImageError = () => {
@@ -184,28 +163,6 @@ export const LibraryGameCard = memo(function LibraryGameCard({
       return <div className="library-game-card__cover-placeholder" />;
     }
 
-    if (game.shop === "launchbox" && !isChosenCoverActive) {
-      return (
-        <div className="library-game-card__classics-cover">
-          <img
-            src={displayImageSource}
-            alt=""
-            aria-hidden="true"
-            className="library-game-card__classics-backdrop"
-            loading="lazy"
-            onError={handleImageError}
-          />
-          <img
-            src={displayImageSource}
-            alt={game.title}
-            className="library-game-card__classics-image"
-            loading="lazy"
-            onError={handleImageError}
-          />
-        </div>
-      );
-    }
-
     return (
       <img
         src={displayImageSource}
@@ -230,8 +187,6 @@ export const LibraryGameCard = memo(function LibraryGameCard({
     >
       <div
         className={cn("library-game-card__overlay", {
-          "library-game-card__overlay--classics":
-            game.shop === "launchbox" && !isChosenCoverActive,
           "library-game-card__overlay--no-fade":
             hideAchievementProgress ||
             ((game.achievementCount ?? 0) === 0 &&
@@ -267,38 +222,19 @@ export const LibraryGameCard = memo(function LibraryGameCard({
             )}
           </div>
 
-          {(showSteamLibraryBadge || showPlatformBadge || showReadyBadge) && (
+          {(showSteamLibraryBadge || showReadyBadge) && (
             <div className="library-game-card__top-right">
               {showSteamLibraryBadge && <SteamLibraryBadge />}
 
-              {showPlatformBadge && (
-                <div className="library-game-card__classics-badges">
-                  <span className="library-game-card__platform-badge">
-                    {classicsPlatformLabel}
-                  </span>
-                </div>
-              )}
-
               {showReadyBadge && (
                 <div
-                  className={cn("library-game-card__installed-badge", {
-                    "library-game-card__installed-badge--classics":
-                      classicsEmulatorIcon,
-                  })}
+                  className="library-game-card__installed-badge"
                   title={t("installed_tooltip")}
                 >
-                  {classicsEmulatorIcon ? (
-                    <img
-                      src={classicsEmulatorIcon}
-                      alt=""
-                      className="library-game-card__installed-emulator-icon"
-                    />
-                  ) : (
-                    <CheckCircleFillIcon
-                      size={11}
-                      className="library-game-card__installed-icon"
-                    />
-                  )}
+                  <CheckCircleFillIcon
+                    size={11}
+                    className="library-game-card__installed-icon"
+                  />
                   <span className="library-game-card__installed-text">
                     {t("installed")}
                   </span>

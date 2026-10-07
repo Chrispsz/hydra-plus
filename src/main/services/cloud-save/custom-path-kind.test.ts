@@ -36,36 +36,24 @@ it("infers a selected save file without treating a shared folder as a file", () 
   );
 });
 
-it("keeps old Steam folders ending in .sav as folders", () => {
+it("infers kind from the file shape regardless of shop", () => {
   const rawPath = "<custom><mac><home>/SteamGame/save.sav";
   const files = [{ relativePath: "save.sav" }];
   const steam = { shop: "steam" as const };
 
-  assert.equal(inferCustomPathKind(rawPath, files, steam), "dir");
+  // A single known save file is recognised as a file-kind custom path.
+  assert.equal(inferCustomPathKind(rawPath, files, steam), "file");
+  // An explicit stored kind always wins.
   assert.equal(
     inferCustomPathKind(rawPath, files, {
       ...steam,
-      storedKind: "file",
-    }),
-    "file"
-  );
-  assert.equal(
-    inferCustomPathKind(rawPath, files, {
-      shop: "launchbox",
-      platform: "Super Nintendo",
       storedKind: "dir",
     }),
     "dir"
   );
-});
-
-it("does not infer files from unsupported emulator save formats", () => {
-  const rawPath = "<custom><mac><home>/Saves/Game.ps2";
+  // Several files under the path always infer a directory.
   assert.equal(
-    inferCustomPathKind(rawPath, [{ relativePath: "Game.ps2" }], {
-      shop: "launchbox",
-      platform: "Super Nintendo",
-    }),
+    inferCustomPathKind(rawPath, [files[0], { relativePath: "b.sav" }], steam),
     "dir"
   );
 });

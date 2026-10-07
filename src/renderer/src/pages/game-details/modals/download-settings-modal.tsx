@@ -39,7 +39,6 @@ import { motion } from "framer-motion";
 import {
   type ReactNode,
   useCallback,
-  useContext,
   useEffect,
   useMemo,
   useRef,
@@ -49,11 +48,6 @@ import { Trans, useTranslation } from "react-i18next";
 import { Tooltip } from "react-tooltip";
 import "./download-settings-modal.scss";
 import { RealDebridInfoModal } from "./real-debrid-info-modal";
-import { gameDetailsContext } from "@renderer/context";
-import {
-  platformToRetroArchPlatform,
-  platformToSystem,
-} from "@renderer/helpers";
 
 export interface DownloadSettingsModalProps {
   visible: boolean;
@@ -246,20 +240,6 @@ export function DownloadSettingsModal({
   repack,
 }: Readonly<DownloadSettingsModalProps>) {
   const { t } = useTranslation("game_details");
-
-  const { game, shopDetails, shop } = useContext(gameDetailsContext);
-
-  const emulatorSystem = useMemo(() => {
-    if (shop !== "launchbox") return null;
-    return platformToSystem(game?.platform ?? shopDetails?.platform ?? null);
-  }, [shop, game?.platform, shopDetails?.platform]);
-
-  const retroArchPlatform = useMemo(() => {
-    if (shop !== "launchbox" || emulatorSystem) return null;
-    return platformToRetroArchPlatform(
-      game?.platform ?? shopDetails?.platform ?? null
-    );
-  }, [shop, emulatorSystem, game?.platform, shopDetails?.platform]);
 
   const userPreferences = useAppSelector(
     (state) => state.userPreferences.value
@@ -489,27 +469,7 @@ export function DownloadSettingsModal({
     let cancelled = false;
 
     const resolveDefaultPath = async () => {
-      let romPath: string | null = null;
-
-      if (emulatorSystem) {
-        romPath = await globalThis.electron
-          .getEmulatorConfigs()
-          .then(
-            (configs) => configs[emulatorSystem]?.romFolders?.[0]?.path ?? null
-          )
-          .catch(() => null);
-      } else if (retroArchPlatform) {
-        romPath = await globalThis.electron
-          .getRetroArchConfig()
-          .then((config) => config.romFolders?.[0]?.path ?? null)
-          .catch(() => null);
-      }
-
-      if (cancelled) return;
-
-      if (romPath) {
-        setSelectedPath(romPath);
-      } else if (userPreferences?.downloadsPath) {
+      if (userPreferences?.downloadsPath) {
         setSelectedPath(userPreferences.downloadsPath);
       } else {
         const defaultDownloadsPath =
@@ -529,13 +489,7 @@ export function DownloadSettingsModal({
     return () => {
       cancelled = true;
     };
-  }, [
-    getDefaultDownloader,
-    userPreferences?.downloadsPath,
-    downloadOptions,
-    emulatorSystem,
-    retroArchPlatform,
-  ]);
+  }, [getDefaultDownloader, userPreferences?.downloadsPath, downloadOptions]);
 
   useEffect(() => {
     if (visible) {

@@ -27,8 +27,6 @@ import "./torrenting";
 import "./user";
 import "./user-preferences";
 import "./library/transfer-game-files";
-import "./emulators";
-import "./retroarch";
 
 ipcMain.handle("ping", () => "pong");
 ipcMain.handle("getVersion", () => appVersion);

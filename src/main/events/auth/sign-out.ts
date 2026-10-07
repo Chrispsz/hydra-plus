@@ -4,8 +4,6 @@ import {
   HydraApi,
   SSEClient,
   WindowManager,
-  emulators,
-  retroarch,
 } from "@main/services";
 import { clearGamesPlaytimeState } from "@main/services/game-running-state";
 import {
@@ -38,8 +36,6 @@ const signOut = async (_event: Electron.IpcMainInvokeEvent) => {
         gamesSublevel.clear(),
         downloadsSublevel.clear(),
         downloadLayoutStateSublevel.clear(),
-        emulators.resetEmulatorScanData(),
-        retroarch.resetRetroArchScanData(),
       ]);
     });
 

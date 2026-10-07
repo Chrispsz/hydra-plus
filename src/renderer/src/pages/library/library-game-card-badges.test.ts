@@ -53,13 +53,9 @@ function renderCard(
     },
     "@shared": { getDisplayedPlayTimeInMilliseconds: () => 0 },
     "@renderer/helpers": {
-      CLASSICS_PS_PLATFORM_LABELS: {},
       isGameReadyToPlay: (game: Record<string, unknown>) => game.isInstalled,
       shouldShowSteamLibraryBadge: (game: Record<string, unknown>) =>
         game.hasActiveSteamImport && !preferences.hideSteamLibraryBadges,
-      resolveClassicsBadge: (_shop: string, platform?: string) => ({
-        label: platform,
-      }),
       isGameCompleted: () => false,
     },
     "@renderer/components": {
@@ -152,7 +148,6 @@ describe("visibility and playtime badge layout", () => {
     const dom = renderCard(layouts[0], {
       isHiddenFromOthers: true,
       hasActiveSteamImport: true,
-      platform: "SNES",
       isInstalled: true,
     });
     const { document } = dom.window;
@@ -163,7 +158,6 @@ describe("visibility and playtime badge layout", () => {
     assert.equal(right.contains(badge), false);
     assert.equal(dom.window.getComputedStyle(right).marginLeft, "auto");
     assert.match(right.textContent!, /Steam/);
-    assert.match(right.textContent!, /SNES/);
     assert.match(right.textContent!, /installed/);
     dom.window.close();
   });

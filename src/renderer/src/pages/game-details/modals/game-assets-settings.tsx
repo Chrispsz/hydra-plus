@@ -7,15 +7,14 @@ import {
 } from "react";
 import { motion } from "framer-motion";
 import { useTranslation } from "react-i18next";
-import { useNavigate } from "react-router-dom";
 import {
   AlertIcon,
   ImageIcon,
   PencilIcon,
   TrashIcon,
 } from "@primer/octicons-react";
-import { Button, ImageCropModal } from "@renderer/components";
-import { useToast, useAppSelector, useUserDetails } from "@renderer/hooks";
+import { ImageCropModal } from "@renderer/components";
+import { useToast, useUserDetails } from "@renderer/hooks";
 import { useSubscription } from "@renderer/hooks/use-subscription";
 import type {
   Game,
@@ -200,11 +199,6 @@ export function GameAssetsSettings({
   const { showSuccessToast, showErrorToast } = useToast();
   const { hasActiveSubscription } = useUserDetails();
   const { showHydraCloudModal } = useSubscription();
-  const navigate = useNavigate();
-  const classicsUseHeroLayout =
-    useAppSelector(
-      (state) => state.userPreferences.value?.classicsUseHeroLayout
-    ) ?? false;
 
   const [assetPaths, setAssetPaths] = useState<AssetPaths>(INITIAL_ASSET_PATHS);
   const [originalAssetPaths, setOriginalAssetPaths] =
@@ -1206,27 +1200,6 @@ export function GameAssetsSettings({
             />
           )}
         </div>
-
-        {game.shop === "launchbox" &&
-          !classicsUseHeroLayout &&
-          (selectedAssetType === "hero" || selectedAssetType === "logo") && (
-            <div className="game-assets-settings__warning">
-              <AlertIcon
-                size={16}
-                className="game-assets-settings__warning-icon"
-              />
-              <span className="game-assets-settings__warning-text">
-                {t("classics_hero_layout_warning")}
-              </span>
-              <Button
-                type="button"
-                theme="outline"
-                onClick={() => navigate("/settings?tab=content_gameplay")}
-              >
-                {t("classics_hero_layout_open_settings")}
-              </Button>
-            </div>
-          )}
 
         {renderImageSection(selectedAssetType)}
 

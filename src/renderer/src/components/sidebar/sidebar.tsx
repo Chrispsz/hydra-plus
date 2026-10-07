@@ -20,7 +20,6 @@ import "./sidebar.scss";
 
 import { buildGameDetailsPath, sortLibraryGames } from "@renderer/helpers";
 import {
-  categoryShowsPlatforms,
   categoryShowsSources,
   filterLibraryGames,
   hasSteamLibraryGames,
@@ -36,7 +35,6 @@ import deckyIcon from "@renderer/assets/icons/decky.png";
 import cn from "classnames";
 import { SidebarFilterMenu } from "./sidebar-filter-menu";
 import {
-  SIDEBAR_PLATFORMS_STORAGE_KEY,
   SIDEBAR_PLAYABLE_ONLY_STORAGE_KEY,
   SIDEBAR_SOURCES_STORAGE_KEY,
 } from "@renderer/session-state";
@@ -61,20 +59,6 @@ const isGamePlayable = (game: LibraryGame) =>
   (game.shop === "launchbox" && (game.discs?.length ?? 0) > 0);
 
 const initialSidebarWidth = window.localStorage.getItem("sidebarWidth");
-
-const readStoredSidebarPlatforms = (): string[] => {
-  try {
-    const saved = localStorage.getItem(SIDEBAR_PLATFORMS_STORAGE_KEY);
-    if (!saved) return [];
-
-    const parsed = JSON.parse(saved);
-    if (!Array.isArray(parsed)) return [];
-
-    return parsed.filter((item): item is string => typeof item === "string");
-  } catch {
-    return [];
-  }
-};
 
 export function Sidebar() {
   const { t } = useTranslation(["sidebar", "library"]);
@@ -124,34 +108,14 @@ export function Sidebar() {
     return localStorage.getItem("sidebar-favorites-first") !== "false";
   });
 
-  const [selectedPlatforms, setSelectedPlatforms] = useState<string[]>(
-    readStoredSidebarPlatforms
-  );
   const [showPlayableOnly, setShowPlayableOnly] = useState<boolean>(
     () => localStorage.getItem(SIDEBAR_PLAYABLE_ONLY_STORAGE_KEY) === "true"
   );
 
-  const uniquePlatforms = useMemo(() => {
-    const set = new Set<string>();
-    for (const game of library) {
-      if (game.shop === "launchbox" && game.platform) {
-        set.add(game.platform);
-      }
-    }
-    return Array.from(set).sort((a, b) =>
-      a.localeCompare(b, undefined, { sensitivity: "base" })
-    );
-  }, [library]);
-
   const hasSteamGames = useMemo(() => hasSteamLibraryGames(library), [library]);
-  const hasPlatforms = uniquePlatforms.length > 0;
   const effectiveSources = useMemo(
     () => (hasSteamGames ? selectedSources : []),
     [hasSteamGames, selectedSources]
-  );
-  const effectivePlatforms = useMemo(
-    () => (hasPlatforms ? selectedPlatforms : []),
-    [hasPlatforms, selectedPlatforms]
   );
 
   const orderSidebarGames = useCallback(
@@ -178,9 +142,9 @@ export function Sidebar() {
       filterLibraryGames(orderedLibrary, {
         category: sidebarCategory,
         sources: effectiveSources,
-        platforms: effectivePlatforms,
+        platforms: [],
       }),
-    [orderedLibrary, sidebarCategory, effectiveSources, effectivePlatforms]
+    [orderedLibrary, sidebarCategory, effectiveSources]
   );
 
   const searchIndex = useMemo(
@@ -231,8 +195,6 @@ export function Sidebar() {
     library.length > 0 &&
     (sidebarCategory !== "all" ||
       (categoryShowsSources(sidebarCategory) && effectiveSources.length > 0) ||
-      (categoryShowsPlatforms(sidebarCategory) &&
-        effectivePlatforms.length > 0) ||
       showPlayableOnly ||
       isSearching);
 
@@ -257,11 +219,6 @@ export function Sidebar() {
     setFilterQuery(event.target.value);
   };
 
-  const handleSelectedPlatformsChange = useCallback((next: string[]) => {
-    setSelectedPlatforms(next);
-    localStorage.setItem(SIDEBAR_PLATFORMS_STORAGE_KEY, JSON.stringify(next));
-  }, []);
-
   const handleSelectedSourcesChange = useCallback((next: LibrarySource[]) => {
     setSelectedSources(next);
     localStorage.setItem(SIDEBAR_SOURCES_STORAGE_KEY, JSON.stringify(next));
@@ -282,14 +239,11 @@ export function Sidebar() {
     (next: LibraryCategory) => {
       setSidebarCategory(next);
       localStorage.setItem("sidebar-category", next);
-      if (!categoryShowsPlatforms(next)) {
-        handleSelectedPlatformsChange([]);
-      }
       if (!categoryShowsSources(next)) {
         handleSelectedSourcesChange([]);
       }
     },
-    [handleSelectedPlatformsChange, handleSelectedSourcesChange]
+    [handleSelectedSourcesChange]
   );
 
   const handleSidebarSortChange = useCallback((next: SortOption) => {
@@ -301,19 +255,6 @@ export function Sidebar() {
     setShowFavoritesFirst(next);
     localStorage.setItem("sidebar-favorites-first", String(next));
   }, []);
-
-  useEffect(() => {
-    if (uniquePlatforms.length === 0 || selectedPlatforms.length === 0) return;
-
-    const availablePlatforms = new Set(uniquePlatforms);
-    const nextPlatforms = selectedPlatforms.filter((platform) =>
-      availablePlatforms.has(platform)
-    );
-
-    if (nextPlatforms.length !== selectedPlatforms.length) {
-      handleSelectedPlatformsChange(nextPlatforms);
-    }
-  }, [uniquePlatforms, selectedPlatforms, handleSelectedPlatformsChange]);
 
   const loadDeckyPluginInfo = async () => {
     if (window.electron.platform !== "linux") return;
@@ -574,12 +515,6 @@ export function Sidebar() {
                 }
                 selectedSources={selectedSources}
                 onSourcesChange={handleSelectedSourcesChange}
-                showPlatforms={
-                  categoryShowsPlatforms(sidebarCategory) && hasPlatforms
-                }
-                platforms={uniquePlatforms}
-                selectedPlatforms={selectedPlatforms}
-                onPlatformsChange={handleSelectedPlatformsChange}
               />
             </div>
 

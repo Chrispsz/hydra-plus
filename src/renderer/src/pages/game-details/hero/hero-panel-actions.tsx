@@ -8,7 +8,7 @@ import {
   PlayIcon,
   PlusCircleIcon,
 } from "@primer/octicons-react";
-import { Button, ConfirmationModal } from "@renderer/components";
+import { Button } from "@renderer/components";
 import { XCircle } from "lucide-react";
 import {
   useDownload,
@@ -16,18 +16,12 @@ import {
   useToast,
   useUserDetails,
 } from "@renderer/hooks";
-import { useContext, useState } from "react";
+import { useContext, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { useNavigate } from "react-router-dom";
 import { gameDetailsContext } from "@renderer/context";
-import {
-  canDownloadOnSteam,
-  handleClassicsLaunchError,
-} from "@renderer/helpers";
-import { DiscSelectionModal } from "../modals/disc-selection-modal";
+import { canDownloadOnSteam } from "@renderer/helpers";
 
 import "./hero-panel-actions.scss";
-import { useEffect } from "react";
 
 export function HeroPanelActions() {
   const [toggleLibraryGameDisabled, setToggleLibraryGameDisabled] =
@@ -60,37 +54,9 @@ export function HeroPanelActions() {
 
   const { updateLibrary } = useLibrary();
 
-  const { showSuccessToast, showErrorToast } = useToast();
-
-  const navigate = useNavigate();
-
-  const [showDiscSelectionModal, setShowDiscSelectionModal] = useState(false);
-  const [pendingClassicsLaunch, setPendingClassicsLaunch] = useState<{
-    discPath: string | undefined;
-  } | null>(null);
+  const { showSuccessToast } = useToast();
 
   const { t } = useTranslation("game_details");
-
-  useEffect(() => {
-    const onOpenDiscSelection = (event: Event) => {
-      const detail = (event as CustomEvent<{ objectId?: string }>).detail;
-      if (!detail?.objectId || detail.objectId === game?.objectId) {
-        if (game?.shop === "launchbox" && (game?.discs?.length ?? 0) > 1) {
-          setShowDiscSelectionModal(true);
-        }
-      }
-    };
-    window.addEventListener(
-      "hydra:openDiscSelection",
-      onOpenDiscSelection as EventListener
-    );
-    return () => {
-      window.removeEventListener(
-        "hydra:openDiscSelection",
-        onOpenDiscSelection as EventListener
-      );
-    };
-  }, [game?.objectId, game?.shop, game?.discs?.length]);
 
   useEffect(() => {
     const onFavoriteToggled = () => {
@@ -203,75 +169,8 @@ export function HeroPanelActions() {
     }
   };
 
-  const launchClassicsWithErrorHandling = async (
-    discPath?: string,
-    force?: boolean
-  ): Promise<void> => {
-    if (!game) return;
-    try {
-      await window.electron.openClassicsGame(
-        game.shop,
-        game.objectId,
-        discPath,
-        force
-      );
-    } catch (error) {
-      handleClassicsLaunchError(error, {
-        t,
-        showErrorToast,
-        showSuccessToast,
-        navigate,
-        onEmulatorAlreadyRunning: () => setPendingClassicsLaunch({ discPath }),
-      });
-    }
-  };
-
-  const openClassicsGame = async () => {
-    if (!game) return;
-
-    const discs = game.discs ?? [];
-
-    if (
-      discs.length === 0 ||
-      (discs.length === 1 && game.selectedDiscPath !== null)
-    ) {
-      await launchClassicsWithErrorHandling();
-      return;
-    }
-
-    if (game.dontAskDiscSelection && game.selectedDiscPath) {
-      await launchClassicsWithErrorHandling(game.selectedDiscPath);
-      return;
-    }
-
-    setShowDiscSelectionModal(true);
-  };
-
-  const handleDiscSelectionConfirm = async (
-    discPath: string,
-    dontAskAgain: boolean
-  ) => {
-    if (!game) return;
-    setShowDiscSelectionModal(false);
-    try {
-      await window.electron.updateClassicsDisc(game.shop, game.objectId, {
-        selectedDiscPath: discPath,
-        dontAskDiscSelection: dontAskAgain,
-      });
-      updateGame();
-    } catch (error) {
-      // non-fatal; still try to launch
-    }
-    await launchClassicsWithErrorHandling(discPath);
-  };
-
   const openGame = async () => {
     if (!game) return;
-
-    if (game.shop === "launchbox") {
-      await openClassicsGame();
-      return;
-    }
 
     if (game.executablePath) {
       window.electron.openGame(
@@ -353,10 +252,7 @@ export function HeroPanelActions() {
       );
     }
 
-    const isPlayableClassics =
-      game?.shop === "launchbox" && (game?.discs?.length ?? 0) > 0;
-
-    if (game?.executablePath || isPlayableClassics) {
+    if (game?.executablePath) {
       return (
         <Button
           onClick={openGame}
@@ -429,33 +325,6 @@ export function HeroPanelActions() {
           <GearIcon />
           {t("options")}
         </Button>
-
-        {game.shop === "launchbox" && (
-          <DiscSelectionModal
-            visible={showDiscSelectionModal}
-            discs={game.discs ?? []}
-            defaultDiscPath={game.selectedDiscPath ?? null}
-            defaultDontAsk={Boolean(game.dontAskDiscSelection)}
-            onClose={() => setShowDiscSelectionModal(false)}
-            onConfirm={handleDiscSelectionConfirm}
-          />
-        )}
-
-        <ConfirmationModal
-          visible={pendingClassicsLaunch !== null}
-          title={t("rpcs3_already_running_title")}
-          descriptionText={t("rpcs3_already_running_description")}
-          confirmButtonLabel={t("rpcs3_already_running_confirm")}
-          cancelButtonLabel={t("cancel")}
-          onClose={() => setPendingClassicsLaunch(null)}
-          onConfirm={() => {
-            const pending = pendingClassicsLaunch;
-            setPendingClassicsLaunch(null);
-            if (pending) {
-              void launchClassicsWithErrorHandling(pending.discPath, true);
-            }
-          }}
-        />
       </div>
     );
   }

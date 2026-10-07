@@ -1,10 +1,11 @@
 import type { Game } from "@types";
-import { getCloudSaveEmulatorProvider } from "../../../shared/cloud-save-emulator-provider.js";
 
+/**
+ * Legacy (v1) Cloud Save writes used to be blocked for emulator-managed
+ * games, whose saves were owned by the v2 engine. Retro emulation was
+ * removed from the fork, so every remaining legacy game may write freely.
+ * Kept as a no-op so legacy flow call sites stay untouched.
+ */
 export const assertLegacyCloudSaveWriteAllowed = (
-  game: Pick<Game, "shop" | "platform"> | null | undefined
-) => {
-  if (game && getCloudSaveEmulatorProvider(game.shop, game.platform)) {
-    throw new Error("cloud_save_legacy_read_only");
-  }
-};
+  _game: Pick<Game, "shop" | "platform"> | null | undefined
+) => {};

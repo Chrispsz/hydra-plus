@@ -1,20 +1,10 @@
-import { useEffect, useId, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { Tooltip } from "react-tooltip";
-import {
-  ClockIcon,
-  DeviceDesktopIcon,
-  SearchIcon,
-  XIcon,
-} from "@primer/octicons-react";
+import { ClockIcon, SearchIcon, XIcon } from "@primer/octicons-react";
 import cn from "classnames";
 import { useTranslation } from "react-i18next";
 import type { SearchHistoryEntry } from "@renderer/hooks/use-search-history";
-import type {
-  SearchSuggestion,
-  SuggestionShop,
-} from "@renderer/hooks/use-search-suggestions";
-import { ClassicsIcon } from "@renderer/pages/library/category-filter";
+import type { SearchSuggestion } from "@renderer/hooks/use-search-suggestions";
 import { HighlightText } from "./highlight-text";
 import "./search-dropdown.scss";
 
@@ -24,9 +14,6 @@ export interface SearchDropdownProps {
   historyItems: SearchHistoryEntry[];
   suggestions: SearchSuggestion[];
   isLoadingSuggestions: boolean;
-  suggestionShop: SuggestionShop;
-  onSuggestionShopChange: (shop: SuggestionShop) => void;
-  showShopSwitch: boolean;
   onSelectHistory: (query: string) => void;
   onSelectSuggestion: (suggestion: SearchSuggestion) => void;
   onRemoveHistoryItem: (query: string) => void;
@@ -43,9 +30,6 @@ export function SearchDropdown({
   historyItems,
   suggestions,
   isLoadingSuggestions,
-  suggestionShop,
-  onSuggestionShopChange,
-  showShopSwitch,
   onSelectHistory,
   onSelectSuggestion,
   onRemoveHistoryItem,
@@ -58,7 +42,6 @@ export function SearchDropdown({
   const dropdownRef = useRef<HTMLDivElement>(null);
   const [adjustedPosition, setAdjustedPosition] = useState(position);
   const { t } = useTranslation("header");
-  const shopTooltipId = useId();
 
   useEffect(() => {
     if (!visible) {
@@ -195,38 +178,6 @@ export function SearchDropdown({
               <span className="search-dropdown__section-title">
                 {t("suggestions")}
               </span>
-              {showShopSwitch && (
-                <div className="search-dropdown__shop-switch">
-                  <button
-                    type="button"
-                    className={cn("search-dropdown__shop-button", {
-                      "search-dropdown__shop-button--active":
-                        suggestionShop === "steam",
-                    })}
-                    onMouseDown={(e) => e.preventDefault()}
-                    onClick={() => onSuggestionShopChange("steam")}
-                    aria-label="PC"
-                    data-tooltip-id={shopTooltipId}
-                    data-tooltip-content="PC"
-                  >
-                    <DeviceDesktopIcon size={14} />
-                  </button>
-                  <button
-                    type="button"
-                    className={cn("search-dropdown__shop-button", {
-                      "search-dropdown__shop-button--active":
-                        suggestionShop === "launchbox",
-                    })}
-                    onMouseDown={(e) => e.preventDefault()}
-                    onClick={() => onSuggestionShopChange("launchbox")}
-                    aria-label="Classics"
-                    data-tooltip-id={shopTooltipId}
-                    data-tooltip-content="Classics"
-                  >
-                    <ClassicsIcon size={16} />
-                  </button>
-                </div>
-              )}
             </div>
             {hasSuggestions ? (
               <ul className="search-dropdown__list">
@@ -266,8 +217,6 @@ export function SearchDropdown({
           </div>
         )}
       </div>
-
-      <Tooltip id={shopTooltipId} place="bottom" style={{ zIndex: 1001 }} />
     </>
   );
 

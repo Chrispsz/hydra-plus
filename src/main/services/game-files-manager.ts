@@ -10,15 +10,7 @@ import {
   FILE_EXTENSIONS_TO_EXTRACT,
   removeSymbolsFromName,
 } from "@shared";
-import type {
-  ClassicsDisc,
-  EmulatorSystem,
-  ExtractionFailure,
-  Game,
-  GameShop,
-  RetroArchPlatform,
-  UserPreferences,
-} from "@types";
+import type { ExtractionFailure, GameShop, UserPreferences } from "@types";
 import axios from "axios";
 import createDesktopShortcut from "create-desktop-shortcuts";
 import fs from "node:fs";
@@ -26,13 +18,10 @@ import path from "node:path";
 import pngToIco from "png-to-ico";
 import sharp from "sharp";
 import { ExtractionProgress, SevenZip } from "./7zip";
-import * as emulators from "./emulators";
-import * as retroarch from "./retroarch";
 import { getPathType } from "./extraction-path";
+import { getWindowsVbsPath } from "@main/helpers/shortcut-launch";
 import { GameExecutables } from "./game-executables";
 import { logger } from "./logger";
-import { platformToRetroArchPlatform, platformToSystem } from "@main/helpers";
-import { getWindowsVbsPath } from "@main/helpers/shortcut-launch";
 import { deleteArchiveFile } from "@main/events/library/delete-archive";
 import { publishExtractionCompleteNotification } from "./notifications";
 import { SystemPath } from "./system-path";
@@ -152,7 +141,6 @@ export class GameFilesManager {
     }
 
     await this.searchAndBindExecutable();
-    await this.autoLinkClassicsDiscs();
   }
 
   private readonly handleProgress = (progress: ExtractionProgress) => {
@@ -312,150 +300,6 @@ export class GameFilesManager {
     this.lastProgressUpdateValue = 0;
 
     await this.searchAndBindExecutable();
-    await this.autoLinkClassicsDiscs();
-  }
-
-  private async persistLinkedDiscs(
-    game: Game,
-    discs: ClassicsDisc[],
-    added: number,
-    kindLabel: string
-  ): Promise<void> {
-    if (added === 0) return;
-
-    await gamesSublevel.put(this.gameKey, {
-      ...game,
-      discs,
-      selectedDiscPath:
-        game.selectedDiscPath === undefined
-          ? (discs[0]?.path ?? null)
-          : game.selectedDiscPath,
-    });
-
-    WindowManager.sendToAppWindows("on-library-batch-complete");
-
-    logger.info(
-      `[GameFilesManager] Auto-linked ${added} ${kindLabel} for ${this.objectId}`
-    );
-  }
-
-  private async linkRetroArchRoms(
-    game: Game,
-    gameFolderPath: string,
-    platform: RetroArchPlatform
-  ): Promise<void> {
-    const files = await retroarch.scanRetroArchFolder({
-      path: gameFolderPath,
-      scanSubfolders: true,
-    });
-
-    const roms = [...(game.discs ?? [])];
-    let linked = 0;
-
-    for (const entry of files) {
-      if (entry.platform !== platform) continue;
-      if (roms.some((disc) => disc.path === entry.primaryPath)) continue;
-
-      roms.push({
-        path: entry.primaryPath,
-        label: `Disc ${roms.length + 1}`,
-        fileName: path.basename(entry.primaryPath),
-        sku: null,
-      });
-      linked += 1;
-    }
-
-    await this.persistLinkedDiscs(game, roms, linked, "ROM(s)");
-
-    if (linked > 0) {
-      await retroarch.refreshRetroArchLibraryStats();
-    }
-  }
-
-  private async collectClassicsRomPaths(
-    targetPath: string,
-    system: EmulatorSystem
-  ): Promise<string[]> {
-    const stats = await fs.promises.stat(targetPath);
-
-    if (stats.isFile()) {
-      const extension = path.extname(targetPath).toLowerCase();
-      return emulators.KNOWN_BINARIES[system].romExtensions.includes(extension)
-        ? [targetPath]
-        : [];
-    }
-
-    const { games: scanned } = await emulators.scanRomFolder(
-      targetPath,
-      emulators.KNOWN_BINARIES[system],
-      true
-    );
-
-    return scanned.map((entry) => entry.primaryPath);
-  }
-
-  private async linkClassicsDiscsFromScan(
-    game: Game,
-    gameFolderPath: string,
-    system: EmulatorSystem
-  ): Promise<void> {
-    const romPaths = await this.collectClassicsRomPaths(gameFolderPath, system);
-
-    const discs = [...(game.discs ?? [])];
-    let added = 0;
-
-    for (const romPath of romPaths) {
-      if (discs.some((disc) => disc.path === romPath)) continue;
-
-      const sku = await emulators.extractDiscSku(romPath, system);
-
-      discs.push({
-        path: romPath,
-        label: `Disc ${discs.length + 1}`,
-        fileName: path.basename(romPath),
-        sku,
-      });
-      added += 1;
-    }
-
-    await this.persistLinkedDiscs(game, discs, added, "disc(s)");
-  }
-
-  async autoLinkClassicsDiscs(): Promise<void> {
-    try {
-      const [download, game] = await Promise.all([
-        downloadsSublevel.get(this.gameKey),
-        gamesSublevel.get(this.gameKey),
-      ]);
-
-      if (!download || game?.shop !== "launchbox") return;
-      if (!download.folderName) return;
-
-      const retroArchPlatform = platformToRetroArchPlatform(game.platform);
-      const system = platformToSystem(game.platform);
-      if (!retroArchPlatform && !system) return;
-
-      const gameFolderPath = path.join(
-        download.downloadPath,
-        download.folderName
-      );
-
-      if (!fs.existsSync(gameFolderPath)) return;
-
-      if (retroArchPlatform) {
-        await this.linkRetroArchRoms(game, gameFolderPath, retroArchPlatform);
-        return;
-      }
-
-      if (system) {
-        await this.linkClassicsDiscsFromScan(game, gameFolderPath, system);
-      }
-    } catch (err) {
-      logger.error(
-        `[GameFilesManager] Error auto-linking classics discs: ${this.objectId}`,
-        err
-      );
-    }
   }
 
   async searchAndBindExecutable(): Promise<void> {

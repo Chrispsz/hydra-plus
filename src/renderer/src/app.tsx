@@ -20,12 +20,6 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import {
   clearExtraction,
   closeToast,
-  failClassicsScan,
-  failRetroArchScan,
-  finishClassicsScan,
-  finishRetroArchScan,
-  hydrateClassicsScan,
-  hydrateRetroArchScan,
   setExtractionProgress,
   setGameRunning,
   setLibrarySyncingRemote,
@@ -33,8 +27,6 @@ import {
   setUserDetails,
   setUserPreferences,
   toggleDraggingDisabled,
-  updateClassicsScanProgress,
-  updateRetroArchScanProgress,
 } from "@renderer/features";
 import { useTranslation } from "react-i18next";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
@@ -42,8 +34,6 @@ import { useSubscription } from "./hooks/use-subscription";
 import { ArchiveDeletionModal } from "./pages/downloads/archive-deletion-error-modal";
 import { CloudSubscriptionModal } from "./pages/shared-modals/hydra-cloud/cloud-subscription-modal";
 import { AddFriendModal } from "./pages/profile/profile-content/add-friend-modal";
-import { ClassicsScanModal } from "./pages/settings/emulation/classics-scan-modal";
-import { RetroArchScanModal } from "./pages/settings/emulation/retroarch-scan-modal";
 import { CloudGiftNotificationModal } from "./pages/shared-modals/cloud-gift-notification-modal";
 
 import type { UserPreferences } from "@types";
@@ -228,75 +218,6 @@ export function App() {
       unsubscribe();
     };
   }, [dispatch, library]);
-
-  useEffect(() => {
-    window.electron.getActiveClassicsImport().then((snapshot) => {
-      if (snapshot) dispatch(hydrateClassicsScan(snapshot));
-    });
-
-    const unsubscribe = window.electron.onClassicsImportProgress((payload) => {
-      if (payload.type === "error") {
-        dispatch(failClassicsScan(payload.message));
-        return;
-      }
-
-      if (payload.type === "progress") {
-        dispatch(updateClassicsScanProgress(payload));
-        return;
-      }
-
-      dispatch(
-        finishClassicsScan({
-          cancelled: payload.type === "cancelled",
-          system: payload.system,
-          result: {
-            fileCount: payload.fileCount,
-            sizeBytes: payload.sizeBytes,
-            matched: payload.matched,
-            unmatched: payload.unmatched,
-            unmatchedFiles: payload.unmatchedFiles,
-          },
-        })
-      );
-      updateLibrary();
-    });
-
-    return () => unsubscribe();
-  }, [dispatch, updateLibrary]);
-
-  useEffect(() => {
-    window.electron.getActiveRetroArchImport().then((snapshot) => {
-      if (snapshot) dispatch(hydrateRetroArchScan(snapshot));
-    });
-
-    const unsubscribe = window.electron.onRetroArchImportProgress((payload) => {
-      if (payload.type === "error") {
-        dispatch(failRetroArchScan(payload.message));
-        return;
-      }
-
-      if (payload.type === "progress") {
-        dispatch(updateRetroArchScanProgress(payload));
-        return;
-      }
-
-      dispatch(
-        finishRetroArchScan({
-          cancelled: payload.type === "cancelled",
-          result: {
-            fileCount: payload.fileCount,
-            sizeBytes: payload.sizeBytes,
-            matched: payload.matched,
-            unmatched: payload.unmatched,
-            unmatchedFiles: payload.unmatchedFiles,
-          },
-        })
-      );
-      updateLibrary();
-    });
-
-    return () => unsubscribe();
-  }, [dispatch, updateLibrary]);
 
   useEffect(() => {
     let hasReceivedSyncState = false;
@@ -586,9 +507,6 @@ export function App() {
         visible={showAddFriendModal}
         onClose={() => setShowAddFriendModal(false)}
       />
-
-      <ClassicsScanModal />
-      <RetroArchScanModal />
 
       <main>
         <Sidebar />

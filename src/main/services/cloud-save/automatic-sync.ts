@@ -5,11 +5,7 @@ import type {
   GameShop,
   SyncGameCloudSaveResult,
 } from "@types";
-import {
-  getCloudSaveEmulatorProvider,
-  hasRpcs3CloudSaveDisc,
-  isCloudSaveV2Eligible,
-} from "@shared";
+import { isCloudSaveV2Eligible } from "@shared";
 import { gamesSublevel, levelKeys } from "@main/level";
 
 import { HydraApi } from "../hydra-api";
@@ -80,27 +76,6 @@ export const canRunAutomaticCloudSaveSync = async (
     .catch(() => null);
   if (!game || !isCloudSaveV2Eligible(shop, game.platform)) return false;
   if (shop === "steam") return Boolean(game.executablePath);
-  if (
-    getCloudSaveEmulatorProvider(shop, game.platform) === "rpcs3" &&
-    !hasRpcs3CloudSaveDisc(game)
-  )
-    return false;
-  if (getCloudSaveEmulatorProvider(shop, game.platform) === "retroarch") {
-    const { getSelectedRetroArchRom } = await import(
-      "./retroarch-save-provider"
-    );
-    if (!(await getSelectedRetroArchRom(game))) return false;
-  }
-  const context = await getCloudSaveGameContext(objectId, shop).catch(
-    () => null
-  );
-  if (!context?.pathContext.executablePath) return false;
-  if (getCloudSaveEmulatorProvider(shop, game.platform) === "rpcs3") {
-    const { getRpcs3DiscIdentityStatus } = await import(
-      "./rpcs3-game-identity.js"
-    );
-    return (await getRpcs3DiscIdentityStatus(game)).status === "ready";
-  }
   return true;
 };
 
@@ -169,12 +144,6 @@ export const runAutomaticCloudSaveSyncDetailed = async (
   if (isGameRunning(objectId, shop)) {
     return { status: "skipped", result: null };
   }
-  if (
-    getCloudSaveEmulatorProvider(shop, game.platform) === "rpcs3" &&
-    !hasRpcs3CloudSaveDisc(game)
-  ) {
-    return { status: "skipped", result: null };
-  }
 
   let contextResolutionFailed = false;
   const context =
@@ -204,14 +173,6 @@ export const runAutomaticCloudSaveSyncDetailed = async (
   }
   if (!context.pathContext.executablePath) {
     return { status: "skipped", result: null };
-  }
-  if (getCloudSaveEmulatorProvider(shop, game.platform) === "retroarch") {
-    const { getSelectedRetroArchRom } = await import(
-      "./retroarch-save-provider"
-    );
-    if (!(await getSelectedRetroArchRom(game))) {
-      return { status: "skipped", result: null };
-    }
   }
   const key = gameKey(objectId, shop);
   const operationKey = JSON.stringify([

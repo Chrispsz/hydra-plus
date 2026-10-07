@@ -13,7 +13,6 @@ import { abortAchievementMetadataExport } from "./achievements/metadata-export";
 import { INTERVALS } from "@main/constants";
 import { Wine } from "./wine";
 import { NativeAddon } from "./native-addon";
-import { emulatorSessions } from "./emulators/emulator-session-tracker";
 import { launchedGamePids } from "./launched-game-pids";
 import {
   isValidProcessWatcherScan,
@@ -110,16 +109,7 @@ const handleAutomaticCloudSaveLifecycleError = (
 
 export const getGamesRunning = () => {
   const now = performance.now();
-  const gamesRunning = getTrackedGamesRunning(now);
-
-  for (const [gameKey, session] of emulatorSessions) {
-    gamesRunning.push({
-      id: gameKey,
-      sessionDurationInMillis: now - session.startedAt,
-    });
-  }
-
-  return gamesRunning;
+  return getTrackedGamesRunning(now);
 };
 
 const TICKS_TO_UPDATE_API = (3 * 60 * 1000) / INTERVALS.processWatcher; // 3 minutes

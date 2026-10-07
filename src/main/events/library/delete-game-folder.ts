@@ -2,9 +2,9 @@ import path from "node:path";
 import fs from "node:fs";
 
 import { getDownloadsPath } from "../helpers/get-downloads-path";
-import { DownloadOrchestrator, logger, retroarch } from "@main/services";
+import { DownloadOrchestrator, logger } from "@main/services";
 import { registerEvent } from "../register-event";
-import { isWithin } from "../emulators/rom-path-utils";
+import { isWithin } from "../../helpers/is-within";
 import { GameShop } from "@types";
 import { downloadsSublevel, gamesSublevel, levelKeys } from "@main/level";
 
@@ -82,15 +82,6 @@ const deleteGameFolder = async (
           : null,
       }),
     });
-
-    if (hasUnlinkedDiscs) {
-      await retroarch.refreshRetroArchLibraryStats().catch((error) => {
-        logger.error(
-          "[deleteGameFolder] Failed to refresh RetroArch library stats",
-          error
-        );
-      });
-    }
   }
 };
 

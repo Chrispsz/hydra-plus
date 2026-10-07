@@ -23,20 +23,10 @@ import { CloudSaveWidget } from "./cloud-save-v2";
 import { getCloudSaveVisibility } from "./cloud-save-visibility";
 import { SimilarGames } from "./similar-games/similar-games";
 
-import { AuthPage, getDisplayedPlayTimeInMilliseconds } from "@shared";
+import { getDisplayedPlayTimeInMilliseconds } from "@shared";
 import { cloudSyncContext, gameDetailsContext } from "@renderer/context";
 
-import cloudIconAnimated from "@renderer/assets/icons/cloud-animated.gif";
-import tvEffectVideo from "@renderer/assets/emulation/tv-effect.mp4";
-import { useUserDetails, useLibrary, useAppSelector } from "@renderer/hooks";
-import {
-  CLASSICS_PS_PLATFORM_LABELS,
-  resolveClassicsBadge,
-} from "@renderer/helpers";
-import {
-  EMULATOR_ICONS,
-  RETROARCH_EMULATOR_ICON,
-} from "@renderer/pages/settings/emulation/emulator-icons";
+import { useUserDetails, useLibrary } from "@renderer/hooks";
 import "./game-details.scss";
 import "./hero.scss";
 
@@ -193,16 +183,6 @@ export function GameDetailsContent() {
     };
   }, [aboutTheGame]);
 
-  const handleLegacyCloudSaveButtonClick = () => {
-    if (!userDetails) {
-      globalThis.window.electron.openAuthWindow(AuthPage.SignIn);
-      return;
-    }
-
-    setGameOptionsInitialCategory("hydra_cloud_legacy");
-    setShowGameOptionsModal(true);
-  };
-
   const handleEditGameClick = () => {
     setGameOptionsInitialCategory("assets");
     setShowGameOptionsModal(true);
@@ -222,15 +202,7 @@ export function GameDetailsContent() {
     }
   }, [searchParams, objectId]);
 
-  const userPreferences = useAppSelector(
-    (state) => state.userPreferences.value
-  );
-  const hideClassicsBookmark = userPreferences?.hideClassicsBookmark ?? false;
-  const classicsUseHeroLayout = userPreferences?.classicsUseHeroLayout ?? false;
-
   const isCustomGame = game?.shop === "custom";
-  const isLaunchboxGame = shop === "launchbox";
-  const renderClassicsHero = isLaunchboxGame && !classicsUseHeroLayout;
 
   const heroImage = isCustomGame
     ? game?.libraryHeroImageUrl || game?.iconUrl || ""
@@ -239,57 +211,9 @@ export function GameDetailsContent() {
         shopDetails?.assets?.libraryHeroImageUrl
       );
 
-  const launchboxCover = isLaunchboxGame
-    ? game?.customCoverImageUrl ||
-      shopDetails?.assets?.coverImageUrl ||
-      shopDetails?.assets?.libraryImageUrl ||
-      game?.libraryImageUrl ||
-      shopDetails?.assets?.iconUrl ||
-      game?.iconUrl ||
-      ""
-    : "";
-
-  const resolvedHeroImage = isLaunchboxGame
-    ? heroImage || launchboxCover
-    : heroImage;
-
-  const launchboxPlatform = isLaunchboxGame
-    ? (game?.platform ?? shopDetails?.platform ?? null)
-    : null;
-
-  const launchboxTitle = isLaunchboxGame
-    ? (game?.title ?? shopDetails?.name ?? "")
-    : "";
-
-  const classicsBadge = resolveClassicsBadge(
-    "launchbox",
-    isLaunchboxGame ? launchboxPlatform : null,
-    CLASSICS_PS_PLATFORM_LABELS,
-    {
-      emulatorIcons: EMULATOR_ICONS,
-      retroarchIcon: RETROARCH_EMULATOR_ICON,
-    }
-  );
-
-  const classicsChipLabel = classicsBadge.label ?? launchboxPlatform;
-
-  const classicsChips =
-    isLaunchboxGame && classicsChipLabel ? (
-      <div className="game-details__hero-classics-chips">
-        <span className="game-details__hero-classics-chip">
-          {classicsChipLabel}
-        </span>
-        {classicsBadge.icon && (
-          <span className="game-details__hero-classics-chip game-details__hero-classics-chip--icon">
-            <img src={classicsBadge.icon} alt="" />
-          </span>
-        )}
-      </div>
-    ) : null;
-
-  const heroImageContent = resolvedHeroImage ? (
+  const heroImageContent = heroImage ? (
     <img
-      src={resolvedHeroImage}
+      src={heroImage}
       className="game-details__hero-image"
       alt={game?.title}
     />
@@ -302,126 +226,17 @@ export function GameDetailsContent() {
       className={`game-details__wrapper ${hasNSFWContentBlocked ? "game-details__wrapper--blurred" : ""}`}
     >
       <section className="game-details__container">
-        <div
-          className={`game-details__hero${renderClassicsHero ? " game-details__hero--classics-wrapper" : ""}`}
-        >
-          {renderClassicsHero ? (
-            <>
-              <div className="game-details__hero--classics">
-                <div className="game-details__hero-classics-backdrop">
-                  {launchboxCover && (
-                    <img src={launchboxCover} alt="" aria-hidden="true" />
-                  )}
-                  <div className="game-details__hero-classics-backdrop-overlay" />
-                </div>
-              </div>
-              <div className="game-details__hero-classics-content">
-                <div className="game-details__hero-classics-cover">
-                  {launchboxCover && (
-                    <img src={launchboxCover} alt={game?.title} />
-                  )}
-                </div>
-                <div className="game-details__hero-classics-meta">
-                  <h1 className="game-details__hero-classics-title">
-                    {launchboxTitle}
-                  </h1>
-                  {classicsChips}
-                </div>
-              </div>
-            </>
-          ) : (
-            heroImageContent
-          )}
-
-          {isLaunchboxGame && !hideClassicsBookmark && (
-            <div className="game-details__hero-bookmark" aria-hidden="true">
-              <div className="game-details__hero-classics-rainbow">
-                <span className="game-details__hero-classics-stripe game-details__hero-classics-stripe--shadow game-details__hero-classics-stripe--orange">
-                  <span className="game-details__hero-classics-stripe-band game-details__hero-classics-stripe-band--shadow" />
-                </span>
-                <span className="game-details__hero-classics-stripe game-details__hero-classics-stripe--shadow game-details__hero-classics-stripe--red">
-                  <span className="game-details__hero-classics-stripe-band game-details__hero-classics-stripe-band--shadow" />
-                </span>
-                <span className="game-details__hero-classics-stripe game-details__hero-classics-stripe--shadow game-details__hero-classics-stripe--yellow">
-                  <span className="game-details__hero-classics-stripe-band game-details__hero-classics-stripe-band--shadow" />
-                </span>
-                <span className="game-details__hero-classics-stripe game-details__hero-classics-stripe--shadow game-details__hero-classics-stripe--green">
-                  <span className="game-details__hero-classics-stripe-band game-details__hero-classics-stripe-band--shadow" />
-                </span>
-                <span className="game-details__hero-classics-stripe game-details__hero-classics-stripe--shadow game-details__hero-classics-stripe--blue">
-                  <span className="game-details__hero-classics-stripe-band game-details__hero-classics-stripe-band--shadow" />
-                </span>
-
-                <span className="game-details__hero-classics-stripe game-details__hero-classics-stripe--red">
-                  <span className="game-details__hero-classics-stripe-band game-details__hero-classics-stripe-band--rtl game-details__hero-classics-stripe-band--delay-1">
-                    <video
-                      src={tvEffectVideo}
-                      autoPlay
-                      muted
-                      loop
-                      playsInline
-                    />
-                  </span>
-                </span>
-                <span className="game-details__hero-classics-stripe game-details__hero-classics-stripe--orange">
-                  <span className="game-details__hero-classics-stripe-band game-details__hero-classics-stripe-band--ltr game-details__hero-classics-stripe-band--delay-2">
-                    <video
-                      src={tvEffectVideo}
-                      autoPlay
-                      muted
-                      loop
-                      playsInline
-                    />
-                  </span>
-                </span>
-                <span className="game-details__hero-classics-stripe game-details__hero-classics-stripe--yellow">
-                  <span className="game-details__hero-classics-stripe-band game-details__hero-classics-stripe-band--rtl game-details__hero-classics-stripe-band--delay-3">
-                    <video
-                      src={tvEffectVideo}
-                      autoPlay
-                      muted
-                      loop
-                      playsInline
-                    />
-                  </span>
-                </span>
-                <span className="game-details__hero-classics-stripe game-details__hero-classics-stripe--green">
-                  <span className="game-details__hero-classics-stripe-band game-details__hero-classics-stripe-band--ltr game-details__hero-classics-stripe-band--delay-4">
-                    <video
-                      src={tvEffectVideo}
-                      autoPlay
-                      muted
-                      loop
-                      playsInline
-                    />
-                  </span>
-                </span>
-                <span className="game-details__hero-classics-stripe game-details__hero-classics-stripe--blue">
-                  <span className="game-details__hero-classics-stripe-band game-details__hero-classics-stripe-band--rtl game-details__hero-classics-stripe-band--delay-5">
-                    <video
-                      src={tvEffectVideo}
-                      autoPlay
-                      muted
-                      loop
-                      playsInline
-                    />
-                  </span>
-                </span>
-              </div>
-            </div>
-          )}
+        <div className="game-details__hero">
+          {heroImageContent}
 
           <div
             className="game-details__hero-logo-backdrop"
             style={{ opacity: backdropOpacity }}
           >
             <div className="game-details__hero-content">
-              {!renderClassicsHero && (
-                <div className="game-details__hero-standard-meta">
-                  <GameLogo game={game} shopDetails={shopDetails} />
-                  {classicsChips}
-                </div>
-              )}
+              <div className="game-details__hero-standard-meta">
+                <GameLogo game={game} shopDetails={shopDetails} />
+              </div>
 
               <div className="game-details__hero-buttons game-details__hero-buttons--right">
                 {game && (
@@ -432,23 +247,6 @@ export function GameDetailsContent() {
                     title={t("edit_game_modal_button")}
                   >
                     <PencilIcon size={16} />
-                  </button>
-                )}
-
-                {game && cloudSaveVisibility?.hero === "legacy" && (
-                  <button
-                    type="button"
-                    className="game-details__cloud-sync-button"
-                    onClick={handleLegacyCloudSaveButtonClick}
-                  >
-                    <div className="game-details__cloud-icon-container">
-                      <img
-                        src={cloudIconAnimated}
-                        alt=""
-                        className="game-details__cloud-icon"
-                      />
-                    </div>
-                    {t("cloud_save")}
                   </button>
                 )}
 

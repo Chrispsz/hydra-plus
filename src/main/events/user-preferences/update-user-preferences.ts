@@ -10,14 +10,6 @@ import { DownloadManager, Wine } from "@main/services";
 import { invalidateRemoteStoreCache } from "@main/services/cloud-save/remote-store/provider-resolver";
 import { WindowManager } from "@main/services/window-manager";
 import { getDownloadDirectoryPreferences } from "@shared";
-import {
-  restoreDuckStationFileLogging,
-  restoreRetroArchAchievementScreenshots,
-} from "@main/services/emulators/emulator-souvenir-config";
-import {
-  prepareLinuxGameCaptureSession,
-  stopAllLinuxGameCaptureSessions,
-} from "@main/services/linux-game-capture-session";
 
 const updateLanguagePreference = async (language: string | undefined) => {
   if (!language) return;
@@ -59,53 +51,6 @@ const pinExistingWinePrefixes = async (
 
   const games = await gamesSublevel.values().all();
   await Promise.all(games.map(pinGameWinePrefix));
-};
-
-const prepareRunningLinuxCaptureSessions = async () => {
-  if (process.platform !== "linux") return;
-
-  const [{ gamesPlaytime }, { emulatorSessions }] = await Promise.all([
-    import("@main/services/game-running-state"),
-    import("@main/services/emulators/emulator-session-tracker"),
-  ]);
-  const runningGameKeys = new Set(gamesPlaytime.keys());
-
-  for (const [gameKey, session] of emulatorSessions) {
-    if (session.system === "ps1" || session.system === "ps2") {
-      runningGameKeys.add(gameKey);
-    }
-  }
-
-  for (const gameKey of runningGameKeys) {
-    const game = await gamesSublevel.get(gameKey).catch(() => null);
-    if (game?.remoteId) void prepareLinuxGameCaptureSession(gameKey);
-  }
-};
-
-const enableAchievementSouvenirs = async () => {
-  await restoreRetroArchAchievementScreenshots();
-  await prepareRunningLinuxCaptureSessions();
-};
-
-const updateAchievementSouvenirPreference = async (
-  preferences: Partial<UserPreferences>
-) => {
-  if (!Object.hasOwn(preferences, "enableAchievementSouvenirs")) return;
-
-  if (preferences.enableAchievementSouvenirs === true) {
-    await enableAchievementSouvenirs();
-    return;
-  }
-
-  stopAllLinuxGameCaptureSessions();
-  const { stopAllEmulatorSouvenirCaptureSessions } = await import(
-    "@main/services/emulators/emulator-session-tracker"
-  );
-  await Promise.all([
-    stopAllEmulatorSouvenirCaptureSessions(),
-    restoreRetroArchAchievementScreenshots(),
-    restoreDuckStationFileLogging(),
-  ]);
 };
 
 const applyDownloadManagerPreferences = async (
@@ -165,8 +110,6 @@ const updateUserPreferences = async (
   ) {
     invalidateRemoteStoreCache();
   }
-
-  await updateAchievementSouvenirPreference(preferences);
 
   WindowManager.sendToAppWindows(
     "on-user-preferences-updated",

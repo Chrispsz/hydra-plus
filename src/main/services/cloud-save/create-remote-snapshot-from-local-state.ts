@@ -5,7 +5,6 @@ import type {
   CloudSaveUploadProgress,
   CommitSnapshotRequest,
   CommitSnapshotResponse,
-  Game,
   GameShop,
   LocalGameSnapshotContext,
   RemoteGameSnapshot,
@@ -21,9 +20,6 @@ import {
 import { buildCloudSaveAggregateHash } from "./snapshot-aggregate-hash";
 import { assertCloudSaveV2Eligible } from "./assert-cloud-save-executable";
 import { buildLocalGameSnapshotContext } from "./build-local-game-snapshot";
-import { getCloudSaveCustomPathBindings } from "./custom-path-store";
-import { cloudSaveCustomPathContextFromPathContext } from "./custom-path";
-import { getEmulatorSaveProvider } from "./emulator-save-provider";
 import {
   CLOUD_SAVE_HASH_PATTERN,
   cloudSaveFileKey,
@@ -97,7 +93,6 @@ const validateCommitResponse = (value: unknown): CommitSnapshotResponse => {
  * the Hydra API flow below, so the sync engine is none the wiser.
  */
 const createRemoteSnapshotInGoogleDrive = async (
-  game: Game,
   objectId: string,
   shop: GameShop,
   onProgress: ProgressCallback | undefined,
@@ -120,9 +115,6 @@ const createRemoteSnapshotInGoogleDrive = async (
         hostname: os.hostname() || undefined,
         snapshotHash: expectedAggregateHash,
         baseVersion: resolvedOptions.baseVersion,
-        ...(getEmulatorSaveProvider(game) === "retroarch"
-          ? { retroArchFormatVersion: 2 as const }
-          : {}),
         customPathRawPaths,
         variants,
         files,
@@ -220,27 +212,13 @@ export const createRemoteSnapshotFromLocalState = async (
   localSnapshotContext?: LocalGameSnapshotContext,
   options?: CreateRemoteSnapshotOptions
 ): Promise<RemoteGameSnapshot | null> => {
-  const game = await assertCloudSaveV2Eligible(objectId, shop);
+  await assertCloudSaveV2Eligible(objectId, shop);
   const resolvedOptions = resolveCreateRemoteSnapshotOptions(options);
   const context =
     localSnapshotContext ??
     (await buildLocalGameSnapshotContext(objectId, shop));
   const variants = resolvedOptions.variants ?? context.variants;
   const files: SnapshotFile[] = resolvedOptions.files ?? context.files;
-  if (getEmulatorSaveProvider(game) === "rpcs3") {
-    const { assertRpcs3DiscIdentity, assertRpcs3SnapshotIdentity } =
-      await import("./rpcs3-game-identity.js");
-    const bindings = await getCloudSaveCustomPathBindings(
-      shop,
-      objectId,
-      cloudSaveCustomPathContextFromPathContext(context.pathContext)
-    );
-    assertRpcs3SnapshotIdentity(
-      files,
-      await assertRpcs3DiscIdentity(game),
-      bindings.ready
-    );
-  }
   const customPathRawPaths =
     resolvedOptions.customPathRawPaths ?? context.customPathRawPaths;
   const expectedAggregateHash =
@@ -249,7 +227,6 @@ export const createRemoteSnapshotFromLocalState = async (
 
   if (await isGoogleDriveCloudActive()) {
     return createRemoteSnapshotInGoogleDrive(
-      game,
       objectId,
       shop,
       onProgress,
@@ -273,9 +250,6 @@ export const createRemoteSnapshotFromLocalState = async (
         context,
         {
           ...resolvedOptions,
-          ...(getEmulatorSaveProvider(game) === "retroarch"
-            ? { retroArchFormatVersion: 2 as const }
-            : {}),
           variants,
           files,
           customPathRawPaths,

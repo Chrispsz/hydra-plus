@@ -823,7 +823,6 @@ export class DownloadManager {
     } else {
       const gameFilesManager = new GameFilesManager(game.shop, game.objectId);
       gameFilesManager.searchAndBindExecutable();
-      void gameFilesManager.autoLinkClassicsDiscs();
     }
 
     await this.processNextQueuedDownload();

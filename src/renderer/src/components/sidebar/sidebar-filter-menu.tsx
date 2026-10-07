@@ -13,10 +13,7 @@ import {
 import { useId, useRef, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { Tooltip } from "react-tooltip";
-import {
-  ClassicsIcon,
-  type LibraryCategory,
-} from "@renderer/pages/library/category-filter";
+import type { LibraryCategory } from "@renderer/pages/library/category-filter";
 import {
   LIBRARY_SOURCES,
   type LibrarySource,
@@ -38,10 +35,6 @@ interface SidebarFilterMenuProps {
   showSources: boolean;
   selectedSources: LibrarySource[];
   onSourcesChange: (sources: LibrarySource[]) => void;
-  showPlatforms: boolean;
-  platforms: string[];
-  selectedPlatforms: string[];
-  onPlatformsChange: (platforms: string[]) => void;
 }
 
 interface FilterGroupOption {
@@ -146,10 +139,6 @@ export function SidebarFilterMenu({
   showSources,
   selectedSources,
   onSourcesChange,
-  showPlatforms,
-  platforms,
-  selectedPlatforms,
-  onPlatformsChange,
 }: Readonly<SidebarFilterMenuProps>) {
   const { t } = useTranslation(["sidebar", "library"]);
 
@@ -170,11 +159,6 @@ export function SidebarFilterMenu({
       value: "pc",
       label: t("category_pc", { ns: "library" }),
       icon: <DeviceDesktopIcon size={14} />,
-    },
-    {
-      value: "classics",
-      label: t("category_classics", { ns: "library" }),
-      icon: <ClassicsIcon size={14} />,
     },
   ];
 
@@ -319,48 +303,29 @@ export function SidebarFilterMenu({
             </DropdownMenuPrimitive.Group>
           </div>
 
-          {(showSources || showPlatforms) && (
+          {showSources && (
             <>
               <div className="sidebar-filter-menu__divider" />
 
               <div className="sidebar-filter-menu__column">
-                {showSources && (
-                  <FilterGroup
-                    label={t("libraries_label")}
-                    allLabel={t("all_libraries", { ns: "library" })}
-                    options={LIBRARY_SOURCES.map((source) => ({
-                      value: source,
-                      label: t(`library_${source}`, { ns: "library" }),
-                      icon: <SourceIcon source={source} />,
-                    }))}
-                    selected={selectedSources}
-                    singleSelect
-                    onChange={(sources) =>
-                      onSourcesChange(
-                        LIBRARY_SOURCES.filter((source) =>
-                          sources.includes(source)
-                        )
+                <FilterGroup
+                  label={t("libraries_label")}
+                  allLabel={t("all_libraries", { ns: "library" })}
+                  options={LIBRARY_SOURCES.map((source) => ({
+                    value: source,
+                    label: t(`library_${source}`, { ns: "library" }),
+                    icon: <SourceIcon source={source} />,
+                  }))}
+                  selected={selectedSources}
+                  singleSelect
+                  onChange={(sources) =>
+                    onSourcesChange(
+                      LIBRARY_SOURCES.filter((source) =>
+                        sources.includes(source)
                       )
-                    }
-                  />
-                )}
-
-                {showSources && showPlatforms && (
-                  <DropdownMenuPrimitive.Separator className="sidebar-filter-menu__separator" />
-                )}
-
-                {showPlatforms && (
-                  <FilterGroup
-                    label={t("consoles_label")}
-                    allLabel={t("all_consoles", { ns: "library" })}
-                    options={platforms.map((platform) => ({
-                      value: platform,
-                      label: platform,
-                    }))}
-                    selected={selectedPlatforms}
-                    onChange={onPlatformsChange}
-                  />
-                )}
+                    )
+                  }
+                />
               </div>
             </>
           )}

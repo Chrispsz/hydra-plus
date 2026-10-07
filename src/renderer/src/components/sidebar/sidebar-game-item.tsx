@@ -4,12 +4,7 @@ import cn from "classnames";
 import { useLocation } from "react-router-dom";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import {
-  ConfirmationModal,
-  GameContextMenu,
-  SteamLibraryBadge,
-  useGameActions,
-} from "..";
+import { GameContextMenu, SteamLibraryBadge, useGameActions } from "..";
 import { HeartFillIcon } from "@primer/octicons-react";
 import { useAppSelector, useToast } from "@renderer/hooks";
 import { useCollectionContextMenu } from "@renderer/context";
@@ -29,13 +24,7 @@ export function SidebarGameItem({
   const location = useLocation();
   const { t } = useTranslation("game_details");
   const { showWarningToast } = useToast();
-  const {
-    canPlay,
-    handlePlayGame,
-    rpcs3ConfirmPending,
-    handleConfirmRpcs3Launch,
-    handleCancelRpcs3Launch,
-  } = useGameActions(game);
+  const { canPlay, handlePlayGame } = useGameActions(game);
   const userPreferences = useAppSelector(
     (state) => state.userPreferences.value
   );
@@ -92,18 +81,11 @@ export function SidebarGameItem({
                 void handlePlayGame();
               } else {
                 showWarningToast(
-                  game.shop === "launchbox"
-                    ? t("game_has_no_disc_hint", {
-                        ns: "sidebar",
-                        options: t("options"),
-                        settings: t("settings", { ns: "sidebar" }),
-                        emulation: t("emulation", { ns: "settings" }),
-                      })
-                    : t("game_has_no_executable_hint", {
-                        ns: "sidebar",
-                        options: t("options"),
-                        locations: t("settings_category_locations"),
-                      })
+                  t("game_has_no_executable_hint", {
+                    ns: "sidebar",
+                    options: t("options"),
+                    locations: t("settings_category_locations"),
+                  })
                 );
               }
             }
@@ -150,16 +132,6 @@ export function SidebarGameItem({
         position={contextMenu.position}
         onClose={handleCloseContextMenu}
         onCollectionContextMenu={openCollectionContextMenu}
-      />
-
-      <ConfirmationModal
-        visible={rpcs3ConfirmPending !== null}
-        title={t("rpcs3_already_running_title")}
-        descriptionText={t("rpcs3_already_running_description")}
-        confirmButtonLabel={t("rpcs3_already_running_confirm")}
-        cancelButtonLabel={t("cancel")}
-        onClose={handleCancelRpcs3Launch}
-        onConfirm={handleConfirmRpcs3Launch}
       />
     </>
   );

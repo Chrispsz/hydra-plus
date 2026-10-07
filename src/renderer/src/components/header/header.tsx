@@ -33,7 +33,6 @@ import cn from "classnames";
 import { SearchDropdown } from "@renderer/components";
 import { buildGameDetailsPath } from "@renderer/helpers";
 import type { GameShop } from "@types";
-import type { SuggestionShop } from "@renderer/hooks/use-search-suggestions";
 import { debounce } from "lodash-es";
 
 const pathTitle: Record<string, string> = {
@@ -113,16 +112,13 @@ export function Header() {
 
   const { t } = useTranslation("header");
 
-  const [suggestionShop, setSuggestionShop] = useState<SuggestionShop>("steam");
-
   const { addToHistory, removeFromHistory, clearHistory, getRecentHistory } =
     useSearchHistory();
 
   const { suggestions, isLoading: isLoadingSuggestions } = useSearchSuggestions(
     deferredSearchValue,
     isOnLibraryPage,
-    isDropdownVisible && isFocused && !isOnCataloguePage,
-    suggestionShop
+    isDropdownVisible && isFocused && !isOnCataloguePage
   );
 
   const historyItems = getRecentHistory(
@@ -498,9 +494,6 @@ export function Header() {
         historyItems={historyItems}
         suggestions={suggestions}
         isLoadingSuggestions={isLoadingSuggestions}
-        suggestionShop={suggestionShop}
-        onSuggestionShopChange={setSuggestionShop}
-        showShopSwitch={!isOnLibraryPage}
         onSelectHistory={handleSelectHistory}
         onSelectSuggestion={handleSelectSuggestion}
         onRemoveHistoryItem={handleRemoveHistoryItem}

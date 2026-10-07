@@ -9,38 +9,17 @@ import {
 } from "./custom-path-selection-policy.ts";
 
 describe("cloud save custom path selection", () => {
-  it("rejects direct file selection for Steam and unsupported LaunchBox games", () => {
+  it("rejects direct file selection for every game", () => {
     assert.throws(
       () => assertCloudSaveCustomPathKindAllowed("file", "steam"),
       /cloud_save_custom_path_file_not_supported/
     );
     assert.throws(
-      () =>
-        assertCloudSaveCustomPathKindAllowed(
-          "file",
-          "launchbox",
-          "Unsupported Platform"
-        ),
-      /cloud_save_custom_path_file_not_supported/
-    );
-    assert.throws(
-      () =>
-        assertCloudSaveCustomPathKindAllowed(
-          "file",
-          "launchbox",
-          "Sony PlayStation 2"
-        ),
+      () => assertCloudSaveCustomPathKindAllowed("file", "custom"),
       /cloud_save_custom_path_file_not_supported/
     );
     assert.doesNotThrow(() =>
       assertCloudSaveCustomPathKindAllowed("dir", "steam")
-    );
-    assert.doesNotThrow(() =>
-      assertCloudSaveCustomPathKindAllowed(
-        "file",
-        "launchbox",
-        "Super Nintendo"
-      )
     );
   });
 

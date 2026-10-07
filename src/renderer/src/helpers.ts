@@ -1,18 +1,6 @@
-import type {
-  EmulationCloudSave,
-  EmulatorBinary,
-  EmulatorSystem,
-  EmulationSavePlatform,
-  GameShop,
-  LibraryGame,
-  SouvenirSort,
-} from "@types";
+import type { GameShop, LibraryGame, SouvenirSort } from "@types";
 
-import {
-  platformToRetroArchPlatform,
-  RETROARCH_PLATFORM_LABELS,
-  getDisplayedPlayTimeInMilliseconds,
-} from "@shared";
+import { getDisplayedPlayTimeInMilliseconds } from "@shared";
 
 import Color from "color";
 import i18next from "i18next";
@@ -63,71 +51,6 @@ export const ensureArray = <T>(value: unknown, source: string): T[] => {
   return [];
 };
 
-export const platformToSystem = (
-  platform?: string | null
-): EmulatorSystem | null => {
-  if (!platform) return null;
-  const p = platform.toLowerCase();
-  if (/playstation\s*portable|\bpsp\b/.test(p)) return "psp";
-  if (/playstation\s*3|\bps3\b/.test(p)) return "ps3";
-  if (/playstation\s*2|\bps2\b/.test(p)) return "ps2";
-  if (/playstation|\bps1\b|\bpsx\b/.test(p)) return "ps1";
-  if (/game\s*cube/.test(p)) return "dolphin";
-  if (/^(nintendo\s+)?wii$/.test(p.trim())) return "dolphin";
-  return null;
-};
-
-export const platformToEmulationSavePlatform = (
-  platform?: string | null
-): EmulationSavePlatform | null => {
-  if (!platform) return null;
-  const normalized = platform.toLowerCase().trim();
-  if (/playstation\s*portable|\bpsp\b/.test(normalized)) return "psp";
-  if (/playstation\s*3|\bps3\b/.test(normalized)) return null;
-  if (/playstation\s*2|\bps2\b/.test(normalized)) return "ps2";
-  if (/playstation|\bps1\b|\bpsx\b/.test(normalized)) return "ps1";
-  if (/game\s*cube/.test(normalized)) return "gamecube";
-  if (/^(nintendo\s+)?wii$/.test(normalized)) return "wii";
-  return null;
-};
-
-export const getEmulationSaveMetadataSku = (
-  save: Pick<EmulationCloudSave, "metadata">
-): string | null => {
-  const metadata = save.metadata;
-  if (!metadata) return null;
-  if ("discId" in metadata && typeof metadata.discId === "string") {
-    return metadata.discId;
-  }
-  if ("gameId" in metadata && typeof metadata.gameId === "string") {
-    return metadata.gameId;
-  }
-  return null;
-};
-
-export const SYSTEM_TO_BINARY: Record<EmulatorSystem, EmulatorBinary> = {
-  ps1: "duckstation",
-  ps2: "pcsx2",
-  ps3: "rpcs3",
-  psp: "ppsspp",
-  dolphin: "dolphin",
-};
-
-export {
-  platformToRetroArchPlatform,
-  RETROARCH_PLATFORM_LABELS,
-} from "@shared";
-
-export const RETROARCH_EMULATION_SETTINGS_PATH =
-  "/settings?tab=emulation&system=retroarch&section=emulator";
-
-export const retroarchLaunchErrorToastKey = (
-  code: "RETROARCH_NOT_CONFIGURED" | "CORE_NOT_INSTALLED"
-): string =>
-  code === "CORE_NOT_INSTALLED"
-    ? "core_not_installed_toast"
-    : "retroarch_not_configured_toast";
-
 export const showExecutableOpenDialog = (defaultPath?: string | null) => {
   const isMac = window.electron.platform === "darwin";
 
@@ -143,100 +66,6 @@ export const showExecutableOpenDialog = (defaultPath?: string | null) => {
     defaultPath: defaultPath ?? undefined,
     filters,
   });
-};
-
-export interface ClassicsBadgeInfo {
-  label: string | null;
-  icon: string | undefined;
-}
-
-export const CLASSICS_PS_PLATFORM_LABELS: Partial<
-  Record<EmulatorSystem, string>
-> = {
-  ps1: "PS",
-  ps2: "PS2",
-  ps3: "PS3",
-  psp: "PSP",
-  dolphin: "GC/Wii",
-};
-
-export const resolveClassicsBadge = (
-  shop: GameShop,
-  platform: string | null | undefined,
-  psLabels: Partial<Record<EmulatorSystem, string>>,
-  icons: {
-    emulatorIcons: Partial<Record<EmulatorBinary, string>>;
-    retroarchIcon: string;
-  }
-): ClassicsBadgeInfo => {
-  if (shop !== "launchbox") return { label: null, icon: undefined };
-
-  const system = platformToSystem(platform);
-  if (system) {
-    const dolphinLabel = /game\s*cube/i.test(platform ?? "") ? "GC" : "Wii";
-    return {
-      label: system === "dolphin" ? dolphinLabel : (psLabels[system] ?? null),
-      icon: icons.emulatorIcons[SYSTEM_TO_BINARY[system]],
-    };
-  }
-
-  const retroArchPlatform = platformToRetroArchPlatform(platform);
-  if (retroArchPlatform) {
-    return {
-      label: RETROARCH_PLATFORM_LABELS[retroArchPlatform],
-      icon: icons.retroarchIcon,
-    };
-  }
-
-  return { label: null, icon: undefined };
-};
-
-interface ClassicsLaunchErrorContext {
-  t: (key: string) => string;
-  showErrorToast: (message: string) => void;
-  showSuccessToast: (message: string) => void;
-  navigate: (path: string) => void;
-  onEmulatorAlreadyRunning: () => void;
-}
-
-export const handleClassicsLaunchError = (
-  error: unknown,
-  context: ClassicsLaunchErrorContext
-): boolean => {
-  const { t, showErrorToast, showSuccessToast, navigate } = context;
-  const code = getClassicsLaunchErrorCode(error);
-  const system = getClassicsLaunchErrorSystem(error);
-  const emulationPath = system
-    ? `/settings?tab=emulation&system=${system}&section=emulator`
-    : "/settings?tab=emulation";
-
-  if (code === "EMULATOR_NOT_CONFIGURED") {
-    showErrorToast(t("emulator_not_configured_toast"));
-    navigate(emulationPath);
-  } else if (code === "BIOS_NOT_CONFIGURED") {
-    showErrorToast(t("bios_not_configured_toast"));
-    navigate(emulationPath);
-  } else if (
-    code === "RETROARCH_NOT_CONFIGURED" ||
-    code === "CORE_NOT_INSTALLED"
-  ) {
-    showErrorToast(t(retroarchLaunchErrorToastKey(code)));
-    navigate(RETROARCH_EMULATION_SETTINGS_PATH);
-  } else if (code === "PLATFORM_UNKNOWN") {
-    showErrorToast(t("platform_unknown_toast"));
-  } else if (code === "NO_DISC") {
-    showErrorToast(t("no_disc_toast"));
-  } else if (code === "PKG_INSTALLING") {
-    showSuccessToast(t("pkg_installing_toast"));
-  } else if (code === "PKG_UNREADABLE") {
-    showErrorToast(t("pkg_unreadable_toast"));
-  } else if (code === "EMULATOR_ALREADY_RUNNING") {
-    context.onEmulatorAlreadyRunning();
-  } else {
-    showErrorToast(t("launch_failed_toast"));
-  }
-
-  return code !== "EMULATOR_ALREADY_RUNNING" && code !== "PKG_INSTALLING";
 };
 
 export const formatDownloadProgress = (
@@ -391,46 +220,6 @@ const SKU_REGION_FLAGS: Record<SkuRegion, string> = {
 
 export const getSkuRegionFlag = (region: SkuRegion): string =>
   SKU_REGION_FLAGS[region];
-
-const CLASSICS_LAUNCH_ERROR_CODES = [
-  "EMULATOR_NOT_CONFIGURED",
-  "BIOS_NOT_CONFIGURED",
-  "PLATFORM_UNKNOWN",
-  "NO_DISC",
-  "EMULATOR_ALREADY_RUNNING",
-  "PKG_INSTALLING",
-  "PKG_UNREADABLE",
-  "RETROARCH_NOT_CONFIGURED",
-  "CORE_NOT_INSTALLED",
-] as const;
-
-export const getClassicsLaunchErrorCode = (
-  error: unknown
-): (typeof CLASSICS_LAUNCH_ERROR_CODES)[number] | undefined => {
-  const direct = (error as { code?: string })?.code;
-  if (direct && CLASSICS_LAUNCH_ERROR_CODES.includes(direct as never)) {
-    return direct as (typeof CLASSICS_LAUNCH_ERROR_CODES)[number];
-  }
-
-  let message = "";
-  if (error instanceof Error) message = error.message;
-  else if (typeof error === "string") message = error;
-  return CLASSICS_LAUNCH_ERROR_CODES.find((code) => message.includes(code));
-};
-
-export const getClassicsLaunchErrorSystem = (
-  error: unknown
-): EmulatorSystem | undefined => {
-  const direct = (error as { system?: string })?.system;
-  const systems: EmulatorSystem[] = ["ps1", "ps2", "ps3", "psp", "dolphin"];
-  if (systems.includes(direct as EmulatorSystem))
-    return direct as EmulatorSystem;
-
-  let message = "";
-  if (error instanceof Error) message = error.message;
-  else if (typeof error === "string") message = error;
-  return systems.find((system) => message.includes(system));
-};
 
 const getPlayTimeDifference = (a: LibraryGame, b: LibraryGame): number => {
   const aHasPlayed = a.lastTimePlayed !== null;

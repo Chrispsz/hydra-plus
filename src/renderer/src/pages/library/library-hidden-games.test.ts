@@ -201,11 +201,6 @@ async function renderLibrary(
       LIBRARY_PLATFORMS_STORAGE_KEY: "library-platforms",
       LIBRARY_SOURCES_STORAGE_KEY: "library-sources",
     },
-    "@renderer/components/classics-onboarding-modal/classics-onboarding-modal":
-      {
-        ClassicsOnboardingModal: () => null,
-        hasDismissedClassicsOnboarding: () => true,
-      },
   };
   const filename = path.resolve(
     process.cwd(),

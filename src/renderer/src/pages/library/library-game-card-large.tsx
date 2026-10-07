@@ -1,5 +1,3 @@
-import cn from "classnames";
-
 import { LibraryGame } from "@types";
 import {
   isAnimatedCoverCandidate,
@@ -9,9 +7,7 @@ import {
   useAnimatedSourceWarmup,
 } from "@renderer/hooks";
 import {
-  CLASSICS_PS_PLATFORM_LABELS,
   isGameReadyToPlay,
-  resolveClassicsBadge,
   shouldShowSteamLibraryBadge,
 } from "@renderer/helpers";
 import { AchievementProgress, SteamLibraryBadge } from "@renderer/components";
@@ -26,10 +22,6 @@ import {
 } from "@primer/octicons-react";
 import { memo, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import {
-  EMULATOR_ICONS,
-  RETROARCH_EMULATOR_ICON,
-} from "@renderer/pages/settings/emulation/emulator-icons";
 import "./library-game-card-large.scss";
 
 interface LibraryGameCardLargeProps {
@@ -45,32 +37,18 @@ const normalizePathForCss = (url: string | null | undefined): string => {
   return url.replaceAll("\\", "/");
 };
 
-interface InstalledBadgeProps {
-  emulatorIcon: string | null | undefined;
-}
-
-function InstalledBadge({ emulatorIcon }: Readonly<InstalledBadgeProps>) {
+function InstalledBadge() {
   const { t } = useTranslation("library");
 
   return (
     <div
-      className={cn("library-game-card-large__installed-badge", {
-        "library-game-card-large__installed-badge--classics": emulatorIcon,
-      })}
+      className="library-game-card-large__installed-badge"
       title={t("installed_tooltip")}
     >
-      {emulatorIcon ? (
-        <img
-          src={emulatorIcon}
-          alt=""
-          className="library-game-card-large__installed-emulator-icon"
-        />
-      ) : (
-        <CheckCircleFillIcon
-          size={12}
-          className="library-game-card-large__installed-icon"
-        />
-      )}
+      <CheckCircleFillIcon
+        size={12}
+        className="library-game-card-large__installed-icon"
+      />
       <span className="library-game-card-large__installed-text">
         {t("installed")}
       </span>
@@ -92,8 +70,6 @@ export const LibraryGameCardLarge = memo(function LibraryGameCardLarge({
   const hideBadges = userPreferences?.hideLibraryGameBadges ?? false;
   const hideReadySizeBadges =
     userPreferences?.hideLibraryReadySizeBadges ?? false;
-  const hideClassicsBadges =
-    userPreferences?.hideLibraryClassicsBadges ?? false;
   const showSteamLibraryBadge = shouldShowSteamLibraryBadge(
     game,
     userPreferences?.hideSteamLibraryBadges
@@ -150,8 +126,6 @@ export const LibraryGameCardLarge = memo(function LibraryGameCardLarge({
     }));
   }, [game.installerSizeInBytes, game.installedSizeInBytes]);
 
-  const isClassics = game.shop === "launchbox";
-
   const heroCandidates = useMemo(() => {
     const isSelectedHero = Boolean(game.selectedArtworkTypes?.includes("hero"));
     const isSelectedGrid = Boolean(game.selectedArtworkTypes?.includes("grid"));
@@ -160,25 +134,17 @@ export const LibraryGameCardLarge = memo(function LibraryGameCardLarge({
       [
         { url: game.customHeroImageUrl, isChosen: true },
         { url: game.libraryHeroImageUrl, isChosen: isSelectedHero },
-      ];
-
-    if (!isClassics) {
-      candidates.push(
         { url: game.customCoverImageUrl, isChosen: true },
-        { url: game.coverImageUrl, isChosen: isSelectedGrid }
-      );
-    }
-
-    candidates.push(
-      { url: game.libraryImageUrl, isChosen: false },
-      { url: game.iconUrl, isChosen: false }
-    );
+        { url: game.coverImageUrl, isChosen: isSelectedGrid },
+        { url: game.libraryImageUrl, isChosen: false },
+        { url: game.iconUrl, isChosen: false },
+      ];
 
     return candidates.filter(
       (candidate): candidate is { url: string; isChosen: boolean } =>
         Boolean(candidate.url && candidate.url.trim() !== "")
     );
-  }, [game, isClassics]);
+  }, [game]);
 
   const heroSources = useMemo(
     () => heroCandidates.map((candidate) => candidate.url),
@@ -272,12 +238,7 @@ export const LibraryGameCardLarge = memo(function LibraryGameCardLarge({
     displayHeroSource = heroPoster;
   }
 
-  const activeHeroCandidate = heroCandidates[heroIndex];
-  const isActiveHeroChosen = activeHeroCandidate?.isChosen ?? false;
-  const renderClassicsBlurred = isClassics && !isActiveHeroChosen;
-
-  const usesAnimatedHeroLayer = isAnimatedHero && !renderClassicsBlurred;
-
+  const usesAnimatedHeroLayer = isAnimatedHero;
   const animatedHeroSource = usesAnimatedHeroLayer
     ? normalizePathForCss(displayHeroSource)
     : "";
@@ -292,34 +253,15 @@ export const LibraryGameCardLarge = memo(function LibraryGameCardLarge({
     [usesAnimatedHeroLayer, displayHeroSource]
   );
 
-  const classicsForegroundUrl = useMemo(() => {
-    if (!renderClassicsBlurred || !activeHeroCandidate) return null;
-
-    return normalizePathForCss(displayHeroSource);
-  }, [renderClassicsBlurred, activeHeroCandidate, displayHeroSource]);
-
   const logoImage = game.customLogoImageUrl ?? game.logoImageUrl;
 
-  const { label: classicsPlatformLabel, icon: classicsEmulatorIcon } =
-    resolveClassicsBadge(
-      game.shop,
-      game.platform,
-      CLASSICS_PS_PLATFORM_LABELS,
-      {
-        emulatorIcons: EMULATOR_ICONS,
-        retroarchIcon: RETROARCH_EMULATOR_ICON,
-      }
-    );
-
   const installedBadge =
-    !hideReadySizeBadges && isInstalled ? (
-      <InstalledBadge emulatorIcon={classicsEmulatorIcon} />
-    ) : null;
+    !hideReadySizeBadges && isInstalled ? <InstalledBadge /> : null;
 
   return (
     <button
       type="button"
-      className={`library-game-card-large ${renderClassicsBlurred ? "library-game-card-large--classics" : ""}`}
+      className="library-game-card-large"
       onMouseEnter={() => setIsCoverHovered(true)}
       onMouseLeave={() => setIsCoverHovered(false)}
       onClick={handleCardClick}
@@ -335,14 +277,6 @@ export const LibraryGameCardLarge = memo(function LibraryGameCardLarge({
           alt=""
           aria-hidden="true"
           className="library-game-card-large__animated-hero"
-        />
-      )}
-      {classicsForegroundUrl && (
-        <img
-          src={classicsForegroundUrl}
-          alt={game.title}
-          className="library-game-card-large__classics-foreground"
-          loading="lazy"
         />
       )}
       {!hideAchievementProgress &&
@@ -396,14 +330,6 @@ export const LibraryGameCardLarge = memo(function LibraryGameCardLarge({
             )}
 
             {showSteamLibraryBadge && <SteamLibraryBadge variant="large" />}
-
-            {!hideClassicsBadges && classicsPlatformLabel && (
-              <div className="library-game-card-large__classics-badges">
-                <span className="library-game-card-large__platform-badge">
-                  {classicsPlatformLabel}
-                </span>
-              </div>
-            )}
 
             {installedBadge}
           </div>

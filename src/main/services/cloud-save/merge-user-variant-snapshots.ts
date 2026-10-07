@@ -8,13 +8,6 @@ import type {
 } from "@types";
 
 import { cloudSaveFileKey } from "./cloud-save-contract.js";
-import {
-  isEmulatorSaveRawPath,
-  parseRetroArchGameRawPath,
-  parseRetroArchStateRelativePath,
-  parseRpcs3SaveRawPath,
-} from "./emulator-provider-identity.js";
-import { isRetroArchBatteryRelativePath } from "./retroarch-snapshot-migration.js";
 import { areSnapshotVariantsEqual } from "./snapshot-variant.js";
 import type { SyncDirection } from "./sync-game/policy.js";
 
@@ -52,38 +45,16 @@ const sameBytes = (
   return left.hash === right.hash && left.sizeBytes === right.sizeBytes;
 };
 
-const rpcs3SlotKey = (
-  file: Pick<SnapshotFile, "variantId" | "rawPath" | "relativePath"> | undefined
-) => {
-  if (!file || !parseRpcs3SaveRawPath(file.rawPath)) return null;
-  const [slot, child] = file.relativePath.split("/");
-  return slot && child
-    ? JSON.stringify([file.variantId, file.rawPath, slot])
-    : null;
-};
-
-const retroArchGroupKey = (
-  file: Pick<SnapshotFile, "variantId" | "rawPath" | "relativePath"> | undefined
-) => {
-  if (!file || !parseRetroArchGameRawPath(file.rawPath)) return null;
-  const state = parseRetroArchStateRelativePath(file.relativePath);
-  if (state) {
-    return JSON.stringify([
-      file.variantId,
-      file.rawPath,
-      "state",
-      state.stateId,
-    ]);
-  }
-  if (isRetroArchBatteryRelativePath(file.relativePath)) {
-    return JSON.stringify([file.variantId, file.rawPath, "battery"]);
-  }
-  return null;
-};
-
+/**
+ * Emulator saves (RPCS3 slots, RetroArch states/batteries) used to be merged
+ * as atomic groups. Retro emulation was removed from the fork, so every file
+ * merges independently again.
+ */
 const atomicGroupKey = (
-  file: Pick<SnapshotFile, "variantId" | "rawPath" | "relativePath"> | undefined
-) => rpcs3SlotKey(file) ?? retroArchGroupKey(file);
+  _file:
+    | Pick<SnapshotFile, "variantId" | "rawPath" | "relativePath">
+    | undefined
+) => null;
 
 const mergeVariantMetadata = (
   local: SnapshotVariant[],
@@ -214,14 +185,7 @@ export const mergeUserVariantSnapshots = ({
     const baseEntry = baseById.get(entryId);
     const slotKey = atomicGroupKey(localFile ?? remoteFile ?? baseEntry);
 
-    if (
-      slotKey &&
-      divergentSlots.has(slotKey) &&
-      (retroArchGroupKey(localFile ?? remoteFile ?? baseEntry) ||
-        localFile ||
-        !remoteFile ||
-        coverageStateFor(remoteFile).provesDeletion)
-    ) {
+    if (slotKey && divergentSlots.has(slotKey)) {
       if (sameBytes(localFile, remoteFile)) {
         if (remoteFile) files.push(remoteFile);
         continue;
@@ -297,10 +261,7 @@ export const mergeUserVariantSnapshots = ({
       }
       if (shouldRestoreEmptyLocalSnapshot) {
         files.push(remoteFile);
-        if (
-          !coverage.incomplete ||
-          !isEmulatorSaveRawPath(remoteFile.rawPath)
-        ) {
+        {
           restoreEntryIds.add(entryId);
         }
         if (!baseEntry || !coverage.hasCoverage || coverage.incomplete) {
