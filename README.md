@@ -23,7 +23,16 @@ Baixe e inicie jogos em Windows e Linux, com os saves sincronizados **no seu pr�
 
 ## Status
 
-Veja o roadmap detalhado em [`docs/FORK.md`](docs/FORK.md) e o funcionamento da nuvem no Drive em [`docs/google-drive-cloud.md`](docs/google-drive-cloud.md).
+**☁️ Cloud saves no Google Drive estão funcionais!** Em `Configurações → Nuvem`:
+
+1. Selecione **Google Drive** como provedor.
+2. Conecte sua conta Google (OAuth no navegador, permissão `drive.file` — o app só vê os arquivos que ele mesmo criou).
+3. Se o build não vier com um cliente OAuth embutido, cole o seu próprio ID do cliente (instruções dentro da tela, ~3 minutos no Google Cloud Console).
+4. Pronto: sincronização automática e manual passam a usar o seu Drive — **sem assinatura Hydra Cloud**. A nuvem oficial continua disponível para assinantes.
+
+Tecnicamente: mesmo motor de sync v2 do upstream (merge de três vias, sync anchors, dedup por hash), com o transporte remoto trocável — Hydra API ou a pasta `Hydra Plus Saves/` do seu Drive (`games/`, `blobs/`). Detalhes em [`docs/google-drive-cloud.md`](docs/google-drive-cloud.md).
+
+Veja o roadmap detalhado em [`docs/FORK.md`](docs/FORK.md).
 
 ## Build
 
