@@ -1,4 +1,4 @@
-import { useContext, useEffect, useState } from "react";
+import { useContext, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   CheckCircleFillIcon,
@@ -6,43 +6,33 @@ import {
   PersonIcon,
   XCircleFillIcon,
 } from "@primer/octicons-react";
-import { Badge, Button, Link, TextField } from "@renderer/components";
+import { Badge, Button, Link, RadioField } from "@renderer/components";
 import { useGoogleDriveCloud, useToast } from "@renderer/hooks";
 import { settingsContext } from "@renderer/context";
+import "./settings-context-cloud.scss";
 import type { CloudStorageProvider } from "@types";
 
-const GOOGLE_OAUTH_SETUP_URL =
-  "https://console.cloud.google.com/apis/credentials";
-const GOOGLE_DRIVE_API_URL =
-  "https://console.cloud.google.com/apis/library/drive.googleapis.com";
+const HYDRA_CLOUD_URL = "https://hydralauncher.gg";
 
-function GoogleDriveSetup() {
+export function SettingsContextCloud() {
   const { t } = useTranslation("settings");
-  const { status, connect, disconnect } = useGoogleDriveCloud();
+  const { provider, status, connect, disconnect } = useGoogleDriveCloud();
   const { updateUserPreferences } = useContext(settingsContext);
   const { showSuccessToast, showErrorToast } = useToast();
 
-  const [clientId, setClientId] = useState("");
-  const [clientSecret, setClientSecret] = useState("");
   const [isConnecting, setIsConnecting] = useState(false);
 
-  useEffect(() => {
-    setClientId("");
-    setClientSecret("");
-  }, [status?.linked]);
+  const isDriveLinked = Boolean(status?.linked);
+  const isDriveAvailable = !status?.requiresClientSetup;
 
-  const handleSaveClient = async () => {
-    if (!clientId.trim()) {
-      showErrorToast(t("google_drive_client_id_required"));
-      return;
-    }
-
-    await updateUserPreferences({
-      googleDriveClientId: clientId.trim(),
-      googleDriveClientSecret: clientSecret.trim() || undefined,
-    });
-
-    showSuccessToast(t("changes_saved"));
+  const handleProviderChange = (nextProvider: CloudStorageProvider) => {
+    if (nextProvider === provider) return;
+    updateUserPreferences({ cloudProvider: nextProvider });
+    showSuccessToast(
+      nextProvider === "google-drive"
+        ? t("google_drive_selected")
+        : t("hydra_cloud_selected")
+    );
   };
 
   const handleConnect = async () => {
@@ -79,153 +69,110 @@ function GoogleDriveSetup() {
   };
 
   return (
-    <div className="settings-context-panel__group">
-      <h3>{t("google_drive")}</h3>
-
-      <div className="settings-cloud__account">
-        {status?.linked ? (
-          <>
-            <span className="settings-cloud__account-email">
-              <CheckCircleFillIcon className="settings-cloud__icon-ok" />
-              {status.email ?? t("google_drive_linked")}
-            </span>
-            <Button theme="outline" onClick={handleDisconnect}>
-              {t("google_drive_disconnect")}
-            </Button>
-          </>
-        ) : (
-          <>
-            <span className="settings-cloud__account-email">
-              <XCircleFillIcon className="settings-cloud__icon-error" />
-              {t("google_drive_not_linked")}
-            </span>
-            <Button
-              type="button"
-              onClick={handleConnect}
-              disabled={isConnecting || status?.requiresClientSetup}
-            >
-              {isConnecting
-                ? t("google_drive_connecting")
-                : t("google_drive_connect")}
-            </Button>
-          </>
-        )}
-      </div>
-
-      {status?.requiresClientSetup ? (
-        <div className="settings-cloud__setup">
-          <p>{t("google_drive_setup_instructions")}</p>
-          <ol>
-            <li>
-              <Link to={GOOGLE_DRIVE_API_URL}>
-                <LinkExternalIcon />
-                {t("google_drive_enable_api")}
-              </Link>
-            </li>
-            <li>
-              <Link to={GOOGLE_OAUTH_SETUP_URL}>
-                <LinkExternalIcon />
-                {t("google_drive_create_client")}
-              </Link>
-              <p className="settings-cloud__setup-hint">
-                {t("google_drive_client_type_hint")}
-              </p>
-            </li>
-            <li>{t("google_drive_paste_client")}</li>
-          </ol>
-
-          <TextField
-            label={t("google_drive_client_id")}
-            value={clientId}
-            placeholder="1234567890-abcdefg.apps.googleusercontent.com"
-            onChange={(event) => setClientId(event.target.value)}
-          />
-          <TextField
-            label={t("google_drive_client_secret")}
-            value={clientSecret}
-            placeholder="GOCSPX-…"
-            hint={t("google_drive_client_secret_hint")}
-            onChange={(event) => setClientSecret(event.target.value)}
-          />
-          <Button type="button" theme="outline" onClick={handleSaveClient}>
-            {t("google_drive_save_client")}
-          </Button>
-        </div>
-      ) : null}
-
-      {status?.linked ? (
-        <p className="settings-cloud__hint">{t("google_drive_hint")}</p>
-      ) : null}
-    </div>
-  );
-}
-
-export function SettingsContextCloud() {
-  const { t } = useTranslation("settings");
-  const { provider } = useGoogleDriveCloud();
-  const { updateUserPreferences } = useContext(settingsContext);
-  const { showSuccessToast } = useToast();
-
-  const handleProviderChange = (nextProvider: CloudStorageProvider) => {
-    if (nextProvider === provider) return;
-    updateUserPreferences({ cloudProvider: nextProvider });
-    showSuccessToast(
-      nextProvider === "google-drive"
-        ? t("google_drive_selected")
-        : t("hydra_cloud_selected")
-    );
-  };
-
-  return (
     <div className="settings-context-panel">
       <div className="settings-context-panel__group">
         <h3>{t("cloud_provider")}</h3>
-        <p className="settings-cloud__description">
+
+        <p className="settings-context-cloud__description">
           {t("cloud_provider_description")}
         </p>
 
-        <div className="settings-cloud__providers">
-          <button
-            type="button"
-            className={`settings-cloud__provider-card ${
+        <div className="settings-context-cloud__providers">
+          <div
+            className={`settings-context-cloud__provider ${
               provider === "hydra"
-                ? "settings-cloud__provider-card--active"
+                ? "settings-context-cloud__provider--selected"
                 : ""
             }`}
-            onClick={() => handleProviderChange("hydra")}
           >
-            <div className="settings-cloud__provider-header">
-              <strong>{t("provider_hydra")}</strong>
+            <div className="settings-context-cloud__provider-row">
+              <RadioField
+                label={t("provider_hydra")}
+                name="cloud-provider"
+                checked={provider === "hydra"}
+                onChange={() => handleProviderChange("hydra")}
+              />
               <Badge>{t("provider_hydra_badge")}</Badge>
             </div>
-            <span>{t("provider_hydra_description")}</span>
-          </button>
+            <p className="settings-context-cloud__provider-description">
+              {t("provider_hydra_description")}
+            </p>
+          </div>
 
-          <button
-            type="button"
-            className={`settings-cloud__provider-card ${
+          <div
+            className={`settings-context-cloud__provider ${
               provider === "google-drive"
-                ? "settings-cloud__provider-card--active"
+                ? "settings-context-cloud__provider--selected"
                 : ""
             }`}
-            onClick={() => handleProviderChange("google-drive")}
           >
-            <div className="settings-cloud__provider-header">
-              <strong>{t("provider_google_drive")}</strong>
+            <div className="settings-context-cloud__provider-row">
+              <RadioField
+                label={t("provider_google_drive")}
+                name="cloud-provider"
+                checked={provider === "google-drive"}
+                onChange={() => handleProviderChange("google-drive")}
+              />
               <Badge>{t("provider_google_drive_badge")}</Badge>
             </div>
-            <span>{t("provider_google_drive_description")}</span>
-          </button>
+            <p className="settings-context-cloud__provider-description">
+              {t("provider_google_drive_description")}
+            </p>
+          </div>
         </div>
       </div>
 
       {provider === "google-drive" ? (
-        <GoogleDriveSetup />
+        <div className="settings-context-panel__group">
+          <h3>{t("google_drive")}</h3>
+
+          <div className="settings-context-cloud__account">
+            <span className="settings-context-cloud__account-email">
+              {isDriveLinked ? (
+                <CheckCircleFillIcon className="settings-context-cloud__icon-ok" />
+              ) : (
+                <XCircleFillIcon className="settings-context-cloud__icon-error" />
+              )}
+              {isDriveLinked
+                ? (status?.email ?? t("google_drive_linked"))
+                : t("google_drive_not_linked")}
+            </span>
+
+            {isDriveLinked ? (
+              <Button theme="outline" onClick={handleDisconnect}>
+                {t("google_drive_disconnect")}
+              </Button>
+            ) : (
+              <Button
+                type="button"
+                theme="primary"
+                onClick={handleConnect}
+                disabled={isConnecting || !isDriveAvailable}
+              >
+                {isConnecting
+                  ? t("google_drive_connecting")
+                  : t("google_drive_connect")}
+              </Button>
+            )}
+          </div>
+
+          {!isDriveLinked && !isDriveAvailable ? (
+            <p className="settings-context-cloud__hint">
+              {t("google_drive_requires_setup")}
+            </p>
+          ) : null}
+
+          {isDriveLinked ? (
+            <p className="settings-context-cloud__hint">
+              {t("google_drive_hint")}
+            </p>
+          ) : null}
+        </div>
       ) : (
         <div className="settings-context-panel__group">
-          <p className="settings-cloud__hint">
+          <p className="settings-context-cloud__hint">
             {t("hydra_cloud_provider_hint")}{" "}
-            <Link to="https://hydralauncher.gg">
+            <Link to={HYDRA_CLOUD_URL}>
               <LinkExternalIcon />
               hydralauncher.gg
             </Link>
@@ -234,8 +181,9 @@ export function SettingsContextCloud() {
       )}
 
       <div className="settings-context-panel__group">
-        <p className="settings-cloud__hint">
-          <PersonIcon /> {t("cloud_privacy_note")}
+        <p className="settings-context-cloud__hint">
+          <PersonIcon className="settings-context-cloud__hint-icon" />{" "}
+          {t("cloud_privacy_note")}
         </p>
       </div>
     </div>
