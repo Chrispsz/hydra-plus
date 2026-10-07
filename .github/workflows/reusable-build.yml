@@ -22,12 +22,14 @@ jobs:
 
     runs-on: ${{ matrix.os }}
 
+    timeout-minutes: 120
+
     steps:
       - name: Check out Git repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
 
       - name: Install Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
         with:
           node-version: 22.21.0
           cache: "yarn"
@@ -62,7 +64,7 @@ jobs:
       # Keep fallback restores within the same runner image and target triplet.
       - name: Restore vcpkg binary packages
         id: vcpkg-cache
-        uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        uses: actions/cache/restore@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0
         with:
           path: ${{ env.VCPKG_DEFAULT_BINARY_CACHE }}
           key: ${{ steps.native-cache.outputs.prefix }}-${{ hashFiles('native/torrent-bridge/**/vcpkg*.json', 'native/torrent-bridge/**/triplets/**') }}
@@ -79,7 +81,7 @@ jobs:
       # Save before packaging so later failures do not discard compiled dependencies.
       - name: Save vcpkg binary packages
         if: steps.vcpkg-cache.outputs.cache-hit != 'true'
-        uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        uses: actions/cache/save@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0
         with:
           path: ${{ env.VCPKG_DEFAULT_BINARY_CACHE }}
           key: ${{ steps.vcpkg-cache.outputs.cache-primary-key }}
@@ -111,7 +113,7 @@ jobs:
         run: node scripts/smoke-launch.cjs
 
       - name: Create artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
         with:
           name: hydra-plus-${{ inputs.flavor }}-${{ matrix.os }}
           retention-days: ${{ inputs.flavor == 'ci' && 3 || 7 }}
