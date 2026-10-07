@@ -343,26 +343,6 @@ export interface CloudSaveStateResult {
   activeRemoteSnapshot: RemoteSnapshotSummary | null;
 }
 
-export interface RetroArchLocalBatteryCandidate {
-  romPath: string;
-  signature: string;
-  files: Array<{
-    relativePath: string;
-    path: string;
-    hash: string;
-    lastModifiedAt: string;
-  }>;
-}
-
-export interface RetroArchLegacyBatteryCandidate {
-  rawPath: string;
-  files: Array<{
-    relativePath: string;
-    hash: string;
-    lastModifiedAt: string;
-  }>;
-}
-
 export interface CloudSaveOverview extends CloudSaveStateResult {
   localSnapshotSummary: {
     updatedAt: string | null;
@@ -442,14 +422,6 @@ export interface CloudSaveV2FileDetails {
   local: CloudSaveV2LocalFileSource;
   activeSnapshot: CloudSaveV2ActiveSnapshotFileSource | null;
   customPaths: CloudSaveCustomPath[];
-  emulatorDestinations?: Array<{
-    rawPath: string;
-    kind: "save" | "state";
-    pathHint: string | null;
-    selectedPath: string | null;
-    fileCount: number;
-    status: "pending" | "bound" | "unavailable";
-  }>;
   unresolvedCustomPaths: CloudSaveUnresolvedCustomPath[];
   comparisons: CloudSaveV2FileComparison[];
   variants: Array<{
@@ -461,11 +433,6 @@ export interface CloudSaveV2FileDetails {
     warningCodes: string[];
   }>;
   unresolvedRemoteVariantCount: number;
-  rpcs3Profile?: {
-    localProfileId: string;
-    cloudProfileIds: string[];
-    linkedCloudProfileId: string | null;
-  } | null;
 }
 
 export type CloudSaveSyncTrigger =
@@ -578,7 +545,6 @@ export type BlockedRestoreReason =
   | "blocked-relative-path-incomplete"
   | "blocked-target-outside-root"
   | "blocked-target-ambiguous"
-  | "blocked-emulator-destination-unavailable"
   | "foreign-environment";
 
 export interface BlockedRestoreFile extends RestoreManifestFile {
@@ -751,7 +717,6 @@ export interface PrepareSnapshotRequest extends CloudSaveGameId {
   hostname?: string;
   snapshotHash: string;
   baseVersion: number;
-  retroArchFormatVersion?: 2;
   customPathRawPaths: string[];
   variants: SnapshotVariant[];
   files: SnapshotFile[];

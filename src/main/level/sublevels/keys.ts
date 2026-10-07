@@ -17,14 +17,11 @@ export const levelKeys = {
   userPreferences: "userPreferences",
   language: "language",
   screenState: "screenState",
-  rpcPassword: "rpcPassword",
   downloadSources: "downloadSources",
   downloadSourcesCheckBaseline: "downloadSourcesCheckBaseline", // When we last started the app
   downloadSourcesSinceValue: "downloadSourcesSinceValue", // The 'since' value API used (for modal comparison)
   localNotifications: "localNotifications",
   commonRedistPassed: "commonRedistPassed", // Whether common redistributables preflight has passed
-  emulators: "emulators",
-  retroarch: "retroarch",
   retroArchSouvenirConfigBackups: "retroarch-souvenir-config-backups",
   duckStationSouvenirConfigBackups: "duckstation-souvenir-config-backups",
   pendingAchievementSouvenirs: "pending-achievement-souvenirs",
@@ -44,9 +41,6 @@ export const levelKeys = {
   cloudSaveV2DefaultMigration: "cloud-save-v2-default-migration",
   gameVisibilityRenameMigration: "game-visibility-rename-migration",
   cloudSaveCustomPaths: "cloud-save-custom-paths",
-  cloudSaveRpcs3ProfileBindings: "cloud-save-rpcs3-profile-bindings",
-  cloudSaveEmulatorDestinations: "cloud-save-emulator-destinations",
-  cloudSaveRetroArchBindings: "cloud-save-retroarch-bindings",
   cloudSavePendingDeletions: "cloud-save-pending-deletions",
   steamSyncRun: "steamSyncRun",
 };

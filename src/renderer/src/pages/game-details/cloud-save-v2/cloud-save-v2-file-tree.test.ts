@@ -79,67 +79,31 @@ describe("cloud save V2 local file tree", () => {
     const node = root.children[0];
     assert.equal(node.type, "file");
     if (node.type !== "file") return;
-    assert.equal(node.name, "Meu Jogo.srm");
+    assert.equal(node.name, "battery.srm");
     assert.equal(node.localName, "Meu Jogo.srm");
     assert.equal(node.local?.relativePath, "battery.srm");
   });
 
-  it("opens the physical RetroArch savestate folder without a virtual states child", () => {
-    const stateId = "a".repeat(64);
-    const absolutePath =
-      "/Users/rodrigo/Documents/RetroArch/states/Snes9x/Super Mario World.state12";
+  it("treats an opaque raw path like any other local root", () => {
     const [root] = buildCloudSaveV2LocalFileTree([
       localFile(
         "<emulator>/retroarch-v2/snes",
-        `states/${stateId}.state`,
-        absolutePath
+        `states/${"a".repeat(64)}.state`,
+        "/RetroArch/states/Snes9x/Super Mario World.state12"
       ),
     ]);
 
-    assert.equal(
-      root.localDirectoryPath,
-      "/Users/rodrigo/Documents/RetroArch/states/Snes9x"
-    );
-    assert.equal(root.children.length, 1);
-    const node = root.children[0];
+    assert.equal(root.rawPath, "<emulator>/retroarch-v2/snes");
+    assert.equal(root.localDirectoryPath, "/RetroArch/states");
+    const states = root.children[0];
+    assert.equal(states.type, "directory");
+    if (states.type !== "directory") return;
+    assert.equal(states.name, "states");
+    assert.equal(states.localDirectoryPath, "/RetroArch/states/states");
+    const node = states.children[0];
     assert.equal(node.type, "file");
     if (node.type !== "file") return;
-    assert.equal(node.name, "Super Mario World.state12");
-    assert.equal(node.local?.relativePath, `states/${stateId}.state`);
-  });
-
-  it("separates RetroArch save and state directories", () => {
-    const rawPath = "<emulator>/retroarch-v2/snes";
-    const roots = buildCloudSaveV2LocalFileTree([
-      localFile(rawPath, "battery.srm", "/RetroArch/saves/Snes9x/Game.srm"),
-      localFile(
-        rawPath,
-        `states/${"b".repeat(64)}.state`,
-        "/RetroArch/states/Snes9x/Game.state1"
-      ),
-    ]);
-
-    assert.deepEqual(
-      roots.map((root) => root.localDirectoryPath),
-      ["/RetroArch/saves/Snes9x", "/RetroArch/states/Snes9x"]
-    );
-    assert.deepEqual(
-      roots.map((root) => root.children[0].name),
-      ["Game.srm", "Game.state1"]
-    );
-  });
-
-  it("uses the physical RetroArch directory on Windows", () => {
-    const [root] = buildCloudSaveV2LocalFileTree([
-      localFile(
-        "<emulator>/retroarch-v2/snes",
-        `states/${"c".repeat(64)}.state`,
-        "C:\\RetroArch\\states\\Snes9x\\Game.state2"
-      ),
-    ]);
-
-    assert.equal(root.localDirectoryPath, "C:\\RetroArch\\states\\Snes9x");
-    assert.equal(root.children[0].name, "Game.state2");
+    assert.equal(node.name, `${"a".repeat(64)}.state`);
   });
 
   it("formats Windows extended paths without changing Unix paths", () => {
@@ -340,7 +304,7 @@ describe("cloud save V2 local file tree", () => {
 });
 
 describe("cloud save V2 comparison tree", () => {
-  it("keeps the logical state group but opens its physical local directory", () => {
+  it("builds the generic relative path tree for an opaque raw path", () => {
     const rawPath = "<emulator>/retroarch-v2/snes";
     const relativePath = `states/${"a".repeat(64)}.state`;
     const local = localFile(
@@ -360,18 +324,18 @@ describe("cloud save V2 comparison tree", () => {
       },
     ]);
 
-    assert.equal(root.localDirectoryPath, "/RetroArch/states/Snes9x");
+    assert.equal(root.localDirectoryPath, "/RetroArch/states");
     const states = root.children[0];
     assert.equal(states.type, "directory");
     if (states.type !== "directory") return;
     assert.equal(states.name, "states");
-    assert.equal(states.localDirectoryPath, "/RetroArch/states/Snes9x");
+    assert.equal(states.localDirectoryPath, "/RetroArch/states/states");
     assert.equal(states.children[0].type, "file");
     if (states.children[0].type !== "file") return;
     assert.equal(states.children[0].local?.relativePath, relativePath);
   });
 
-  it("does not expose an Open path for a remote-only RetroArch state", () => {
+  it("does not expose an Open path for a remote-only opaque raw path", () => {
     const rawPath = "<emulator>/retroarch-v2/snes";
     const relativePath = `states/${"a".repeat(64)}.state`;
     const remote = remoteFile(rawPath, relativePath);
@@ -391,45 +355,6 @@ describe("cloud save V2 comparison tree", () => {
     assert.equal(states.type, "directory");
     if (states.type !== "directory") return;
     assert.equal(states.localDirectoryPath, null);
-  });
-
-  it("opens the state directory when save and state live in different folders", () => {
-    const rawPath = "<emulator>/retroarch-v2/snes";
-    const battery = localFile(
-      rawPath,
-      "battery.srm",
-      "/RetroArch/saves/Snes9x/Game.srm"
-    );
-    const stateRelativePath = `states/${"a".repeat(64)}.state`;
-    const state = localFile(
-      rawPath,
-      stateRelativePath,
-      "/RetroArch/states/Snes9x/Game.state12"
-    );
-    const [root] = buildCloudSaveV2ComparisonTree([
-      {
-        variantId: battery.variantId,
-        rawPath,
-        relativePath: battery.relativePath,
-        status: "unchanged",
-        local: battery,
-        remote: remoteFile(rawPath, battery.relativePath),
-      },
-      {
-        variantId: state.variantId,
-        rawPath,
-        relativePath: stateRelativePath,
-        status: "unchanged",
-        local: state,
-        remote: remoteFile(rawPath, stateRelativePath),
-      },
-    ]);
-
-    assert.equal(root.localDirectoryPath, "/RetroArch/saves/Snes9x");
-    const states = root.children[0];
-    assert.equal(states.type, "directory");
-    if (states.type !== "directory") return;
-    assert.equal(states.localDirectoryPath, "/RetroArch/states/Snes9x");
   });
 
   it("keeps local and remote display names separate", () => {

@@ -26,10 +26,6 @@ import type {
   TorBoxUser,
   Auth,
   ShortcutLocation,
-  Ps2MemcardScanInput,
-  Ps2MemcardScanProgress,
-  Ps2MemoryCardSaveRecord,
-  Ps2ExportResult,
   ShopAssets,
   ShopDetailsWithAssets,
   AchievementCustomNotificationPosition,
@@ -44,30 +40,6 @@ import type {
   CreateSteamShortcutOptions,
   TorrentFilesResponse,
   DownloadLayoutState,
-  EmulatorConfig,
-  EmulatorConfigMap,
-  EmulatorSystem,
-  EmulationBackupProgress,
-  EmulatorBinary,
-  EmulatorInstallProgress,
-  EmulatorInstallResult,
-  ResolvedInstallOption,
-  DetectedRom,
-  RetroArchConfig,
-  RetroArchCoreName,
-  RetroArchPlatform,
-  RetroArchCoreInstallProgress,
-  RetroArchCoreInstallResult,
-  RetroArchExecutablePreview,
-  RetroArchInstallOption,
-  RetroArchInstallProgress,
-  RetroArchInstallResult,
-  EmulationCloudSave,
-  EmulationSaveMetadata,
-  EmulationSavePlatform,
-  MemcardFormatState,
-  MemcardRestoreResult,
-  MemcardRestoreTarget,
   ArtworkAssetType,
   ArtworkKind,
   ArtworkPage,
@@ -76,8 +48,6 @@ import type {
   CloudSaveAutomaticSyncModeChangedEvent,
   CloudSaveAutomaticSyncEvent,
   CloudSaveConflictResolution,
-  RetroArchLocalBatteryCandidate,
-  RetroArchLegacyBatteryCandidate,
   CloudSaveOverview,
   CloudSaveV2FileDetails,
   AchievementSouvenirSyncCleanupResult,
@@ -146,30 +116,6 @@ declare global {
       objectId: string,
       shop: GameShop
     ) => Promise<CloudSaveV2FileDetails>;
-    getRetroArchLocalBatteryCandidates: (
-      objectId: string,
-      shop: GameShop
-    ) => Promise<RetroArchLocalBatteryCandidate[]>;
-    selectRetroArchLocalBattery: (
-      objectId: string,
-      shop: GameShop,
-      romPath: string,
-      signature: string
-    ) => Promise<void>;
-    getRetroArchLegacyBatteryCandidates: (
-      objectId: string,
-      shop: GameShop
-    ) => Promise<RetroArchLegacyBatteryCandidate[]>;
-    selectRetroArchLegacyBattery: (
-      objectId: string,
-      shop: GameShop,
-      rawPath: string
-    ) => Promise<void>;
-    bindRpcs3CloudSaveProfile: (
-      objectId: string,
-      shop: GameShop,
-      cloudProfileId: string
-    ) => Promise<void>;
     deleteGameCloudSaveData: (
       objectId: string,
       shop: GameShop
@@ -179,18 +125,6 @@ declare global {
       shop: GameShop,
       kind?: "file" | "dir"
     ) => Promise<SelectCloudSaveCustomPathResult>;
-    selectEmulatorDestination: (
-      objectId: string,
-      shop: GameShop,
-      rawPath: string,
-      kind: "save" | "state"
-    ) => Promise<{ canceled: boolean }>;
-    removeEmulatorDestination: (
-      objectId: string,
-      shop: GameShop,
-      rawPath: string,
-      kind: "save" | "state"
-    ) => Promise<void>;
     createCloudSaveCustomPathRebindApproval: (
       objectId: string,
       shop: GameShop,
@@ -513,24 +447,6 @@ declare global {
       executablePath: string,
       launchOptions?: string | null
     ) => Promise<void>;
-    openClassicsGame: (
-      shop: GameShop,
-      objectId: string,
-      discPath?: string,
-      force?: boolean
-    ) => Promise<void>;
-    updateClassicsDisc: (
-      shop: GameShop,
-      objectId: string,
-      patch: {
-        selectedDiscPath?: string | null;
-        dontAskDiscSelection?: boolean;
-        platform?: string | null;
-        addDisc?: { path: string; label: string; fileName: string };
-        removeDiscPath?: string;
-      }
-    ) => Promise<LibraryGame>;
-    getEmulatorRomExtensions: (system: EmulatorSystem) => Promise<string[]>;
     closeGame: (shop: GameShop, objectId: string) => Promise<boolean>;
     removeGameFromLibrary: (shop: GameShop, objectId: string) => Promise<void>;
     removeGame: (shop: GameShop, objectId: string) => Promise<void>;
@@ -552,61 +468,6 @@ declare global {
       cb: (syncing: boolean) => void
     ) => () => Electron.IpcRenderer;
     onDownloadsUpdated: (cb: () => void) => () => Electron.IpcRenderer;
-    onClassicsImportStatus: (
-      cb: (importing: boolean) => void
-    ) => () => Electron.IpcRenderer;
-    getClassicsImportStatus: () => Promise<boolean>;
-    getActiveClassicsImport: () => Promise<{
-      requestId: string;
-      system: EmulatorSystem;
-      phase: "scanning" | "matching" | "done";
-      processed: number;
-      total: number;
-      percent: number;
-      currentFile: string | null;
-      status: "matched" | "wrong_platform" | "unmatched" | null;
-      discovered: number;
-      matched: number;
-      sizeBytes: number;
-    } | null>;
-    onClassicsImportProgress: (
-      cb: (
-        payload:
-          | {
-              type: "progress";
-              requestId: string;
-              system: EmulatorSystem;
-              phase: "scanning" | "matching";
-              processed: number;
-              total: number;
-              percent: number;
-              currentFile: string | null;
-              status: "matched" | "wrong_platform" | "unmatched" | null;
-              discovered: number;
-              matched: number;
-              sizeBytes: number;
-            }
-          | {
-              type: "done" | "cancelled";
-              requestId: string;
-              system: EmulatorSystem;
-              fileCount: number;
-              sizeBytes: number;
-              matched: number;
-              unmatched: number;
-              unmatchedFiles: {
-                name: string;
-                reason: "wrong_platform" | "unmatched";
-              }[];
-            }
-          | {
-              type: "error";
-              requestId: string;
-              system: EmulatorSystem;
-              message: string;
-            }
-      ) => void
-    ) => () => Electron.IpcRenderer;
     resetGameAchievements: (shop: GameShop, objectId: string) => Promise<void>;
     changeGamePlayTime: (
       shop: GameShop,
@@ -623,278 +484,6 @@ declare global {
     updateUserPreferences: (
       preferences: Partial<UserPreferences>
     ) => Promise<void>;
-    /* Emulators */
-    getEmulatorConfigs: () => Promise<EmulatorConfigMap>;
-    getRpcs3ConfigRootStatus: () => Promise<
-      import("@types").Rpcs3ConfigRootStatus
-    >;
-    getRpcs3DiscIdentityStatus: (
-      objectId: string,
-      shop: GameShop
-    ) => Promise<import("@types").Rpcs3DiscIdentityStatus>;
-    setRpcs3ConfigRoot: (root: string) => Promise<EmulatorConfig>;
-    detectEmulators: () => Promise<EmulatorConfigMap>;
-    detectEmulator: (system: EmulatorSystem) => Promise<EmulatorConfig>;
-    previewEmulatorExecutable: (
-      system: EmulatorSystem,
-      executablePath?: string | null
-    ) => Promise<{
-      executablePath: string;
-      detectedVersion: string | null;
-    } | null>;
-    setEmulatorExecutablePath: (
-      system: EmulatorSystem,
-      executablePath: string | null
-    ) => Promise<EmulatorConfig | null>;
-    setEmulatorBiosPath: (
-      system: EmulatorSystem,
-      biosPath: string | null
-    ) => Promise<EmulatorConfig>;
-    addRomFolder: (
-      system: EmulatorSystem,
-      folderPath: string,
-      scanSubfolders: boolean,
-      language?: string
-    ) => Promise<EmulatorConfig>;
-    registerRomFolder: (
-      system: EmulatorSystem,
-      folderPath: string,
-      scanSubfolders: boolean
-    ) => Promise<EmulatorConfig>;
-    removeRomFolder: (
-      system: EmulatorSystem,
-      folderId: string
-    ) => Promise<EmulatorConfig>;
-    listEmulatorRoms: (system: EmulatorSystem) => Promise<DetectedRom[]>;
-    toggleRomFolderSubfolders: (
-      system: EmulatorSystem,
-      folderId: string,
-      scanSubfolders: boolean
-    ) => Promise<EmulatorConfig>;
-    rescanEmulator: (
-      system: EmulatorSystem,
-      language?: string
-    ) => Promise<EmulatorConfig>;
-    checkPs3Firmware: (
-      executablePath: string | null
-    ) => Promise<{ installed: boolean }>;
-    checkEmulatorBios: (
-      system: EmulatorSystem,
-      executablePath: string | null,
-      manualBiosPath?: string | null
-    ) => Promise<{ installed: boolean; detectedPath: string | null }>;
-    getEmulatorInstallOptions: (
-      binary: EmulatorBinary
-    ) => Promise<ResolvedInstallOption[]>;
-    installEmulator: (
-      binary: EmulatorBinary,
-      optionId: string
-    ) => Promise<EmulatorInstallResult>;
-    onEmulatorInstallProgress: (
-      cb: (payload: EmulatorInstallProgress) => void
-    ) => () => void;
-    /* RetroArch */
-    getRetroArchConfig: () => Promise<RetroArchConfig>;
-    detectRetroArch: () => Promise<RetroArchConfig>;
-    previewRetroArchExecutable: (
-      executablePath?: string | null
-    ) => Promise<RetroArchExecutablePreview | null>;
-    setRetroArchExecutablePath: (
-      executablePath: string | null
-    ) => Promise<RetroArchConfig | null>;
-    setRetroArchCoresDir: (coresDir: string | null) => Promise<RetroArchConfig>;
-    getRetroArchInstallOptions: () => Promise<RetroArchInstallOption[]>;
-    installRetroArch: (optionId: string) => Promise<RetroArchInstallResult>;
-    installRetroArchCore: (
-      core: RetroArchCoreName
-    ) => Promise<RetroArchCoreInstallResult>;
-    installAllRetroArchCores: () => Promise<RetroArchCoreInstallResult[]>;
-    onRetroArchCoreInstallProgress: (
-      cb: (payload: RetroArchCoreInstallProgress) => void
-    ) => () => void;
-    onRetroArchInstallProgress: (
-      cb: (payload: RetroArchInstallProgress) => void
-    ) => () => void;
-    importRetroArchRoms: (
-      folders: { path: string; scanSubfolders: boolean }[],
-      language: string
-    ) => Promise<{ requestId: string }>;
-    cancelRetroArchImport: (requestId: string) => Promise<void>;
-    rescanRetroArch: (language?: string) => Promise<RetroArchConfig>;
-    listRetroArchRoms: () => Promise<
-      (DetectedRom & { platform: RetroArchPlatform })[]
-    >;
-    getActiveRetroArchImport: () => Promise<{
-      requestId: string;
-      phase: "scanning" | "matching" | "done";
-      processed: number;
-      total: number;
-      percent: number;
-      currentFile: string | null;
-      status: "matched" | "unmatched" | null;
-      discovered: number;
-      matched: number;
-      sizeBytes: number;
-    } | null>;
-    onRetroArchImportProgress: (
-      cb: (
-        payload:
-          | {
-              type: "progress";
-              requestId: string;
-              phase: "scanning" | "matching";
-              processed: number;
-              total: number;
-              percent: number;
-              currentFile: string | null;
-              status: "matched" | "unmatched" | null;
-              discovered: number;
-              matched: number;
-              sizeBytes: number;
-            }
-          | {
-              type: "done" | "cancelled";
-              requestId: string;
-              fileCount: number;
-              sizeBytes: number;
-              matched: number;
-              unmatched: number;
-              unmatchedFiles: { name: string; reason: "unmatched" }[];
-            }
-          | {
-              type: "error";
-              requestId: string;
-              message: string;
-            }
-      ) => void
-    ) => () => void;
-    onRetroArchImportStatus: (cb: (importing: boolean) => void) => () => void;
-    previewRetroArchRomFolder: (
-      folderPath: string,
-      scanSubfolders: boolean
-    ) => Promise<{ fileCount: number }>;
-    checkRetroArchExecutable: () => Promise<{ exists: boolean }>;
-    removeRetroArch: () => Promise<RetroArchConfig>;
-    addRetroArchRomFolder: (
-      folderPath: string,
-      scanSubfolders: boolean
-    ) => Promise<RetroArchConfig>;
-    changeRetroArchRomFolder: (
-      folderId: string,
-      newPath: string
-    ) => Promise<RetroArchConfig>;
-    removeRetroArchRomFolder: (folderId: string) => Promise<RetroArchConfig>;
-    toggleRetroArchSubfolders: (
-      folderId: string,
-      scanSubfolders: boolean
-    ) => Promise<RetroArchConfig>;
-    previewRomFolder: (
-      system: EmulatorSystem,
-      folderPath: string,
-      scanSubfolders: boolean
-    ) => Promise<{ fileCount: number; sizeBytes: number }>;
-    getEmulatorRomPaths: (system: EmulatorSystem) => Promise<string[]>;
-    addEmulatorRomPath: (
-      system: EmulatorSystem,
-      folderPath: string
-    ) => Promise<boolean>;
-    getRpcs3DefaultSources: () => Promise<{
-      gamesDir: string | null;
-      gamesYmlPath: string | null;
-      gamesYmlEntries: { titleId: string; path: string }[];
-    }>;
-    removeEmulator: (system: EmulatorSystem) => Promise<EmulatorConfig>;
-    checkEmulatorExecutable: (
-      system: EmulatorSystem
-    ) => Promise<{ exists: boolean }>;
-    importLaunchboxRoms: (
-      system: EmulatorSystem,
-      folders: { path: string; scanSubfolders: boolean }[],
-      language: string
-    ) => Promise<{ requestId: string }>;
-    cancelLaunchboxImport: (requestId: string) => Promise<void>;
-    scanPs2Memcards: (
-      input: Ps2MemcardScanInput
-    ) => Promise<{ requestId: string }>;
-    cancelPs2MemcardScan: (requestId: string) => Promise<void>;
-    onPs2MemcardScanProgress: (
-      requestId: string,
-      cb: (payload: Ps2MemcardScanProgress) => void
-    ) => () => Electron.IpcRenderer;
-    listPs2MemcardSaves: () => Promise<Ps2MemoryCardSaveRecord[]>;
-    forgetPs2MemcardSave: (
-      cardFilePath: string,
-      folderName: string
-    ) => Promise<void>;
-    forgetPs2MemcardCard: (cardFilePath: string) => Promise<void>;
-    exportPs2Save: (
-      cardFilePath: string,
-      folderName: string,
-      suggestedName: string
-    ) => Promise<Ps2ExportResult>;
-    scanPs1Memcards: (
-      input: Ps2MemcardScanInput
-    ) => Promise<{ requestId: string }>;
-    cancelPs1MemcardScan: (requestId: string) => Promise<void>;
-    onPs1MemcardScanProgress: (
-      requestId: string,
-      cb: (payload: Ps2MemcardScanProgress) => void
-    ) => () => Electron.IpcRenderer;
-    listPs1MemcardSaves: () => Promise<Ps2MemoryCardSaveRecord[]>;
-    forgetPs1MemcardSave: (
-      cardFilePath: string,
-      identifier: string
-    ) => Promise<void>;
-    forgetPs1MemcardCard: (cardFilePath: string) => Promise<void>;
-    exportPs1Save: (
-      cardFilePath: string,
-      identifier: string,
-      suggestedName: string
-    ) => Promise<Ps2ExportResult>;
-    uploadEmulationSave: (
-      platform: EmulationSavePlatform,
-      cardFilePath: string,
-      folderName: string
-    ) => Promise<EmulationCloudSave>;
-    uploadWiiEmulationSave: (
-      dataBinPath: string,
-      objectId: string
-    ) => Promise<EmulationCloudSave>;
-    uploadEmulationSavesForCard: (
-      platform: EmulationSavePlatform,
-      cardFilePath: string
-    ) => Promise<{ uploaded: number; total: number }>;
-    onEmulationBackupProgress: (
-      cb: (payload: EmulationBackupProgress) => void
-    ) => () => Electron.IpcRenderer;
-    getActiveEmulationBackups: () => Promise<EmulationBackupProgress[]>;
-    listEmulationSaves: (
-      platform: EmulationSavePlatform,
-      objectId?: string | null
-    ) => Promise<EmulationCloudSave[]>;
-    listLocalEmulationSaves: (
-      platform: EmulationSavePlatform
-    ) => Promise<Ps2MemoryCardSaveRecord[]>;
-    getMemcardRestoreTargets: (
-      platform: EmulationSavePlatform,
-      metadata?: EmulationSaveMetadata | Record<string, unknown> | null
-    ) => Promise<MemcardRestoreTarget[]>;
-    inspectMemcard: (
-      platform: EmulationSavePlatform,
-      cardFilePath: string
-    ) => Promise<MemcardFormatState>;
-    restoreEmulationSave: (
-      platform: EmulationSavePlatform,
-      saveId: string,
-      targetCardFilePath: string,
-      metadata?: EmulationSaveMetadata | Record<string, unknown> | null,
-      sourceFileName?: string
-    ) => Promise<MemcardRestoreResult>;
-    deleteEmulationSave: (saveId: string) => Promise<void>;
-    updateEmulationSaveLabel: (
-      saveId: string,
-      label: string
-    ) => Promise<EmulationCloudSave>;
     onUserPreferencesUpdated: (
       cb: (preferences: UserPreferences | null) => void
     ) => () => Electron.IpcRenderer;

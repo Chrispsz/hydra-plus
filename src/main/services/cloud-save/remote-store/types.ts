@@ -58,7 +58,6 @@ export interface CreateSnapshotInput {
   snapshotHash: string;
   /** Must match the currently stored version (0 for first sync). */
   baseVersion: number;
-  retroArchFormatVersion?: 2;
   customPathRawPaths: string[];
   variants: SnapshotVariant[];
   files: SnapshotFile[];

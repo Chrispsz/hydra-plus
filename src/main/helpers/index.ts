@@ -40,5 +40,4 @@ export * from "./reg-parser";
 export * from "./launch-game";
 export * from "./download-error-handler";
 export * from "./download-game-helper";
-export * from "./platform-to-system";
 export * from "./global-trackers";

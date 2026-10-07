@@ -222,14 +222,6 @@ export function CloudSaveV2Provider({
 
   const showKnownCloudSaveSyncError = useCallback(
     (error: unknown) => {
-      const message = error instanceof Error ? error.message : error;
-      if (
-        typeof message === "string" &&
-        message.includes("cloud_save_rpcs3_profile_binding_required")
-      ) {
-        setIsFileBrowserVisible(true);
-        return true;
-      }
       const errorKind = getCloudSaveSyncErrorKind(error);
       if (errorKind === "generic") return false;
 

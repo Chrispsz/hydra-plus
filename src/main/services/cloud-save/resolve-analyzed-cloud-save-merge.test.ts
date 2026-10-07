@@ -111,7 +111,6 @@ describe("resolved cloud save merge", () => {
       pendingCustomPathRawPaths: [],
       installationOwnedCustomPathRawPaths: [],
       preserveCloudOnlyEntryIds: [cloudSaveFileKey(transferPak)],
-      restorableEmulatorEntryIds: [],
     } as Parameters<typeof resolveAnalyzedCloudSaveMerge>[0];
 
     const result = resolveAnalyzedCloudSaveMerge(analysis, "keep-local");
@@ -168,7 +167,6 @@ describe("resolved cloud save merge", () => {
       pendingCustomPathRawPaths: [],
       installationOwnedCustomPathRawPaths: [protectedFile.rawPath],
       preserveCloudOnlyEntryIds: [],
-      restorableEmulatorEntryIds: [],
     } as Parameters<typeof resolveAnalyzedCloudSaveMerge>[0];
 
     const result = resolveAnalyzedCloudSaveMerge(analysis, "keep-local");

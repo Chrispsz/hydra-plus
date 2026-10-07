@@ -128,7 +128,6 @@ export const analyzeCloudSaveState = async (
       remoteFiles: remoteManifest?.files ?? [],
     }
   );
-  const restorableEmulatorEntryIds = new Set<string>();
 
   if (remoteManifest) {
     const localEntryIds = new Set(
@@ -185,7 +184,6 @@ export const analyzeCloudSaveState = async (
     preserveLocalMissingRawPaths,
     preserveLocalMissingEntryIds,
     preserveCloudOnlyEntryIds,
-    restorableEmulatorEntryIds,
     treatLocalAsNewRawPaths: new Set(trackingState.pendingRawPaths),
   });
   const mergedCustomPathRawPaths = [
@@ -229,7 +227,6 @@ export const analyzeCloudSaveState = async (
     pendingCustomPathRawPaths: trackingState.pendingRawPaths,
     installationOwnedCustomPathRawPaths: [...preserveLocalMissingRawPaths],
     preserveCloudOnlyEntryIds: [...preserveCloudOnlyEntryIds],
-    restorableEmulatorEntryIds: [...restorableEmulatorEntryIds],
     localSnapshot,
     localSnapshotContext,
     environmentId,

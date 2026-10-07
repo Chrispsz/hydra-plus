@@ -66,9 +66,6 @@ const splitPath = (path: string) =>
     .split("/")
     .filter((segment) => segment.length > 0 && segment !== ".");
 
-const isRetroArchV2Path = (rawPath: string) =>
-  rawPath.startsWith("<emulator>/retroarch-v2/");
-
 const trimTrailingSeparators = (path: string) => {
   let end = path.length;
   while (end > 0 && (path[end - 1] === "/" || path[end - 1] === "\\")) {
@@ -132,10 +129,6 @@ const getDirectoryPath = (path: string) => {
 };
 
 const getLocalRootPath = (file: CloudSaveV2LocalFile) => {
-  if (isRetroArchV2Path(file.rawPath)) {
-    return getDirectoryPath(file.absolutePath);
-  }
-
   let rootPath = file.absolutePath;
   const relativeSegments = splitPath(file.relativePath);
   const levels = Math.max(1, relativeSegments.length);
@@ -293,12 +286,9 @@ const getOrCreateComparisonDirectory = (
     comparison.rawPath,
     ...directorySegments,
   ]);
-  const localDirectoryPath =
-    comparison.local && isRetroArchV2Path(comparison.rawPath)
-      ? getDirectoryPath(comparison.local.absolutePath)
-      : localRootPath
-        ? joinPath(localRootPath, directorySegments)
-        : null;
+  const localDirectoryPath = localRootPath
+    ? joinPath(localRootPath, directorySegments)
+    : null;
   const existingDirectory = parent.branches.get(directoryId);
   if (existingDirectory) {
     updateBranchSources(
@@ -417,9 +407,7 @@ const addLocalFileToTree = (
     roots.set(rootPathIdentity, root);
   }
 
-  const pathSegments = isRetroArchV2Path(file.rawPath)
-    ? splitPath(file.absolutePath).slice(-1)
-    : splitPath(file.relativePath);
+  const pathSegments = splitPath(file.relativePath);
   const fileName = pathSegments.pop() ?? file.relativePath;
   let parent = root;
   const directorySegments: string[] = [];

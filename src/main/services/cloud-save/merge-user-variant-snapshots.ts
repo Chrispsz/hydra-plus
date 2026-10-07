@@ -21,7 +21,6 @@ interface MergeUserVariantSnapshotsInput {
   preserveLocalMissingRawPaths?: ReadonlySet<string>;
   preserveLocalMissingEntryIds?: ReadonlySet<string>;
   preserveCloudOnlyEntryIds?: ReadonlySet<string>;
-  restorableEmulatorEntryIds?: ReadonlySet<string>;
   treatLocalAsNewRawPaths?: ReadonlySet<string>;
 }
 
@@ -88,7 +87,6 @@ export const mergeUserVariantSnapshots = ({
   preserveLocalMissingRawPaths = new Set<string>(),
   preserveLocalMissingEntryIds = new Set<string>(),
   preserveCloudOnlyEntryIds = new Set<string>(),
-  restorableEmulatorEntryIds = new Set<string>(),
   treatLocalAsNewRawPaths = new Set<string>(),
 }: MergeUserVariantSnapshotsInput): CloudSaveMergeResult => {
   const localById = indexUnique(local.files);
@@ -251,12 +249,6 @@ export const mergeUserVariantSnapshots = ({
       const coverage = coverageStateFor(remoteFile);
       if (coverage.foreignEnvironment) {
         files.push(remoteFile);
-        continue;
-      }
-      if (coverage.incomplete && restorableEmulatorEntryIds.has(entryId)) {
-        files.push(remoteFile);
-        restoreEntryIds.add(entryId);
-        if (coverage.incomplete) unresolvedRemoteEntryIds.add(entryId);
         continue;
       }
       if (shouldRestoreEmptyLocalSnapshot) {

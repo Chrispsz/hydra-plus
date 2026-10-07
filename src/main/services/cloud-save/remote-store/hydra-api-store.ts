@@ -101,9 +101,6 @@ export const hydraApiStore: CloudSaveRemoteStore = {
       input.context,
       {
         baseVersion: input.baseVersion,
-        ...(input.retroArchFormatVersion
-          ? { retroArchFormatVersion: input.retroArchFormatVersion }
-          : {}),
         customPathRawPaths: input.customPathRawPaths,
         variants: input.variants,
         files: input.files,
