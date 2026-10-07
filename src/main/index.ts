@@ -201,11 +201,10 @@ const initializeApp = async () => {
   const deepLinkArg = process.argv.find((arg) =>
     arg.startsWith("hydralauncher://")
   );
-  const forceBigPicture = process.argv.includes("--big-picture");
   const isRunDeepLink = deepLinkArg?.startsWith("hydralauncher://run");
 
   if (!process.argv.includes("--hidden") && !isRunDeepLink) {
-    WindowManager.createMainWindow({ forceBigPicture });
+    WindowManager.createMainWindow();
   }
 
   WindowManager.createSystemTray(language || "en");
@@ -351,7 +350,6 @@ app.on("second-instance", (_event, commandLine) => {
   const deepLink = commandLine.find((arg) =>
     arg.startsWith("hydralauncher://")
   );
-  const forceBigPicture = commandLine.includes("--big-picture");
 
   // Check if this is a "run" deep link - don't show main window in that case
   const isRunDeepLink = deepLink?.startsWith("hydralauncher://run");
@@ -362,11 +360,8 @@ app.on("second-instance", (_event, commandLine) => {
         WindowManager.mainWindow.restore();
 
       WindowManager.mainWindow.focus();
-      if (forceBigPicture) {
-        void WindowManager.openBigPictureWindow();
-      }
     } else {
-      WindowManager.createMainWindow({ forceBigPicture });
+      WindowManager.createMainWindow();
     }
   }
 

@@ -124,14 +124,6 @@ export type AchievementCustomNotificationPosition =
   | "bottom-center"
   | "bottom-right";
 
-export type BigPictureDiagnosticsPosition =
-  | "top-left"
-  | "top-center"
-  | "top-right"
-  | "bottom-left"
-  | "bottom-center"
-  | "bottom-right";
-
 export interface DownloadDirectoryPreference {
   path: string;
   createdAt: string;
@@ -170,8 +162,6 @@ export interface UserPreferences {
   runAtStartup?: boolean;
   startMinimized?: boolean;
   launchToLibraryPage?: boolean;
-  bigPictureLaunchToLibraryPage?: boolean;
-  launchInBigPicture?: boolean;
   disableNsfwAlert?: boolean;
   enableAutoInstall?: boolean;
   seedAfterDownloadComplete?: boolean;
@@ -195,10 +185,6 @@ export interface UserPreferences {
   hideToTrayOnGameStart?: boolean;
   enableNewDownloadOptionsBadges?: boolean;
   createStartMenuShortcut?: boolean;
-  bigPictureSoundsEnabled?: boolean;
-  bigPictureVirtualKeyboardEnabled?: boolean;
-  bigPictureDiagnosticsEnabled?: boolean;
-  bigPictureDiagnosticsPosition?: BigPictureDiagnosticsPosition;
   maxDownloadSpeedBytesPerSecond?: number | null;
   torrentNetworkInterface?: string | null;
   globalTrackers?: string[];

@@ -1,6 +1,5 @@
 import type { AuthPage } from "@shared";
 import type {
-  SystemPowerAction,
   AppUpdaterEvent,
   GameShop,
   GoogleDriveCloudStatus,
@@ -1342,10 +1341,6 @@ declare global {
     closeMainWindow: () => Promise<void>;
     isMainWindowMaximized: () => Promise<boolean>;
     onWindowMaximizeChange: (cb: (isMaximized: boolean) => void) => () => void;
-
-    /* Big Picture Window */
-    openBigPictureWindow: () => Promise<void>;
-    executeSystemPowerAction: (action: SystemPowerAction) => Promise<void>;
 
     /* Friends Window */
     openFriendsWindow: () => Promise<void>;

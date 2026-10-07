@@ -4,7 +4,7 @@ import { WindowManager } from "./window-manager";
 import { logger } from "./logger";
 import {
   DEFAULT_DOWNLOAD_LAYOUT_STATE,
-  getBigPictureDownloadView,
+  getDownloadQueueView,
   getDownloadId,
   isActiveLikeDownload,
   isCompletedLikeDownload,
@@ -527,7 +527,7 @@ export class DownloadOrchestrator {
           isActiveLikeDownload(entry) &&
           getDownloadId(entry) !== getDownloadId(download)
       ) ?? null;
-    const view = getBigPictureDownloadView(downloads, layoutState);
+    const view = getDownloadQueueView(downloads, layoutState);
     const downloadId = getDownloadId(download);
     const isHero = view.heroId === downloadId;
     const queueIds = view.queueIds.filter((id) => id !== downloadId);

@@ -51,7 +51,7 @@ export function DownloadDirectoryReplacementModal({
         <div className="download-directory-replacement-modal__controls">
           <SelectField
             className="download-directory-replacement-modal__select"
-            label={t("replace_saved_big_picture_directory")}
+            label={t("replace_saved_directory")}
             value={selectedReplacementPath}
             onChange={(event) =>
               onSelectedReplacementPathChange(event.target.value)

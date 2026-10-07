@@ -13,7 +13,7 @@ export type RendererDownloadBucket =
   | "completed"
   | "hidden";
 
-export interface BigPictureDownloadView {
+export interface DownloadQueueView {
   heroId: string | null;
   queueIds: string[];
   pausedIds: string[];
@@ -162,10 +162,10 @@ export const getRendererDownloadBucket = (
   return "hidden";
 };
 
-export const getBigPictureDownloadView = (
+export const getDownloadQueueView = (
   downloads: Download[],
   layoutState: DownloadLayoutState
-): BigPictureDownloadView => {
+): DownloadQueueView => {
   const visibleDownloads = downloads.filter(
     (download) => getDownloadPlacement(download) !== "hidden"
   );

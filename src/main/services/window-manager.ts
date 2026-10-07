@@ -47,29 +47,24 @@ const isLinuxWayland =
   (process.env.XDG_SESSION_TYPE === "wayland" ||
     Boolean(process.env.WAYLAND_DISPLAY));
 
-interface CreateMainWindowOptions {
-  forceBigPicture?: boolean;
-}
-
 export class WindowManager {
   private static mainWindowInstance: Electron.BrowserWindow | null = null;
   private static gameLauncherWindowInstance: Electron.BrowserWindow | null =
     null;
-  private static bigPicture: Electron.BrowserWindow | null = null;
   private static friendsWindow: Electron.BrowserWindow | null = null;
   private static authWindow: Electron.BrowserWindow | null = null;
   private static retroAchievementsConnectionWindow: Electron.BrowserWindow | null =
     null;
-  private static deferredMainMaximize = false;
 
   private static isArtworkRendererRequest(
     webContentsId: number | undefined
   ): boolean {
-    return [this.mainWindow, this.bigPicture].some(
-      (window) =>
-        window != null &&
-        !window.isDestroyed() &&
-        window.webContents.id === webContentsId
+    const window = this.mainWindow;
+
+    return (
+      window != null &&
+      !window.isDestroyed() &&
+      window.webContents.id === webContentsId
     );
   }
 
@@ -161,28 +156,8 @@ export class WindowManager {
     }
   }
 
-  private static disableMainWindowWhileBigPictureIsOpen() {
-    const main = this.mainWindow;
-
-    if (!main || main.isDestroyed()) return;
-
-    main.setFocusable(false);
-    main.setIgnoreMouseEvents(true);
-    main.hide();
-  }
-
-  private static restoreMainWindowAfterBigPictureCloses() {
-    const main = this.mainWindow;
-
-    if (!main || main.isDestroyed()) return;
-
-    main.setIgnoreMouseEvents(false);
-    main.setFocusable(true);
-    main.setSkipTaskbar(false);
-  }
-
   public static sendToAppWindows(channel: string, ...args: unknown[]) {
-    const windows = [this.mainWindow, this.bigPicture, this.friendsWindow];
+    const windows = [this.mainWindow, this.friendsWindow];
 
     for (const window of windows) {
       if (!window || window.isDestroyed()) continue;
@@ -267,7 +242,7 @@ export class WindowManager {
     };
   }
 
-  public static async createMainWindow(options?: CreateMainWindowOptions) {
+  public static async createMainWindow() {
     if (this.mainWindow) return;
 
     const userPreferences = await db
@@ -286,8 +261,6 @@ export class WindowManager {
     );
     this.mainWindowInstance = mainWindow;
 
-    this.deferredMainMaximize = false;
-
     const emitMaximizeState = () => {
       if (!mainWindow.isDestroyed()) {
         mainWindow.webContents.send(
@@ -299,16 +272,7 @@ export class WindowManager {
     mainWindow.on("maximize", emitMaximizeState);
     mainWindow.on("unmaximize", emitMaximizeState);
 
-    const shouldLaunchInBigPicture =
-      options?.forceBigPicture || Boolean(userPreferences?.launchInBigPicture);
-
-    if (shouldLaunchInBigPicture) {
-      mainWindow.setOpacity(0);
-      mainWindow.setSkipTaskbar(true);
-      if (isMaximized) {
-        this.deferredMainMaximize = true;
-      }
-    } else if (isMaximized) {
+    if (isMaximized) {
       mainWindow.maximize();
     }
 
@@ -397,11 +361,7 @@ export class WindowManager {
     mainWindow.on("ready-to-show", () => {
       if (!app.isPackaged || isStaging)
         WindowManager.mainWindow?.webContents.openDevTools();
-      if (shouldLaunchInBigPicture) {
-        void WindowManager.openBigPictureWindow();
-      } else {
-        WindowManager.mainWindow?.show();
-      }
+      WindowManager.mainWindow?.show();
     });
 
     mainWindow.on("close", async () => {
@@ -445,89 +405,7 @@ export class WindowManager {
     });
   }
 
-  public static isBigPictureSender(sender: Electron.WebContents) {
-    return (
-      this.bigPicture !== null &&
-      !this.bigPicture.isDestroyed() &&
-      this.bigPicture.webContents === sender
-    );
-  }
-
-  public static async openBigPictureWindow() {
-    if (this.bigPicture) {
-      this.bigPicture.focus();
-      return;
-    }
-
-    const userPreferences = await db
-      .get<string, UserPreferences | null>(levelKeys.userPreferences, {
-        valueEncoding: "json",
-      })
-      .catch(() => null);
-
-    const mainWindow = this.mainWindow;
-    const targetDisplay =
-      mainWindow && !mainWindow.isDestroyed()
-        ? screen.getDisplayMatching(mainWindow.getBounds())
-        : screen.getPrimaryDisplay();
-    const targetBounds = targetDisplay.bounds;
-
-    this.bigPicture = new BrowserWindow({
-      x: targetBounds.x,
-      y: targetBounds.y,
-      width: targetBounds.width,
-      height: targetBounds.height,
-      backgroundColor: "#0a0a0a",
-      icon,
-      frame: false,
-      show: false,
-      webPreferences: {
-        preload: path.join(__dirname, "../preload/index.mjs"),
-        sandbox: false,
-      },
-    });
-
-    this.bigPicture.removeMenu();
-
-    if (!app.isPackaged || isStaging) {
-      this.bigPicture.webContents.openDevTools();
-    }
-
-    const bigPictureInitialHash =
-      (userPreferences?.bigPictureLaunchToLibraryPage ??
-      userPreferences?.launchToLibraryPage)
-        ? "big-picture/library"
-        : "big-picture";
-
-    this.loadWindowURL(this.bigPicture, bigPictureInitialHash);
-
-    this.bigPicture.once("ready-to-show", () => {
-      const main = this.mainWindow;
-      if (main && !main.isDestroyed()) {
-        main.setOpacity(1);
-        this.disableMainWindowWhileBigPictureIsOpen();
-      }
-      this.bigPicture?.show();
-      this.bigPicture?.setFullScreen(true);
-      this.bigPicture?.focus();
-    });
-
-    this.bigPicture.on("closed", () => {
-      this.bigPicture = null;
-      const main = this.mainWindow;
-      if (main && !main.isDestroyed()) {
-        this.restoreMainWindowAfterBigPictureCloses();
-        if (WindowManager.deferredMainMaximize) {
-          main.maximize();
-          WindowManager.deferredMainMaximize = false;
-        }
-        main.show();
-        main.focus();
-      }
-    });
-  }
-
-  public static openFriendsWindow() {
+  public static async openFriendsWindow() {
     if (this.friendsWindow) {
       if (this.friendsWindow.isMinimized()) {
         this.friendsWindow.restore();
@@ -651,10 +529,7 @@ export class WindowManager {
   }
 
   public static openAuthWindow(page: AuthPage, searchParams: URLSearchParams) {
-    const parentWindow =
-      this.bigPicture && !this.bigPicture.isDestroyed()
-        ? this.bigPicture
-        : this.mainWindow;
+    const parentWindow = this.mainWindow;
 
     if (!parentWindow || parentWindow.isDestroyed()) return;
 
@@ -847,7 +722,7 @@ export class WindowManager {
     position: AchievementCustomNotificationPosition,
     achievements: AchievementNotificationInfo[]
   ): boolean {
-    const candidates = [this.bigPicture, this.mainWindow];
+    const candidates = [this.mainWindow];
 
     for (const window of candidates) {
       if (window && !window.isDestroyed() && window.isFocused()) {
@@ -1003,11 +878,6 @@ export class WindowManager {
   }
 
   public static openMainWindow() {
-    if (this.bigPicture && !this.bigPicture.isDestroyed()) {
-      this.bigPicture.focus();
-      return;
-    }
-
     if (this.mainWindow) {
       this.mainWindow.show();
       if (this.mainWindow.isMinimized()) {
@@ -1023,10 +893,6 @@ export class WindowManager {
     if (!this.mainWindow) this.createMainWindow();
     this.loadMainWindowURL(hash);
 
-    if (this.bigPicture && !this.bigPicture.isDestroyed()) {
-      return;
-    }
-
     if (this.mainWindow?.isMinimized()) this.mainWindow.restore();
     this.mainWindow?.focus();
   }
@@ -1034,25 +900,10 @@ export class WindowManager {
   public static redirectToMainWindow(hash: string) {
     this.redirect(hash);
 
-    if (this.bigPicture && !this.bigPicture.isDestroyed()) {
-      this.bigPicture.close();
-      return;
-    }
-
     this.openMainWindow();
   }
 
   public static redirectToGameWindow(hash: string) {
-    if (this.bigPicture && !this.bigPicture.isDestroyed()) {
-      this.bigPicture.webContents.send(
-        "on-navigate",
-        `/big-picture/${hash.replace(/^\/+/, "")}`
-      );
-      this.bigPicture.show();
-      this.bigPicture.focus();
-      return;
-    }
-
     this.redirectToMainWindow(hash);
   }
 

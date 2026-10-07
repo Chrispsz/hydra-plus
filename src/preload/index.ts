@@ -4,7 +4,6 @@ import { contextBridge, ipcRenderer } from "electron";
 import { randomUUID } from "node:crypto";
 
 import type {
-  SystemPowerAction,
   GameShop,
   DownloadProgress,
   UserPreferences,
@@ -1982,11 +1981,6 @@ contextBridge.exposeInMainWorld("electron", {
     return () =>
       ipcRenderer.removeListener("on-window-maximize-change", listener);
   },
-
-  /* Big Picture */
-  openBigPictureWindow: () => ipcRenderer.invoke("openBigPictureWindow"),
-  executeSystemPowerAction: (action: SystemPowerAction) =>
-    ipcRenderer.invoke("executeSystemPowerAction", action),
 
   /* Friends */
   openFriendsWindow: () => ipcRenderer.invoke("openFriendsWindow"),

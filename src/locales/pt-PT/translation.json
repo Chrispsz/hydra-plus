@@ -815,7 +815,6 @@
     "enable_friend_request_notifications": "Quando um pedido de amizade é recebido",
     "launch_minimized": "Iniciar Hydra minimizado",
     "launch_hydra_in_library_page": "Iniciar o Hydra na página da Biblioteca",
-    "launch_hydra_in_big_picture": "Iniciar o Hydra no modo Big Picture",
     "disable_nsfw_alert": "Desativar alertas NSFW",
     "seed_after_download_complete": "Semear após concluir o download",
     "show_hidden_achievement_description": "Mostrar descrição de conquistas ocultas antes de as desbloquear",
@@ -959,16 +958,7 @@
     "debrid": "Debrid",
     "debrid_description": "Serviços Debrid são transferidores premium sem restrições que permitem transferir rapidamente ficheiros alojados em vários serviços de alojamento de ficheiros, limitados apenas pela velocidade de internet.",
     "create_real_debrid_account": "Clica aqui se ainda não tens uma conta do Real-Debrid",
-    "create_torbox_account": "Clica aqui se ainda não tens uma conta do TorBox",
-    "big_picture": "Big Picture",
-    "big_picture_startup": "Inicialização",
-    "big_picture_audio": "Áudio",
-    "big_picture_input": "Entrada",
-    "big_picture_diagnostics": "Diagnóstico",
-    "big_picture_enable_sounds": "Ativar sons do Big Picture",
-    "big_picture_enable_virtual_keyboard": "Ativar teclado virtual",
-    "big_picture_enable_diagnostics": "Ativar diagnóstico de navegação",
-    "big_picture_diagnostics_position": "Posição do diagnóstico"
+    "create_torbox_account": "Clica aqui se ainda não tens uma conta do TorBox"
   },
   "notifications": {
     "download_complete": "Transferência concluída",

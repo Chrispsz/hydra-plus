@@ -90,7 +90,7 @@ export function useUserDetails() {
 
   // After a local accept/refuse/cancel/send, the API has already mutated the
   // request server-side but only the *other* user gets a WS push. Fan the new
-  // state out to every app window (main, big picture, friends) so their request
+  // state out to every app window (main, friends) so their request
   // badges and notification lists refresh without a manual reload.
   const broadcastFriendRequestSync = useCallback(
     (requests: FriendRequest[] | null) => {

@@ -30,11 +30,7 @@ import {
 } from "@renderer/pages/library/library-category";
 import type { SortOption } from "@renderer/pages/library/filter-options";
 
-import {
-  CheckCircleFillIcon,
-  CheckCircleIcon,
-  VideoIcon,
-} from "@primer/octicons-react";
+import { CheckCircleFillIcon, CheckCircleIcon } from "@primer/octicons-react";
 import { Tooltip } from "react-tooltip";
 import deckyIcon from "@renderer/assets/icons/decky.png";
 import cn from "classnames";
@@ -485,17 +481,6 @@ export function Sidebar() {
         maxWidth: sidebarWidth,
       }}
     >
-      {globalThis.window.electron.platform === "darwin" && (
-        <button
-          type="button"
-          className="sidebar__big-picture-darwin"
-          onClick={() => globalThis.window.electron.openBigPictureWindow()}
-        >
-          <VideoIcon size={14} />
-          {t("big_picture")}
-        </button>
-      )}
-
       <div className="sidebar__container">
         <SidebarProfile />
 

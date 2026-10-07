@@ -17,7 +17,6 @@ const ALWAYS_SESSION_SCOPED_KEYS = [
   SETTINGS_EMULATION_VIEW_STORAGE_KEY,
   SETTINGS_RETROARCH_TAB_STORAGE_KEY,
   "library-view-mode",
-  "hydra:big-picture:library-view-mode",
 ];
 
 const FILTER_SESSION_SCOPED_KEYS = [
@@ -37,10 +36,6 @@ const FILTER_SESSION_SCOPED_KEYS = [
   "profile-platform",
   "profile-souvenir-sort-by",
   "profile-souvenir-grouping",
-  "hydra:big-picture:library-sort-by",
-  "hydra:big-picture:library-filter-by",
-  "hydra:big-picture:library-tab",
-  "hydra:big-picture:sidebar-library-filter",
 ];
 
 export const getSessionScopedKeysToClear = (
