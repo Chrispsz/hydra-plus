@@ -2,6 +2,9 @@
 
 # Hydra Plus
 
+[![CI](https://github.com/Chrispsz/hydra-plus/actions/workflows/ci.yml/badge.svg)](https://github.com/Chrispsz/hydra-plus/actions/workflows/ci.yml)
+[![Release](https://github.com/Chrispsz/hydra-plus/actions/workflows/release.yml/badge.svg)](https://github.com/Chrispsz/hydra-plus/actions/workflows/release.yml)
+
 **Fork minimalista do [Hydra Launcher](https://github.com/hydralauncher/hydra) com nuvem pessoal no Google Drive.**
 
 Baixe e inicie jogos em Windows e Linux, com os saves sincronizados **no seu próprio Drive** — grátis, organizado e sob seu controle. Ou continue usando a nuvem oficial da Hydra, se preferir.
