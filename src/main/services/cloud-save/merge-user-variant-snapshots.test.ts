@@ -131,7 +131,7 @@ describe("merge user variant snapshots", () => {
       kind: "default",
     };
     const localFile = {
-      ...file("achievements.json", "a", "<winAppData>/GSE Saves/1817070"),
+      ...file("progress.json", "a", "<winAppData>/GSE Saves/1817070"),
       variantId: stableDefault.variantId,
     };
     const remoteFile = { ...localFile };

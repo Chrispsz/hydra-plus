@@ -8,7 +8,6 @@ import {
   getSteamSourceRetryDelayMs,
   isSteamPrivateProfilePayload,
   isSteamRateLimitedPayload,
-  isSteamSourceAchievementSkippable,
   isSteamSourceLibraryFatal,
   isSteamSourceRateLimited,
   isSteamSourceTransportError,
@@ -67,46 +66,14 @@ describe("Steam source retry policy", () => {
     assert.equal(getSteamSourceRetryDelayMs(error, 2), 1000);
   });
 
-  it("treats 403 as fatal for the library and skippable for one game", () => {
+  it("treats 403 as fatal for the library", () => {
     const error = axiosError(403);
 
     assert.equal(shouldRetrySteamSource(error, 1), false);
     assert.equal(isSteamSourceLibraryFatal(error), true);
-    assert.equal(isSteamSourceAchievementSkippable(error), true);
   });
 
-  it("treats exhausted 502 as skippable for one game, not fatal for the library", () => {
-    const error = axiosError(502);
-
-    assert.equal(isSteamSourceAchievementSkippable(error), true);
-    assert.equal(isSteamSourceLibraryFatal(error), false);
-  });
-
-  it("treats 429 as skippable for one game, not fatal for the library", () => {
-    const error = axiosError(429);
-
-    assert.equal(isSteamSourceAchievementSkippable(error), true);
-    assert.equal(isSteamSourceLibraryFatal(error), false);
-  });
-
-  it("treats 409 as skippable for one game, not fatal for the library", () => {
-    const error = axiosError(409);
-
-    assert.equal(isSteamSourceAchievementSkippable(error), true);
-    assert.equal(isSteamSourceLibraryFatal(error), false);
-  });
-
-  it("treats 400 as skippable for one game, not fatal for the library", () => {
-    const error = new SteamWebApiHttpError(400, {
-      playerstats: { success: false, error: "Requested app has no stats" },
-    });
-
-    assert.equal(isSteamSourceAchievementSkippable(error), true);
-    assert.equal(isSteamSourceLibraryFatal(error), false);
-    assert.equal(shouldRetrySteamSource(error, 1), false);
-  });
-
-  it("treats transport failures as skippable for one game's achievements", () => {
+  it("treats transport failures as transport errors", () => {
     const timeout = Object.assign(new Error("connect ETIMEDOUT"), {
       code: "ETIMEDOUT",
     });
@@ -117,9 +84,7 @@ describe("Steam source retry policy", () => {
     });
 
     assert.equal(isSteamSourceTransportError(timeout), true);
-    assert.equal(isSteamSourceAchievementSkippable(timeout), true);
     assert.equal(isSteamSourceTransportError(fetchFailure), true);
-    assert.equal(isSteamSourceAchievementSkippable(fetchFailure), true);
   });
 
   it("does not hide unknown errors or cancellation as transport failures", () => {
@@ -128,10 +93,6 @@ describe("Steam source retry policy", () => {
     });
 
     assert.equal(isSteamSourceTransportError(new Error("parse failed")), false);
-    assert.equal(
-      isSteamSourceAchievementSkippable(new Error("parse failed")),
-      false
-    );
     assert.equal(isSteamSourceTransportError(cancelled), false);
   });
 

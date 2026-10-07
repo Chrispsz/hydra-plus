@@ -2,7 +2,6 @@ import { chunk } from "lodash-es";
 import { HydraApi } from "../hydra-api";
 import { mergeWithRemoteGames } from "./merge-with-remote-games";
 import { WindowManager } from "../window-manager";
-import { AchievementWatcherManager } from "../achievements/achievement-watcher-manager";
 import { gamesSublevel } from "@main/level";
 import { trackRemoteLibrarySync } from "./remote-library-sync-state";
 
@@ -36,8 +35,6 @@ const uploadLocalGamesAndMerge = async () => {
   }
 
   await mergeWithRemoteGames();
-
-  AchievementWatcherManager.preSearchAchievements();
 
   if (WindowManager.mainWindow)
     WindowManager.sendToAppWindows("on-library-batch-complete");

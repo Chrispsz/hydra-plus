@@ -3,7 +3,6 @@ import { getGameAssets } from "@main/events/catalogue/get-game-assets";
 import { getDirectorySize } from "@main/events/helpers/get-directory-size";
 import { findGameExecutableInFolder } from "@main/helpers/find-game-executable";
 import { updateGameExecutablePath } from "@main/helpers/update-executable-path";
-import { runAchievementMetadataExport } from "@main/services/achievements/metadata-export";
 import { db, downloadsSublevel, gamesSublevel, levelKeys } from "@main/level";
 import {
   Downloader,
@@ -350,8 +349,6 @@ export class GameFilesManager {
           this.shop,
           "environment-changed"
         );
-
-        void runAchievementMetadataExport(this.gameKey, updatedGame);
 
         WindowManager.sendToAppWindows("on-library-batch-complete");
 

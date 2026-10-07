@@ -46,7 +46,6 @@ interface LaunchboxBasic {
   coverImageUrl: string | null;
   releaseDate: string | null;
   releaseYear: number | null;
-  retroAchievementsGameId: number | null;
 }
 
 interface LaunchboxShopDetailsAssets {
@@ -85,7 +84,6 @@ const mapLaunchboxToShopDetails = (
   objectId: string,
   basic: LaunchboxBasic | null,
   entry: LaunchboxShopDetailsEntry | null,
-  cached: ShopDetailsWithAssets | null,
   language: string
 ): ShopDetails => {
   const data = entry?.data ?? null;
@@ -97,8 +95,6 @@ const mapLaunchboxToShopDetails = (
     name: data?.title ?? basic?.title ?? "",
     platform: entry?.platform ?? data?.platform ?? undefined,
     skus: entry?.skus ?? undefined,
-    retroAchievementsGameId:
-      basic?.retroAchievementsGameId ?? cached?.retroAchievementsGameId ?? null,
     steam_appid: 0,
     detailed_description: description,
     about_the_game: description,
@@ -142,7 +138,6 @@ const getLaunchboxShopDetails = async (
   const cacheHasNewFields =
     cachedData &&
     (cachedData.platform || cachedData.skus) &&
-    typeof cachedData.retroAchievementsGameId === "number" &&
     cachedData.descriptionLanguage === language;
   if (cachedData && cacheHasNewFields) {
     return { ...cachedData, assets: cachedAssets ?? null };
@@ -176,7 +171,6 @@ const getLaunchboxShopDetails = async (
     objectId,
     basic,
     detailsEntry,
-    cachedData ? { ...cachedData, assets: cachedAssets ?? null } : null,
     language
   );
 

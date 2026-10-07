@@ -36,35 +36,12 @@ type PendingExitSync = {
   lastPublishedPayload: SteamGameSyncPayload | null;
 };
 
-const achievementFingerprint = (
-  achievements: SteamGameSyncPayload["achievements"]
-) =>
-  achievements
-    ?.map(({ name, unlockTime }) => ({ name, unlockTime }))
-    .sort((left, right) =>
-      `${left.name}:${left.unlockTime}`.localeCompare(
-        `${right.name}:${right.unlockTime}`
-      )
-    );
-
 const hasChanged = (
   previous: SteamGameSyncPayload,
   current: SteamGameSyncPayload
-) => {
-  if (
-    previous.playTimeInSeconds !== current.playTimeInSeconds ||
-    previous.lastPlayedAt !== current.lastPlayedAt
-  ) {
-    return true;
-  }
-
-  if (current.achievements === undefined) return false;
-
-  return (
-    JSON.stringify(achievementFingerprint(previous.achievements)) !==
-    JSON.stringify(achievementFingerprint(current.achievements))
-  );
-};
+) =>
+  previous.playTimeInSeconds !== current.playTimeInSeconds ||
+  previous.lastPlayedAt !== current.lastPlayedAt;
 
 export const createSteamGameExitSyncScheduler = (
   dependencies: ExitSyncDependencies

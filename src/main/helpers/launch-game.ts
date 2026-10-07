@@ -30,7 +30,6 @@ import { updateGameRecord } from "@main/services/game-record-updater";
 import { dispatchSteamProtocolLaunch } from "@main/services/steam-integration/steam-protocol-launch-dispatch";
 import { resolveSteamProtocolLaunch } from "@main/services/steam-integration/steam-protocol-launch";
 import { CommonRedistManager } from "@main/services/common-redist-manager";
-import { runAchievementMetadataExport } from "@main/services/achievements/metadata-export";
 import { parseExecutablePath } from "../events/helpers/parse-executable-path";
 import { isGamemodeAvailable } from "./is-gamemode-available";
 import { isMangohudAvailable } from "./is-mangohud-available";
@@ -781,10 +780,6 @@ const launchGameWithCloudSaveChecks = async (
   // Run preflight check for common redistributables (Windows only)
   // Wrapped in try/catch to ensure game launch is never blocked
   await runCommonRedistPreflight(shop, objectId);
-
-  if (updatedGame) {
-    void runAchievementMetadataExport(gameKey, updatedGame);
-  }
 
   await new Promise((resolve) => setTimeout(resolve, LAUNCH_DELAY_IN_MS));
 

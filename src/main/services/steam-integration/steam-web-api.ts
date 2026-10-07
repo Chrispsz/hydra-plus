@@ -104,24 +104,6 @@ export const fetchSteamOwnedGame = (
     fetchImpl,
   });
 
-export const fetchSteamGameAchievementSchema = (
-  token: SteamWebApiToken,
-  steamAppId: string,
-  signal?: AbortSignal,
-  fetchImpl?: typeof fetch
-) =>
-  steamWebApiGet({
-    path: "IPlayerService/GetGameAchievements/v1/",
-    token,
-    params: {
-      appid: steamAppId,
-      language: "english",
-    },
-    signal,
-    fetchImpl,
-    includeSteamId: false,
-  });
-
 export const fetchSteamFamilyGroupForUser = (
   token: SteamWebApiToken,
   signal?: AbortSignal,

@@ -22,11 +22,6 @@ export const levelKeys = {
   downloadSourcesSinceValue: "downloadSourcesSinceValue", // The 'since' value API used (for modal comparison)
   localNotifications: "localNotifications",
   commonRedistPassed: "commonRedistPassed", // Whether common redistributables preflight has passed
-  retroArchSouvenirConfigBackups: "retroarch-souvenir-config-backups",
-  duckStationSouvenirConfigBackups: "duckstation-souvenir-config-backups",
-  pendingAchievementSouvenirs: "pending-achievement-souvenirs",
-  pendingGroupedAchievementSouvenirs: "pending-grouped-achievement-souvenirs",
-  localSouvenirAssets: "local-souvenir-assets",
   globalTrackersUrlCache: "globalTrackersUrlCache",
   ps2MemoryCardSaves: "ps2MemoryCardSaves",
   ps2MemoryCardSave: (cardFilePath: string, folderName: string) =>

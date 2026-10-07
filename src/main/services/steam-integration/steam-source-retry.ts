@@ -189,18 +189,6 @@ export const isSteamSourceTransportError = (error: unknown): boolean => {
   );
 };
 
-export const isSteamSourceAchievementSkippable = (error: unknown) => {
-  const status = getSteamSourceHttpStatus(error);
-  return (
-    status === 400 ||
-    status === 403 ||
-    status === 409 ||
-    status === 429 ||
-    status === 502 ||
-    isSteamSourceTransportError(error)
-  );
-};
-
 export const isSteamRateLimitedPayload = (payload: unknown): boolean => {
   const message = readErrorMessage(payload);
   if (!message) return false;

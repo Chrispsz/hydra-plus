@@ -71,22 +71,6 @@ export class HydraApi {
     this.userAuth.subscription = subscription
       ? { expiresAt: subscription.expiresAt }
       : null;
-
-    if (process.platform === "linux" && !this.hasActiveSubscription()) {
-      void import("./linux-game-capture-session").then(
-        ({ stopAllLinuxGameCaptureSessions }) => {
-          if (!this.hasActiveSubscription()) {
-            stopAllLinuxGameCaptureSessions();
-          }
-        }
-      );
-    }
-
-    if (this.isLoggedIn() && this.hasActiveSubscription()) {
-      void import("./achievements/grouped-souvenir-worker").then(
-        ({ groupedSouvenirWorker }) => groupedSouvenirWorker.trigger()
-      );
-    }
   }
 
   static async handleExternalAuth(uri: string) {
@@ -113,11 +97,6 @@ export class HydraApi {
       subscription: null,
     };
 
-    const { AchievementWatcherManager } = await import(
-      "./achievements/achievement-watcher-manager"
-    );
-    AchievementWatcherManager.resetSessionState();
-
     logger.log(
       "Sign in received. Token expiration timestamp:",
       tokenExpirationTimestamp
@@ -143,11 +122,6 @@ export class HydraApi {
       }
     });
 
-    const { groupedSouvenirWorker } = await import(
-      "./achievements/grouped-souvenir-worker"
-    );
-    void groupedSouvenirWorker.trigger();
-
     const { startSteamSyncOnStartup } = await import(
       "./steam-integration/steam-startup-sync"
     );
@@ -172,19 +146,6 @@ export class HydraApi {
       expirationTimestamp: 0,
       subscription: null,
     };
-
-    const { AchievementWatcherManager } = await import(
-      "./achievements/achievement-watcher-manager"
-    );
-    AchievementWatcherManager.resetSessionState();
-    const { stopAllLinuxGameCaptureSessions } = await import(
-      "./linux-game-capture-session"
-    );
-    stopAllLinuxGameCaptureSessions();
-    const { groupedSouvenirWorker } = await import(
-      "./achievements/grouped-souvenir-worker"
-    );
-    groupedSouvenirWorker.stop();
 
     const { resetSteamStartupSync } = await import(
       "./steam-integration/steam-startup-sync"
@@ -368,20 +329,6 @@ export class HydraApi {
         refreshToken: "",
         subscription: null,
       };
-
-      const { AchievementWatcherManager } = await import(
-        "./achievements/achievement-watcher-manager"
-      );
-      AchievementWatcherManager.resetSessionState();
-
-      const { stopAllLinuxGameCaptureSessions } = await import(
-        "./linux-game-capture-session"
-      );
-      stopAllLinuxGameCaptureSessions();
-      const { groupedSouvenirWorker } = await import(
-        "./achievements/grouped-souvenir-worker"
-      );
-      groupedSouvenirWorker.stop();
 
       db.batch([
         {

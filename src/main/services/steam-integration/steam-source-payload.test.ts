@@ -4,7 +4,6 @@ import { describe, it } from "node:test";
 // @ts-ignore The Node ESM test runner requires the source extension.
 import {
   isSkippedSteamLibraryTitle,
-  parseSteamSourceAchievements,
   parseSteamSourceLibrary,
 } from "./steam-source-payload.ts";
 
@@ -100,61 +99,6 @@ describe("parseSteamSourceLibrary", () => {
       }),
       []
     );
-  });
-});
-
-describe("parseSteamSourceAchievements", () => {
-  it("reads the OpenAPI { achievements } object", () => {
-    const achievements = [
-      {
-        name: "ACH.WAKE_UP",
-        unlocked: true,
-        unlockTime: "2026-09-08T17:00:00.000Z",
-      },
-      { name: "LOCKED", unlocked: false, unlockTime: null },
-    ];
-
-    assert.deepEqual(
-      parseSteamSourceAchievements({ achievements }),
-      achievements
-    );
-  });
-
-  it("reads a root array", () => {
-    const achievements = [
-      { name: "ACH.WAKE_UP", unlocked: false, unlockTime: null },
-    ];
-
-    assert.deepEqual(parseSteamSourceAchievements(achievements), achievements);
-  });
-
-  it("reads the Steam playerstats envelope and converts fields", () => {
-    const unlockUnix = 1_694_196_000;
-
-    assert.deepEqual(
-      parseSteamSourceAchievements({
-        playerstats: {
-          steamID: "76561198000000000",
-          achievements: [
-            { apiname: "ACH.WAKE_UP", achieved: 1, unlocktime: unlockUnix },
-            { apiname: "LOCKED", achieved: 0, unlocktime: 0 },
-          ],
-        },
-      }),
-      [
-        {
-          name: "ACH.WAKE_UP",
-          unlocked: true,
-          unlockTime: new Date(unlockUnix * 1000).toISOString(),
-        },
-        { name: "LOCKED", unlocked: false, unlockTime: null },
-      ]
-    );
-  });
-
-  it("returns an empty list when achievements are missing", () => {
-    assert.deepEqual(parseSteamSourceAchievements({}), []);
-    assert.deepEqual(parseSteamSourceAchievements({ achievements: null }), []);
   });
 });
 

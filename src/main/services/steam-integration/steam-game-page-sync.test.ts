@@ -11,7 +11,6 @@ import {
 const payload: SteamGameSyncPayload = {
   playTimeInSeconds: 600,
   lastPlayedAt: "2026-09-17T18:00:00.000Z",
-  achievements: [],
 };
 
 const setup = ({

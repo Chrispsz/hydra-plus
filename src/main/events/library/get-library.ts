@@ -13,10 +13,6 @@ import {
 import { composeAssetsWithArtwork } from "@shared";
 import { HydraApi } from "@main/services/hydra-api";
 import { belongsToLibraryCollection } from "@main/services/library-sync/game-visibility";
-import {
-  resolveAchievementCount,
-  resolveUnlockedAchievementCount,
-} from "@main/services/achievements/achievement-memory-store";
 
 export const lookupCachedPlatform = async (
   gameKey: string
@@ -59,11 +55,6 @@ const getLibrary = async (
             const composedAssets = composeAssetsWithArtwork(
               gameAssets ?? null,
               artworkSelection
-            );
-            const unlockedAchievementCount = resolveUnlockedAchievementCount(
-              game.shop,
-              game.objectId,
-              game.unlockedAchievementCount
             );
 
             // Verify installer still exists, clear if deleted externally
@@ -112,12 +103,6 @@ const getLibrary = async (
               installerSizeInBytes,
               installedSizeInBytes,
               download: download ?? null,
-              unlockedAchievementCount,
-              achievementCount: resolveAchievementCount(
-                game.shop,
-                game.objectId,
-                game.achievementCount
-              ),
               // Spread composed assets last to ensure all image URLs are properly set
               ...composedAssets,
               title: composedAssets?.title || game.title,

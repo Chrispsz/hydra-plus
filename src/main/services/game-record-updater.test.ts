@@ -1,12 +1,8 @@
 import assert from "node:assert/strict";
-import { afterEach, describe, it } from "node:test";
+import { describe, it } from "node:test";
 
 import type { Game } from "@types";
 
-import {
-  AchievementMemoryStore,
-  mergePersistedAchievementTotals,
-} from "./achievements/achievement-memory-store.js";
 import {
   mergeImportedProfileGame,
   type ImportedProfileGame,
@@ -28,8 +24,6 @@ const game: Game = {
 };
 
 describe("game record updater", () => {
-  afterEach(() => AchievementMemoryStore.clear());
-
   it("preserves playtime and pending deltas across concurrent setting updates", async () => {
     let storedGame = { ...game };
     const updateGame = createGameRecordUpdater({
@@ -95,7 +89,7 @@ describe("game record updater", () => {
     assert.equal(storedGame.hasActiveSteamImport, true);
   });
 
-  it("keeps process state across a concurrent achievement-count update", async () => {
+  it("keeps process state across a concurrent favorite update", async () => {
     let storedGame = { ...game };
     const updateGame = createGameRecordUpdater({
       get: async () => ({ ...storedGame }),
@@ -111,18 +105,16 @@ describe("game record updater", () => {
         unsyncedDeltaPlayTimeInMilliseconds: 240_000,
         executablePath: "/games/Portal 2/portal2",
       }),
-      updateGame("steam:620", (currentGame) =>
-        mergePersistedAchievementTotals("steam", "620", currentGame, {
-          achievementCount: 51,
-          unlockedAchievementCount: 15,
-        })
-      ),
+      updateGame("steam:620", (currentGame) => ({
+        favorite: !currentGame.favorite,
+        isPinned: true,
+      })),
     ]);
 
     assert.equal(storedGame.playTimeInMilliseconds, 720_000);
     assert.equal(storedGame.unsyncedDeltaPlayTimeInMilliseconds, 240_000);
     assert.equal(storedGame.executablePath, "/games/Portal 2/portal2");
-    assert.equal(storedGame.achievementCount, 51);
-    assert.equal(storedGame.unlockedAchievementCount, 15);
+    assert.equal(storedGame.favorite, true);
+    assert.equal(storedGame.isPinned, true);
   });
 });

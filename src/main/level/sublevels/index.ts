@@ -9,8 +9,6 @@ export * from "./keys";
 export * from "./download-sources";
 export * from "./download-sources-check-timestamp";
 export * from "./local-notifications";
-export * from "./pending-achievement-souvenirs";
-export * from "./grouped-achievement-souvenirs";
 export * from "./ps2-memory-card-saves";
 export * from "./ps1-memory-card-saves";
 export * from "./cloud-save-local-hash-cache";

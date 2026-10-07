@@ -1,6 +1,5 @@
 import { db, levelKeys } from "@main/level";
 import { isSteamReconnectRequired } from "@shared";
-import { updateGameRecord } from "../game-record-updater";
 import { HydraApi } from "../hydra-api";
 import { mergeWithRemoteGames } from "../library-sync";
 import { steamSyncLogger } from "../logger";
@@ -8,24 +7,20 @@ import { WindowManager } from "../window-manager";
 import type {
   SteamIntegrationStatus,
   SteamGameSyncPayload,
-  SteamSourceAchievement,
   SteamSourceLibraryGame,
   SteamSnapshotPayload,
   SteamSyncFinishedPayload,
   SteamSyncRunStatus,
   SteamSyncOrigin,
   SteamSyncState,
-  UnlockedAchievement,
 } from "@types";
 import {
   isSkippedSteamLibraryTitle,
-  parseSteamSourceAchievements,
   parseSteamSourceLibrary,
 } from "./steam-source-payload";
 import {
   getSteamSourceHttpStatus,
   isSteamPrivateProfilePayload,
-  isSteamSourceAchievementSkippable,
   isSteamSourceLibraryFatal,
   isSteamSourceRateLimited,
   isSteamSyncConflict,
@@ -46,23 +41,10 @@ import type { SteamWebApiToken } from "./steam-store-session-config";
 import {
   getSteamWebApiToken,
   readSteamCommunitySession,
-  type SteamCommunitySession,
 } from "./steam-store-session";
-import {
-  catalogueFromSteamSchema,
-  fetchSteamCommunityPlayerAchievements,
-  shouldFetchSteamCommunityAchievements,
-} from "./steam-community-achievements";
-import {
-  AchievementMemoryStore,
-  mergePersistedAchievementTotals,
-  withSteamAchievementCatalogue,
-} from "../achievements/achievement-memory-store";
-import { mergeUnlockedAchievementLists } from "../achievements/merge-unlocked-achievements";
 import {
   fetchSteamFamilyGroupForUser,
   fetchSteamFamilyPlaytimeSummary,
-  fetchSteamGameAchievementSchema,
   fetchSteamLastPlayedTimes,
   fetchSteamOwnedGames,
   fetchSteamOwnedGame,
@@ -81,17 +63,14 @@ import {
   type SteamFamilySharedApp,
 } from "./steam-family-library";
 import {
-  buildLegacySteamSnapshotFallback,
   buildSteamSnapshot,
   chunkSteamSnapshot,
   uploadSteamSnapshotChunks,
 } from "./steam-sync-snapshot";
 import { linkImportedSteamGameExecutables } from "./link-imported-steam-executables";
 import { watchSteamLibraries } from "./steam-install-watcher";
-import { AchievementWatcherManager } from "../achievements/achievement-watcher-manager";
 
 const INTEGRATION_ENDPOINT = "/profile/integrations/steam";
-const ACHIEVEMENT_FETCH_CONCURRENCY = 8;
 
 const idleState = (): SteamSyncState => ({ status: "idle" });
 
@@ -112,48 +91,6 @@ const getHydraApiErrorMessage = (error: unknown): string | null => {
 
   return null;
 };
-
-const steamWebApiErrorBody = (error: unknown): string | null => {
-  let body: unknown = null;
-
-  if (error instanceof SteamWebApiHttpError) {
-    body = error.body;
-  } else if (typeof error === "object" && error !== null && "body" in error) {
-    body = (error as { body: unknown }).body;
-  }
-
-  if (body == null) return null;
-
-  return typeof body === "string" ? body : JSON.stringify(body);
-};
-
-const formatAchievementHttpDetail = (error: unknown, status: number | null) => {
-  const message = getHydraApiErrorMessage(error);
-  const body = steamWebApiErrorBody(error);
-  const extras = [message, body].filter(Boolean);
-
-  if (extras.length === 0) {
-    return `HTTP ${status}`;
-  }
-
-  return `HTTP ${status}, ${extras.join(", ")}`;
-};
-
-const steamUnlocksToLocal = (
-  achievements: SteamSourceAchievement[]
-): UnlockedAchievement[] =>
-  achievements.flatMap((achievement) => {
-    if (!achievement.unlocked || !achievement.unlockTime) {
-      return [];
-    }
-
-    return [
-      {
-        name: achievement.name,
-        unlockTime: Date.parse(achievement.unlockTime),
-      },
-    ];
-  });
 
 const getSteamSyncFailureMessage = (error: unknown): string => {
   if (
@@ -210,34 +147,6 @@ const fetchWithRetry = <T>(
       );
     },
   });
-
-const mapPool = async <T, R>(
-  items: T[],
-  concurrency: number,
-  signal: AbortSignal,
-  fn: (item: T, index: number) => Promise<R>
-): Promise<R[]> => {
-  const results: R[] = new Array(items.length);
-  let nextIndex = 0;
-
-  const worker = async () => {
-    for (;;) {
-      throwIfAborted(signal);
-
-      const index = nextIndex;
-      nextIndex += 1;
-      if (index >= items.length) return;
-
-      results[index] = await fn(items[index], index);
-    }
-  };
-
-  const workerCount = Math.min(concurrency, items.length);
-  if (workerCount === 0) return results;
-
-  await Promise.all(Array.from({ length: workerCount }, () => worker()));
-  return results;
-};
 
 class SteamSyncOrchestrator {
   private state: SteamSyncState = idleState();
@@ -381,34 +290,9 @@ class SteamSyncOrchestrator {
       throw new Error(`steam-game-not-found:${steamAppId}`);
     }
 
-    let achievements:
-      | SteamSnapshotPayload["games"][number]["achievements"]
-      | undefined;
-    try {
-      const communitySession = await readSteamCommunitySession();
-      if (communitySession.hasLoginCookie) {
-        const achievementsByAppId = await this.fetchAchievements(
-          token,
-          communitySession,
-          [game],
-          signal,
-          false
-        );
-        achievements = buildSteamSnapshot([game], achievementsByAppId).games[0]
-          ?.achievements;
-      }
-    } catch (error) {
-      if (isSteamSyncAbortError(error)) throw error;
-      steamSyncLogger.log(
-        `Steam achievements unavailable for ${steamAppId}`,
-        error
-      );
-    }
-
     return {
       playTimeInSeconds: game.playTimeInSeconds,
       lastPlayedAt: game.lastPlayedAt,
-      ...(achievements ? { achievements } : {}),
     };
   }
 
@@ -670,216 +554,6 @@ class SteamSyncOrchestrator {
     return games;
   }
 
-  private async persistLocalAchievementCounts(
-    steamAppId: string,
-    schemaCount: number,
-    unlockedCount: number
-  ) {
-    const gameKey = levelKeys.game("steam", steamAppId);
-    await updateGameRecord(gameKey, (localGame) =>
-      mergePersistedAchievementTotals("steam", steamAppId, localGame, {
-        achievementCount: schemaCount,
-        unlockedAchievementCount: unlockedCount,
-      })
-    );
-  }
-
-  private async fetchAchievements(
-    token: SteamWebApiToken,
-    communitySession: SteamCommunitySession,
-    games: SteamSourceLibraryGame[],
-    signal: AbortSignal,
-    trackProgress = true
-  ) {
-    const achievementsByAppId = new Map<
-      string,
-      SteamSourceAchievement[] | undefined
-    >();
-    let gamesProcessed = 0;
-    let rateLimited = false;
-    let runGone = false;
-
-    await mapPool(
-      games,
-      ACHIEVEMENT_FETCH_CONCURRENCY,
-      signal,
-      async (game, index) => {
-        throwIfAborted(signal);
-
-        try {
-          if (rateLimited || runGone) {
-            steamSyncLogger.log(
-              `Skipping achievements for ${game.steamAppId} ${game.name} (HTTP ${runGone ? "409" : "429"})`
-            );
-            achievementsByAppId.set(game.steamAppId, undefined);
-            return;
-          }
-
-          const scrapeCommunity = shouldFetchSteamCommunityAchievements(
-            game.playTimeInSeconds
-          );
-
-          steamSyncLogger.log(
-            `GET Steam achievements ${index + 1}/${games.length}`,
-            game.steamAppId,
-            game.name,
-            scrapeCommunity ? "community" : "schema only"
-          );
-
-          let schemaPayload: unknown;
-          const loadSchema = async (steamAppId: string) => {
-            schemaPayload = await fetchSteamGameAchievementSchema(
-              token,
-              steamAppId,
-              signal
-            );
-            return schemaPayload;
-          };
-
-          const response = scrapeCommunity
-            ? await fetchWithRetry(
-                `achievements ${game.steamAppId}`,
-                () =>
-                  fetchSteamCommunityPlayerAchievements({
-                    steamId64: token.steamId64,
-                    steamAppId: game.steamAppId,
-                    signal,
-                    communityFetch: communitySession.fetch,
-                    timeZoneOffsetSeconds:
-                      communitySession.timeZoneOffsetSeconds,
-                    loadSchema,
-                  }),
-                signal
-              )
-            : { achievements: [] };
-
-          if (schemaPayload == null) {
-            try {
-              schemaPayload = await loadSchema(game.steamAppId);
-            } catch (schemaError) {
-              steamSyncLogger.log(
-                `Schema unavailable for ${game.steamAppId} ${game.name}`,
-                schemaError
-              );
-            }
-          }
-
-          if (response != null && typeof response !== "object") {
-            steamSyncLogger.log(
-              "Unexpected Steam achievements payload",
-              game.steamAppId,
-              typeof response
-            );
-          }
-
-          const achievements = parseSteamSourceAchievements(response);
-          const catalogue =
-            schemaPayload != null
-              ? catalogueFromSteamSchema(game.steamAppId, schemaPayload)
-              : [];
-          const schemaCount =
-            catalogue.length > 0 ? catalogue.length : achievements.length;
-
-          const current = AchievementMemoryStore.get("steam", game.steamAppId);
-          const unlockedAchievements = mergeUnlockedAchievementLists(
-            steamUnlocksToLocal(achievements),
-            current?.unlockedAchievements ?? []
-          );
-
-          steamSyncLogger.log(
-            `Achievements for ${game.steamAppId} ${game.name}: ${unlockedAchievements.length} unlocked / ${schemaCount}`
-          );
-
-          AchievementMemoryStore.set(
-            "steam",
-            game.steamAppId,
-            withSteamAchievementCatalogue(
-              current,
-              catalogue,
-              unlockedAchievements
-            )
-          );
-
-          await this.persistLocalAchievementCounts(
-            game.steamAppId,
-            schemaCount,
-            unlockedAchievements.length
-          );
-
-          achievementsByAppId.set(game.steamAppId, achievements);
-        } catch (error) {
-          if (isSteamSyncAbortError(error)) throw error;
-
-          if (
-            error instanceof SteamSessionRequiredError ||
-            (error instanceof Error &&
-              error.name === "SteamSessionRequiredError")
-          ) {
-            throw error instanceof SteamSessionRequiredError
-              ? error
-              : new SteamSessionRequiredError();
-          }
-
-          const status = getSteamSourceHttpStatus(error);
-          const detail = formatAchievementHttpDetail(error, status);
-
-          if (status === 401) {
-            throw new SteamSessionRequiredError();
-          }
-
-          if (isSteamSourceAchievementSkippable(error)) {
-            steamSyncLogger.log(
-              `Skipping achievements for ${game.steamAppId} ${game.name} (${detail})`
-            );
-            achievementsByAppId.set(game.steamAppId, undefined);
-
-            if (status === 429) {
-              rateLimited = true;
-              if (trackProgress) {
-                this.setState(idleState());
-                this.emitFinished({
-                  ok: false,
-                  message: "profile/steam-rate-limited",
-                  origin: this.origin,
-                });
-              }
-            }
-
-            if (status === 409) {
-              runGone = true;
-            }
-          } else {
-            steamSyncLogger.error(
-              `Failed achievements for ${game.steamAppId} ${game.name} (${detail})`
-            );
-            throw error;
-          }
-        } finally {
-          gamesProcessed += 1;
-
-          if (trackProgress && this.state.status === "running") {
-            this.setState({
-              ...this.state,
-              phase: "achievements",
-              gamesFound: games.length,
-              gamesProcessed,
-            });
-          }
-        }
-      }
-    );
-
-    if (runGone) {
-      throw new SteamSyncRunNotPendingError();
-    }
-
-    if (rateLimited) {
-      throw new SteamRateLimitedError();
-    }
-
-    return achievementsByAppId;
-  }
-
   private async publishSnapshot(
     syncRunId: string,
     snapshot: SteamSnapshotPayload,
@@ -898,19 +572,13 @@ class SteamSyncOrchestrator {
       });
 
     setPublishProgress(0);
-    const unlockedCount = snapshot.games.reduce(
-      (total, game) => total + (game.achievements?.length ?? 0),
-      0
-    );
 
     steamSyncLogger.log(
       "PUT snapshot chunks",
       chunks.length,
       "chunks,",
       snapshot.games.length,
-      "games,",
-      unlockedCount,
-      "unlocked achievements"
+      "games"
     );
 
     try {
@@ -938,29 +606,15 @@ class SteamSyncOrchestrator {
     } catch (error) {
       if (getSteamSourceHttpStatus(error) !== 404) throw error;
 
-      const legacyFallback = buildLegacySteamSnapshotFallback(snapshot);
-
       steamSyncLogger.log(
-        "Chunked snapshot endpoint unavailable; using legacy snapshot endpoint",
-        { deferredAchievementGames: legacyFallback.gameUploads.length }
+        "Chunked snapshot endpoint unavailable; using legacy snapshot endpoint"
       );
       throwIfAborted(signal);
       await HydraApi.put(
         `${INTEGRATION_ENDPOINT}/sync/${syncRunId}/snapshot`,
-        legacyFallback.snapshot,
+        snapshot,
         { signal }
       );
-
-      for (const gameUpload of legacyFallback.gameUploads) {
-        for (const chunk of gameUpload.chunks) {
-          throwIfAborted(signal);
-          await HydraApi.put(
-            `${INTEGRATION_ENDPOINT}/games/${encodeURIComponent(gameUpload.steamAppId)}`,
-            chunk,
-            { signal }
-          );
-        }
-      }
     }
 
     steamSyncLogger.log("Snapshot published");
@@ -996,23 +650,7 @@ class SteamSyncOrchestrator {
       const games = await this.fetchLibrary(token, signal);
       throwIfAborted(signal);
 
-      this.setState({
-        status: "running",
-        syncRunId,
-        phase: "achievements",
-        gamesFound: games.length,
-        gamesProcessed: 0,
-      });
-
-      const achievementsByAppId = await this.fetchAchievements(
-        token,
-        communitySession,
-        games,
-        signal
-      );
-      throwIfAborted(signal);
-
-      const snapshot = buildSteamSnapshot(games, achievementsByAppId);
+      const snapshot = buildSteamSnapshot(games);
 
       await this.publishSnapshot(syncRunId, snapshot, signal);
       snapshotPublished = true;
@@ -1025,43 +663,43 @@ class SteamSyncOrchestrator {
         gamesFound: 0,
         gamesProcessed: 0,
       });
-      const linkedExecutableCount = await AchievementWatcherManager.runBatch(
-        async () => {
-          await mergeWithRemoteGames((processed, total) => {
-            if (signal.aborted) return;
 
-            this.setState({
-              status: "running",
-              syncRunId,
-              phase: "merging",
-              gamesFound: total,
-              gamesProcessed: processed,
-            });
-          });
-          steamSyncLogger.log("Remote games merged");
-          WindowManager.sendToAppWindows("on-library-batch-complete");
+      await mergeWithRemoteGames((processed, total) => {
+        if (signal.aborted) return;
+
+        this.setState({
+          status: "running",
+          syncRunId,
+          phase: "merging",
+          gamesFound: total,
+          gamesProcessed: processed,
+        });
+      });
+      steamSyncLogger.log("Remote games merged");
+      WindowManager.sendToAppWindows("on-library-batch-complete");
+
+      this.setState({
+        status: "running",
+        syncRunId,
+        phase: "executables",
+        gamesFound: 0,
+        gamesProcessed: 0,
+      });
+
+      const linkedExecutableCount = await linkImportedSteamGameExecutables(
+        (processed, total) => {
+          if (signal.aborted) return;
 
           this.setState({
             status: "running",
             syncRunId,
             phase: "executables",
-            gamesFound: 0,
-            gamesProcessed: 0,
-          });
-
-          return linkImportedSteamGameExecutables((processed, total) => {
-            if (signal.aborted) return;
-
-            this.setState({
-              status: "running",
-              syncRunId,
-              phase: "executables",
-              gamesFound: total,
-              gamesProcessed: processed,
-            });
+            gamesFound: total,
+            gamesProcessed: processed,
           });
         }
       );
+
       steamSyncLogger.log("Library merge finished", {
         linkedExecutableCount,
       });

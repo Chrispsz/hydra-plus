@@ -1,4 +1,4 @@
-import type { SteamSourceAchievement, SteamSourceLibraryGame } from "@types";
+import type { SteamSourceLibraryGame } from "@types";
 
 const STEAM_APP_ID_PATTERN = /^[1-9]\d{0,9}$/;
 
@@ -59,12 +59,6 @@ const parseLastPlayedAt = (item: Record<string, unknown>): string | null => {
   return unixSecondsToIso(item.rtime_last_played);
 };
 
-const parseUnlockTime = (item: Record<string, unknown>): string | null => {
-  if (typeof item.unlockTime === "string") return item.unlockTime;
-  if (item.unlockTime === null) return null;
-  return unixSecondsToIso(item.unlocktime);
-};
-
 const STEAM_SKIP_TITLE_PATTERN =
   /\b(?:demo|(?:play|public|closed|open|technical)[\s-]*test|test[\s-]*(?:server|client)|beta|ptb)\b/i;
 
@@ -101,37 +95,10 @@ const parseLibraryGame = (item: unknown): SteamSourceLibraryGame | null => {
   };
 };
 
-const parseAchievement = (item: unknown): SteamSourceAchievement | null => {
-  if (!isRecord(item)) return null;
-
-  const name = readIdString(item.name) ?? readIdString(item.apiname);
-  if (!name) return null;
-
-  const unlocked =
-    typeof item.unlocked === "boolean"
-      ? item.unlocked
-      : item.achieved === 1 || item.achieved === true;
-
-  const unlockTime = parseUnlockTime(item);
-
-  return { name, unlocked, unlockTime };
-};
-
 export const parseSteamSourceLibrary = (
   payload: unknown
 ): SteamSourceLibraryGame[] =>
   extractNamedArray(payload, "games", ["response", "games"]).flatMap((item) => {
     const game = parseLibraryGame(item);
     return game ? [game] : [];
-  });
-
-export const parseSteamSourceAchievements = (
-  payload: unknown
-): SteamSourceAchievement[] =>
-  extractNamedArray(payload, "achievements", [
-    "playerstats",
-    "achievements",
-  ]).flatMap((item) => {
-    const achievement = parseAchievement(item);
-    return achievement ? [achievement] : [];
   });

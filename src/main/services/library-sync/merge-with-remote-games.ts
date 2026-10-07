@@ -31,8 +31,6 @@ import {
   resolveLibrarySource,
 } from "./resolve-library-source";
 import { mergeLocalAndRemotePlayTime } from "@shared";
-import { mergePersistedAchievementTotals } from "../achievements/achievement-memory-store";
-import { trackAchievementBatchGame } from "../achievements/achievement-batch-games";
 import { fetchRemoteProfileGames as fetchProfileGames } from "./fetch-remote-profile-games";
 
 type ProfileGame = {
@@ -49,8 +47,6 @@ type ProfileGame = {
   isHiddenFromOthers?: boolean;
   isConcealed?: boolean;
   isPinned?: boolean;
-  achievementCount: number;
-  unlockedAchievementCount: number;
   platform?: string | null;
   source?: string | null;
   hasActiveSteamImport?: boolean;
@@ -208,12 +204,6 @@ const mergeExistingGame = (
   isConcealed: remoteGame.isConcealed ?? localGame.isConcealed ?? false,
   isPinned: remoteGame.isPinned ?? localGame.isPinned,
   collectionIds,
-  ...mergePersistedAchievementTotals(
-    remoteGame.shop,
-    remoteGame.objectId,
-    localGame,
-    remoteGame
-  ),
   platform: remoteGame.platform ?? localGame.platform,
   source: resolveLibrarySource(localGame.source, remoteGame.source),
   hasActiveSteamImport: remoteGame.hasActiveSteamImport === true,
@@ -266,12 +256,6 @@ const createLocalGame = (
   isConcealed: remoteGame.isConcealed ?? false,
   isPinned: remoteGame.isPinned ?? false,
   collectionIds,
-  ...mergePersistedAchievementTotals(
-    remoteGame.shop,
-    remoteGame.objectId,
-    {},
-    remoteGame
-  ),
   platform: remoteGame.platform ?? null,
   source: resolveLibrarySource(undefined, remoteGame.source),
   hasActiveSteamImport: remoteGame.hasActiveSteamImport === true,
@@ -346,8 +330,6 @@ const mergeRemoteGamesChunk = async (
   remoteGames.forEach((remoteGame, index) => {
     const gameKey = gameKeys[index];
     const localGame = localGames[index];
-
-    if (!localGame || localGame.isDeleted) trackAchievementBatchGame(gameKey);
 
     batch.put(
       gameKey,

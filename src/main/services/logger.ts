@@ -13,10 +13,6 @@ log.transports.file.resolvePathFn = (
   _: log.PathVariables,
   message?: log.LogMessage | undefined
 ) => {
-  if (message?.scope == "achievements") {
-    return path.join(logsPath, "achievements.txt");
-  }
-
   if (message?.level === "error") {
     return path.join(logsPath, "error.txt");
   }
@@ -35,6 +31,5 @@ log.errorHandler.startCatching({
 log.initialize();
 
 export const logger = log.scope("main");
-export const achievementsLogger = log.scope("achievements");
 export const steamSyncLogger = log.scope("steam-sync");
 export const networkLogger = networkLog.scope("network");

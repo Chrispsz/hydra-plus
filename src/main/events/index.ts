@@ -1,12 +1,13 @@
-import { appVersion, defaultDownloadsPath, isStaging } from "@main/constants";
-import { ipcMain } from "electron";
-import { ScreenshotService } from "@main/services/screenshot";
 import {
-  cleanupAchievementSouvenirSync,
-  getAchievementSouvenirSyncDetails,
-  getAchievementSouvenirSyncStatus,
-  retryAchievementSouvenirSync,
-} from "@main/services/achievements/grouped-souvenir-worker";
+  appVersion,
+  defaultDownloadsPath,
+  isStaging,
+  screenshotsPath,
+} from "@main/constants";
+import { ipcMain } from "electron";
+import path from "node:path";
+import { db, levelKeys } from "@main/level";
+import type { UserPreferences } from "@types";
 
 import "./auth";
 import "./autoupdater";
@@ -30,21 +31,21 @@ ipcMain.handle("ping", () => "pong");
 ipcMain.handle("getVersion", () => appVersion);
 ipcMain.handle("isStaging", () => isStaging);
 ipcMain.handle("getDefaultDownloadsPath", () => defaultDownloadsPath);
-ipcMain.handle("getScreenshotsPath", () =>
-  ScreenshotService.getScreenshotsPath()
-);
-ipcMain.handle("getAchievementSouvenirSyncStatus", () =>
-  getAchievementSouvenirSyncStatus()
-);
-ipcMain.handle("getAchievementSouvenirSyncDetails", () =>
-  getAchievementSouvenirSyncDetails()
-);
-ipcMain.handle("retryAchievementSouvenirSync", () =>
-  retryAchievementSouvenirSync()
-);
-ipcMain.handle("cleanupAchievementSouvenirSync", () =>
-  cleanupAchievementSouvenirSync()
-);
+ipcMain.handle("getScreenshotsPath", async () => {
+  const userPreferences = await db
+    .get<string, UserPreferences | null>(levelKeys.userPreferences, {
+      valueEncoding: "json",
+    })
+    .catch(() => null);
+
+  const trimmedPath = userPreferences?.achievementScreenshotsPath?.trim();
+
+  if (trimmedPath && path.isAbsolute(trimmedPath)) {
+    return path.normalize(trimmedPath);
+  }
+
+  return screenshotsPath;
+});
 ipcMain.handle("getCloudIframeUrl", () =>
   new URL("/cloud", import.meta.env.MAIN_VITE_CHECKOUT_URL).toString()
 );

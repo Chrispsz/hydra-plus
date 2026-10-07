@@ -12,7 +12,6 @@ import { WindowManager } from "../window-manager";
 import { createSteamGameExitSyncScheduler } from "./steam-game-exit-sync-scheduler";
 import { createSteamGamePageSync } from "./steam-game-page-sync-core";
 import { steamSyncOrchestrator } from "./steam-sync-orchestrator";
-import { chunkSteamGameSyncPayload } from "./steam-sync-snapshot";
 
 const GAME_ENDPOINT = "/profile/integrations/steam/games";
 
@@ -21,13 +20,11 @@ const publishGame = async (
   payload: SteamGameSyncPayload,
   signal: AbortSignal
 ) => {
-  for (const chunk of chunkSteamGameSyncPayload(payload)) {
-    await HydraApi.put(
-      `${GAME_ENDPOINT}/${encodeURIComponent(steamAppId)}`,
-      chunk,
-      { signal }
-    );
-  }
+  await HydraApi.put(
+    `${GAME_ENDPOINT}/${encodeURIComponent(steamAppId)}`,
+    payload,
+    { signal }
+  );
 
   const remoteGame = await HydraApi.get<ImportedProfileGame>(
     `/profile/games/steam/${encodeURIComponent(steamAppId)}`,

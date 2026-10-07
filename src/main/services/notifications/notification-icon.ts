@@ -42,9 +42,9 @@ export const buildDownloadFileName = (url: string) => {
  * downloaded icon has to go through here before it reaches a `Notification`.
  *
  * `fit: "inside"` preserves the source aspect ratio: profile pictures are
- * already square (see `crop-profile-image.ts`), but game and achievement icons
- * are not, and cropping them to a square would cut off their sides. Upscaling
- * is skipped so a small source icon is not blown up into a blurry one.
+ * already square (see `crop-profile-image.ts`), but game icons are not, and
+ * cropping them to a square would cut off their sides. Upscaling is skipped so
+ * a small source icon is not blown up into a blurry one.
  *
  * Animation is dropped on purpose: neither Windows toasts nor `nativeImage`
  * animate.

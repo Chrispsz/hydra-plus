@@ -27,12 +27,10 @@ import {
   WindowManager,
   logger,
   migrateCloudSaveAutomaticSyncDefaults,
-  groupedSouvenirWorker,
 } from "@main/services";
 import { migrateDownloadSources } from "./helpers/migrate-download-sources";
 import { getDirSize } from "./services/download/helpers";
 import { GofileApi } from "./services/hosters";
-import { clearLegacyAchievementPersistence } from "./level/clear-legacy-achievements";
 import { startSteamSyncOnStartup } from "./services/steam-integration/steam-startup-sync";
 import { watchSteamLibraries } from "./services/steam-integration/steam-install-watcher";
 import { migrateGameVisibilityFields } from "./services/library-sync/game-visibility-migration";
@@ -62,7 +60,6 @@ const hasMissingSeedFiles = async (download: Download): Promise<boolean> => {
 
 export const loadState = async () => {
   await Lock.acquireLock();
-  await clearLegacyAchievementPersistence();
   await migrateCloudSaveAutomaticSyncDefaults();
   await migrateGameVisibilityFields();
 
@@ -135,7 +132,6 @@ export const loadState = async () => {
 
     if (HydraApi.isLoggedIn()) {
       SSEClient.connect();
-      void groupedSouvenirWorker.trigger();
       void startSteamSyncOnStartup();
     }
   });

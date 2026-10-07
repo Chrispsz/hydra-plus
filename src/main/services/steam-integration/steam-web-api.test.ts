@@ -6,7 +6,6 @@ import {
   SteamWebApiHttpError,
   fetchSteamFamilyGroupForUser,
   fetchSteamFamilyPlaytimeSummary,
-  fetchSteamGameAchievementSchema,
   fetchSteamLastPlayedTimes,
   fetchSteamOwnedGames,
   fetchSteamOwnedGame,
@@ -59,40 +58,6 @@ describe("Steam Web API client", () => {
       });
       return Promise.resolve(jsonResponse(200, { response: { games: [] } }));
     });
-  });
-
-  it("calls GetGameAchievements with the store access token and no steamid", async () => {
-    const envelope = {
-      response: {
-        achievements: [
-          {
-            internal_name: "NEW_ACHIEVEMENT_1_1",
-            localized_name: "Welcome to the City of the Dead",
-          },
-        ],
-      },
-    };
-
-    const response = await fetchSteamGameAchievementSchema(
-      token,
-      "883710",
-      undefined,
-      (input) => {
-        const url = new URL(String(input));
-        assert.equal(
-          url.origin + url.pathname,
-          "https://api.steampowered.com/IPlayerService/GetGameAchievements/v1/"
-        );
-        assert.equal(url.searchParams.get("access_token"), token.accessToken);
-        assert.equal(url.searchParams.get("appid"), "883710");
-        assert.equal(url.searchParams.get("language"), "english");
-        assert.equal(url.searchParams.get("steamid"), null);
-        assert.equal(url.searchParams.get("key"), null);
-        return Promise.resolve(jsonResponse(200, envelope));
-      }
-    );
-
-    assert.deepEqual(response, envelope);
   });
 
   it("calls GetFamilyGroupForUser with the store access token and no steamid", async () => {

@@ -37,7 +37,6 @@ import "./refresh-library-assets";
 import "./remove-game-from-favorites";
 import "./remove-game-from-library";
 import "./remove-game";
-import "./reset-game-achievements";
 import "./reset-game-playtime";
 import "./scan-installed-games";
 import "./add-scanned-game";

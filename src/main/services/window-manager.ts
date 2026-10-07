@@ -11,12 +11,7 @@ import {
   CUSTOM_WINDOW_BORDER_WIDTH,
   CUSTOM_WINDOW_TITLE_BAR_HEIGHT,
 } from "@shared";
-import type {
-  AchievementCustomNotificationPosition,
-  AchievementNotificationInfo,
-  ScreenState,
-  UserPreferences,
-} from "@types";
+import type { ScreenState, UserPreferences } from "@types";
 import {
   BrowserWindow,
   Menu,
@@ -40,7 +35,6 @@ import {
   addSteamGridDbCacheControl,
   isSteamGridDbArtworkRequest,
 } from "./steam-grid-db-cache";
-import { getRetroAchievementsConnectionWindowLayout } from "./retroachievements-connection-window-layout";
 
 const isLinuxWayland =
   process.platform === "linux" &&
@@ -52,8 +46,6 @@ export class WindowManager {
   private static gameLauncherWindowInstance: Electron.BrowserWindow | null =
     null;
   private static authWindow: Electron.BrowserWindow | null = null;
-  private static retroAchievementsConnectionWindow: Electron.BrowserWindow | null =
-    null;
 
   private static isArtworkRendererRequest(
     webContentsId: number | undefined
@@ -566,93 +558,6 @@ export class WindowManager {
     if (this.authWindow && !this.authWindow.isDestroyed()) {
       this.authWindow.close();
     }
-  }
-
-  public static openRetroAchievementsConnectionWindow() {
-    const existingWindow = this.retroAchievementsConnectionWindow;
-    if (existingWindow && !existingWindow.isDestroyed()) {
-      if (existingWindow.isMinimized()) existingWindow.restore();
-      existingWindow.focus();
-      return;
-    }
-
-    const parentWindow = this.mainWindow;
-    if (!parentWindow || parentWindow.isDestroyed()) return;
-
-    const layout = getRetroAchievementsConnectionWindowLayout(process.platform);
-    const connectionWindow = new BrowserWindow({
-      width: layout.width,
-      height: layout.height,
-      title: "Hydra",
-      backgroundColor: "#1c1c1c",
-      parent: parentWindow,
-      modal: true,
-      show: false,
-      maximizable: false,
-      resizable: false,
-      minimizable: layout.minimizable,
-      frame: layout.frame,
-      icon,
-      webPreferences: {
-        preload: path.join(__dirname, "../preload/index.mjs"),
-        sandbox: false,
-      },
-    });
-
-    this.retroAchievementsConnectionWindow = connectionWindow;
-    connectionWindow.removeMenu();
-    void this.loadWindowURL(connectionWindow, "retroachievements-connection");
-
-    connectionWindow.once("ready-to-show", () => {
-      connectionWindow.show();
-      if (!app.isPackaged || isStaging) {
-        connectionWindow.webContents.openDevTools();
-      }
-    });
-
-    connectionWindow.once("closed", () => {
-      this.retroAchievementsConnectionWindow = null;
-      if (!parentWindow.isDestroyed()) parentWindow.focus();
-    });
-  }
-
-  public static minimizeRetroAchievementsConnectionWindow() {
-    const connectionWindow = this.retroAchievementsConnectionWindow;
-    if (connectionWindow && !connectionWindow.isDestroyed()) {
-      connectionWindow.minimize();
-    }
-  }
-
-  public static closeRetroAchievementsConnectionWindow() {
-    const connectionWindow = this.retroAchievementsConnectionWindow;
-    if (connectionWindow && !connectionWindow.isDestroyed()) {
-      connectionWindow.close();
-    }
-  }
-
-  public static completeRetroAchievementsConnectionWindow() {
-    this.sendToAppWindows("on-retroachievements-connected");
-    this.closeRetroAchievementsConnectionWindow();
-  }
-
-  public static sendAchievementToFocusedWindow(
-    position: AchievementCustomNotificationPosition,
-    achievements: AchievementNotificationInfo[]
-  ): boolean {
-    const candidates = [this.mainWindow];
-
-    for (const window of candidates) {
-      if (window && !window.isDestroyed() && window.isFocused()) {
-        window.webContents.send(
-          "on-achievement-unlocked-in-app",
-          position,
-          achievements
-        );
-        return true;
-      }
-    }
-
-    return false;
   }
 
   private static readonly GAME_LAUNCHER_WINDOW_WIDTH = 550;

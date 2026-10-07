@@ -11,7 +11,6 @@ import {
   hasImportedSteamData,
 } from "@main/services/steam-integration/steam-imported-games";
 import { clearImportedSteamGames } from "@main/services/steam-integration/clear-imported-steam-games";
-import { AchievementMemoryStore } from "@main/services/achievements/achievement-memory-store";
 import { db, gamesSublevel } from "@main/level";
 import type { Game } from "@types";
 import { chunk } from "lodash-es";
@@ -107,7 +106,6 @@ const disconnectSteam = async (
     ) {
       const cleanupPlan = getSteamImportedDataCleanupPlan(game);
       lastTimePlayedByGameKey.set(key, cleanupPlan.lastTimePlayedFallback);
-      AchievementMemoryStore.delete(game.shop, game.objectId);
       localUpdates.push([key, { ...game, ...cleanupPlan.cleanup }]);
     }
   }

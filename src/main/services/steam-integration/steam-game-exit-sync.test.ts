@@ -13,12 +13,6 @@ type Timer = { callback: () => void; delayMs: number; cancelled: boolean };
 const payload = (playTimeInSeconds: number): SteamGameSyncPayload => ({
   playTimeInSeconds,
   lastPlayedAt: "2026-09-15T18:00:00.000Z",
-  achievements: [
-    {
-      name: "ACH.WAKE_UP",
-      unlockTime: "2026-09-15T17:00:00.000Z",
-    },
-  ],
 });
 
 const setup = (

@@ -14,7 +14,6 @@ import {
   parseSteamStoreSessionConfig,
   type SteamWebApiToken,
 } from "./steam-store-session-config";
-import { parseSteamTimezoneOffsetSeconds } from "./steam-community-achievements";
 
 export { isSteamOpenIdSuccessUrl } from "./steam-openid-return";
 export { STEAM_CONNECTED_DEEP_LINK } from "./steam-openid-return";
@@ -22,6 +21,15 @@ export { parseSteamStoreSessionConfig } from "./steam-store-session-config";
 export type { SteamWebApiToken } from "./steam-store-session-config";
 
 export const STEAM_SESSION_PARTITION = "persist:steam";
+
+export const parseSteamTimezoneOffsetSeconds = (
+  value: string | null | undefined
+) => {
+  if (!value) return 0;
+  const match = /^-?\d+/.exec(value);
+  return match ? Number(match[0]) : 0;
+};
+
 export const STEAM_STORE_EXPLORE_URL =
   "https://store.steampowered.com/explore/";
 export const STEAM_STORE_MAX_REDIRECTS = 5;

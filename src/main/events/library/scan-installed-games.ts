@@ -13,7 +13,6 @@ import {
 } from "@main/helpers/game-executable-ranking";
 import { updateGameExecutablePath } from "@main/helpers/update-executable-path";
 import { gamesSublevel, levelKeys } from "@main/level";
-import { AchievementWatcherManager } from "@main/services/achievements/achievement-watcher-manager";
 import { createGame } from "@main/services/library-sync";
 import {
   GameExecutables,
@@ -23,7 +22,6 @@ import {
 } from "@main/services";
 import { runAutomaticCloudSaveSync } from "@main/services/cloud-save";
 import { clearMissingExecutables } from "@main/services/clear-missing-executables";
-import { trackAchievementBatchGame } from "@main/services/achievements/achievement-batch-games";
 import { resolveSteamLaunchExecutables } from "@main/services/steam-integration/steam-app-info-core";
 import {
   getInstalledSteamApps,
@@ -831,20 +829,6 @@ export const addGameOutsideLibrary = async (
   await gamesSublevel.put(gameKey, game);
   await createGame(game).catch(() => {});
 
-  if (AchievementWatcherManager.isBatching) {
-    AchievementWatcherManager.trackBatchGame(DISCOVERED_GAMES_SHOP, objectId);
-  } else {
-    AchievementWatcherManager.firstSyncWithRemoteIfNeeded(
-      DISCOVERED_GAMES_SHOP,
-      objectId
-    ).catch((err) => {
-      logger.error(
-        `[ScanInstalledGames] Failed to sync achievements for ${objectId}:`,
-        err
-      );
-    });
-  }
-
   logger.info(
     `[ScanInstalledGames] Added ${objectId} to the library: ${executablePath}`
   );
@@ -954,13 +938,11 @@ const scanInstalledGames = async (
   if (requestId) inflightScans.set(requestId, signal);
 
   try {
-    return await AchievementWatcherManager.runBatch(() =>
-      runScan(
-        signal,
-        additionalDirectories,
-        includeDefaultDirectories,
-        addGamesToLibrary
-      )
+    return await runScan(
+      signal,
+      additionalDirectories,
+      includeDefaultDirectories,
+      addGamesToLibrary
     );
   } finally {
     if (requestId) inflightScans.delete(requestId);
@@ -1066,7 +1048,6 @@ const linkLibraryGames = async (
     if (!foundPath) continue;
 
     await gamesSublevel.put(key, updateGameExecutablePath(game, foundPath));
-    trackAchievementBatchGame(key);
     void runAutomaticCloudSaveSync(
       game.objectId,
       game.shop,

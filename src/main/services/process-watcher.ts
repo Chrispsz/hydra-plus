@@ -8,8 +8,6 @@ import { CloudSync } from "./cloud-sync";
 import { logger, networkLogger } from "./logger";
 import { PowerSaveBlockerManager } from "./power-save-blocker";
 import path from "node:path";
-import { AchievementWatcherManager } from "./achievements/achievement-watcher-manager";
-import { abortAchievementMetadataExport } from "./achievements/metadata-export";
 import { INTERVALS } from "@main/constants";
 import { Wine } from "./wine";
 import { NativeAddon } from "./native-addon";
@@ -50,10 +48,6 @@ import {
   getTrackedGamesRunning,
   setGamePlaytime,
 } from "./game-running-state";
-import {
-  prepareLinuxGameCaptureSession,
-  stopLinuxGameCaptureSession,
-} from "./linux-game-capture-session";
 import { updateGameRecord } from "./game-record-updater";
 import { GameExecutables } from "./game-executables";
 
@@ -395,10 +389,6 @@ async function onOpenGame(game: Game, matchedPath: string) {
       }));
   }
 
-  if (game.remoteId) {
-    void prepareLinuxGameCaptureSession(gameKey);
-  }
-
   setGamePlaytime(gameKey, {
     lastTick: now,
     firstTick: now,
@@ -429,8 +419,6 @@ async function onOpenGame(game: Game, matchedPath: string) {
     .catch(() => {});
 
   if (game.shop === "custom") return;
-
-  AchievementWatcherManager.syncGameAchievementFiles(game.shop, game.objectId);
 
   if (game.remoteId) {
     const deltaToSync = game.unsyncedDeltaPlayTimeInMilliseconds ?? 0;
@@ -564,9 +552,7 @@ const onCloseGame = (game: Game) => {
   const gamePlaytime = gamesPlaytime.get(gameKey)!;
   deleteGamePlaytime(gameKey);
   launchedGamePids.delete(gameKey);
-  stopLinuxGameCaptureSession(gameKey);
   PowerSaveBlockerManager.markGameClosed(gameKey);
-  abortAchievementMetadataExport(gameKey);
 
   const { localDelta: delta, syncDelta: deltaToSync } = getGamePlaytimeDeltas(
     gamePlaytime,

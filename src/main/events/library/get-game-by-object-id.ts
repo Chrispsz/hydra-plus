@@ -1,10 +1,6 @@
 import { registerEvent } from "../register-event";
 import { gamesSublevel, downloadsSublevel, levelKeys } from "@main/level";
 import type { GameShop } from "@types";
-import {
-  resolveAchievementCount,
-  resolveUnlockedAchievementCount,
-} from "@main/services/achievements/achievement-memory-store";
 import { lookupCachedPlatform } from "./get-library";
 
 const getGameByObjectId = async (
@@ -28,23 +24,10 @@ const getGameByObjectId = async (
     }
   }
 
-  const unlockedAchievementCount = resolveUnlockedAchievementCount(
-    shop,
-    objectId,
-    game.unlockedAchievementCount
-  );
-  const achievementCount = resolveAchievementCount(
-    shop,
-    objectId,
-    game.achievementCount
-  );
-
   return {
     ...game,
     id: gameKey,
     download,
-    unlockedAchievementCount,
-    achievementCount,
   };
 };
 
