@@ -29,8 +29,15 @@ const EXPECTED_PACKAGE_NAME = "hydra-plus";
 
 const OUT_FILES = [
   path.join("out", "main", "index.js"),
-  path.join("out", "preload", "index.js"),
   path.join("out", "renderer", "index.html"),
+];
+/**
+ * electron-vite emits the preload bundle as index.js (CJS projects) or
+ * index.mjs (ESM projects — this fork sets "type": "module").
+ */
+const PRELOAD_BUNDLE_ALTERNATIVES = [
+  path.join("out", "preload", "index.mjs"),
+  path.join("out", "preload", "index.js"),
 ];
 
 const ARTIFACT_EXTENSIONS = new Set([
@@ -105,6 +112,15 @@ function main() {
   for (const file of OUT_FILES) {
     check(`bundle exists: ${file}`, isFile(file));
   }
+
+  const preloadBundle = PRELOAD_BUNDLE_ALTERNATIVES.find((file) =>
+    isFile(file)
+  );
+  check(
+    `preload bundle exists (${PRELOAD_BUNDLE_ALTERNATIVES.join(" or ")})`,
+    Boolean(preloadBundle),
+    preloadBundle ? `found: ${preloadBundle}` : undefined
+  );
 
   // (b) main bundle must not self-update from the upstream feed
   let mainBundle = null;
