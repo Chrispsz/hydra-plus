@@ -278,21 +278,8 @@ export class WindowManager {
 
     mainWindow.webContents.session.webRequest.onBeforeSendHeaders(
       (details, callback) => {
-        if (
-          !this.isArtworkRendererRequest(details.webContentsId) ||
-          details.url.includes("chatwoot")
-        ) {
+        if (!this.isArtworkRendererRequest(details.webContentsId)) {
           return callback(details);
-        }
-
-        if (details.url.includes("workwonders")) {
-          return callback({
-            ...details,
-            requestHeaders: {
-              Origin: "https://workwonders.app",
-              ...details.requestHeaders,
-            },
-          });
         }
 
         const userAgent = new UserAgent();
@@ -316,12 +303,7 @@ export class WindowManager {
             ? addSteamGridDbCacheControl(details.responseHeaders)
             : details.responseHeaders;
 
-        if (
-          !isArtworkRendererRequest ||
-          details.url.includes("featurebase") ||
-          details.url.includes("chatwoot") ||
-          details.url.includes("workwonders")
-        ) {
+        if (!isArtworkRendererRequest) {
           return callback({ ...details, responseHeaders });
         }
 

@@ -55,13 +55,6 @@ export function Modal({
   }, [onClose, onCloseStart]);
 
   const isTopMostModal = () => {
-    if (
-      document.querySelector(
-        ".featurebase-widget-overlay.featurebase-display-block"
-      )
-    )
-      return false;
-
     const openModals = document.querySelectorAll("[role=dialog]");
 
     return (
