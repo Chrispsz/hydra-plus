@@ -10,7 +10,7 @@ import {
   isGameReadyToPlay,
   shouldShowSteamLibraryBadge,
 } from "@renderer/helpers";
-import { AchievementProgress, SteamLibraryBadge } from "@renderer/components";
+import { SteamLibraryBadge } from "@renderer/components";
 import { GameVisibilityBadge } from "@renderer/components/game-visibility-badge/game-visibility-badge";
 import { formatBytes, getDisplayedPlayTimeInMilliseconds } from "@shared";
 import {
@@ -74,8 +74,6 @@ export const LibraryGameCardLarge = memo(function LibraryGameCardLarge({
     game,
     userPreferences?.hideSteamLibraryBadges
   );
-  const hideAchievementProgress =
-    userPreferences?.hideLibraryAchievementProgress ?? false;
   const autoplayAnimatedArtwork =
     userPreferences?.autoplayAnimatedArtwork ?? false;
 
@@ -153,10 +151,6 @@ export const LibraryGameCardLarge = memo(function LibraryGameCardLarge({
 
   const [heroIndex, setHeroIndex] = useState(0);
 
-  const [unlockedAchievementsCount, setUnlockedAchievementsCount] = useState(
-    game.unlockedAchievementCount ?? 0
-  );
-
   useEffect(() => {
     setHeroIndex(0);
   }, [
@@ -167,38 +161,6 @@ export const LibraryGameCardLarge = memo(function LibraryGameCardLarge({
     game.coverImageUrl,
     game.libraryImageUrl,
     game.iconUrl,
-  ]);
-
-  useEffect(() => {
-    if (game.unlockedAchievementCount != null) {
-      setUnlockedAchievementsCount(game.unlockedAchievementCount);
-      return;
-    }
-
-    setUnlockedAchievementsCount(0);
-
-    if ((game.achievementCount ?? 0) <= 0) return;
-
-    let isStale = false;
-
-    window.electron
-      .getUnlockedAchievements(game.objectId, game.shop)
-      .then((achievements) => {
-        if (isStale) return;
-        setUnlockedAchievementsCount(
-          achievements.filter((a) => a.unlocked).length
-        );
-      })
-      .catch(() => void 0);
-
-    return () => {
-      isStale = true;
-    };
-  }, [
-    game.achievementCount,
-    game.objectId,
-    game.shop,
-    game.unlockedAchievementCount,
   ]);
 
   useEffect(() => {
@@ -279,10 +241,7 @@ export const LibraryGameCardLarge = memo(function LibraryGameCardLarge({
           className="library-game-card-large__animated-hero"
         />
       )}
-      {!hideAchievementProgress &&
-        ((game.achievementCount ?? 0) > 0 || unlockedAchievementsCount > 0) && (
-          <div className="library-game-card-large__gradient" />
-        )}
+      <div className="library-game-card-large__gradient" />
 
       <div className="library-game-card-large__overlay">
         <div className="library-game-card-large__top-section">
@@ -347,22 +306,7 @@ export const LibraryGameCardLarge = memo(function LibraryGameCardLarge({
           )}
         </div>
 
-        <div className="library-game-card-large__info-bar">
-          {!hideAchievementProgress &&
-            ((game.achievementCount ?? 0) > 0 ||
-              unlockedAchievementsCount > 0) && (
-              <AchievementProgress
-                achievementCount={Math.max(
-                  game.achievementCount ?? 0,
-                  unlockedAchievementsCount
-                )}
-                unlockedAchievementCount={unlockedAchievementsCount}
-                classNamePrefix="library-game-card-large"
-                label={`${game.title} achievements`}
-                trophyIconSize={14}
-              />
-            )}
-        </div>
+        <div className="library-game-card-large__info-bar" />
       </div>
     </button>
   );

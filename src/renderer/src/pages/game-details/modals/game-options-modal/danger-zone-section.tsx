@@ -6,12 +6,9 @@ import type { LibraryGame, UserDetails } from "@types";
 interface DangerZoneSectionProps {
   game: LibraryGame;
   deleting: boolean;
-  isDeletingAchievements: boolean;
-  hasAchievements: boolean;
   isGameDownloading: boolean;
   userDetails: UserDetails | null;
   onOpenRemoveFromLibrary: () => void;
-  onOpenResetAchievements: () => void;
   onOpenChangePlaytime: () => void;
   onOpenResetPlaytime: () => void;
   onOpenRemoveFiles: () => void;
@@ -20,12 +17,8 @@ interface DangerZoneSectionProps {
 export function DangerZoneSection({
   game,
   deleting,
-  isDeletingAchievements,
-  hasAchievements,
   isGameDownloading,
-  userDetails,
   onOpenRemoveFromLibrary,
-  onOpenResetAchievements,
   onOpenChangePlaytime,
   onOpenResetPlaytime,
   onOpenRemoveFiles,
@@ -49,21 +42,6 @@ export function DangerZoneSection({
         >
           {t("remove_from_library")}
         </Button>
-
-        {game.shop !== "custom" && (
-          <Button
-            onClick={onOpenResetAchievements}
-            theme="danger"
-            disabled={
-              deleting ||
-              isDeletingAchievements ||
-              !hasAchievements ||
-              !userDetails
-            }
-          >
-            {t("reset_achievements")}
-          </Button>
-        )}
 
         <Button onClick={onOpenChangePlaytime} theme="danger">
           {t("update_game_playtime")}

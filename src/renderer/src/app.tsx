@@ -1,4 +1,5 @@
 import { BottomPanel, Header, Sidebar, Toast } from "@renderer/components";
+import { levelDBService } from "@renderer/services/leveldb.service";
 import {
   DashIcon,
   ScreenFullIcon,
@@ -37,8 +38,6 @@ import { CloudGiftNotificationModal } from "./pages/shared-modals/cloud-gift-not
 
 import type { UserPreferences } from "@types";
 import "./app.scss";
-import { getAchievementSoundUrl, getAchievementSoundVolume } from "./helpers";
-import { levelDBService } from "./services/leveldb.service";
 
 export interface AppProps {
   children: React.ReactNode;
@@ -330,24 +329,6 @@ export function App() {
 
     return () => unsubscribe();
   }, [navigate]);
-
-  const playAudio = useCallback(async () => {
-    const soundUrl = await getAchievementSoundUrl();
-    const volume = await getAchievementSoundVolume();
-    const audio = new Audio(soundUrl);
-    audio.volume = volume;
-    audio.play();
-  }, []);
-
-  useEffect(() => {
-    const unsubscribe = window.electron.onAchievementUnlocked(() => {
-      playAudio();
-    });
-
-    return () => {
-      unsubscribe();
-    };
-  }, [playAudio]);
 
   const handleToastClose = useCallback(() => {
     dispatch(closeToast());

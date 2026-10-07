@@ -4,16 +4,13 @@ import {
   PersonIcon,
   ClockIcon,
   StarFillIcon,
-  HeartFillIcon,
   CommentDiscussionIcon,
   GiftIcon,
 } from "@primer/octicons-react";
-import retroAchievementsLogo from "@renderer/assets/icons/retroachievements.png";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import { useDate } from "@renderer/hooks";
 import cn from "classnames";
-import { buildSouvenirNotificationTarget } from "@shared";
 
 import type { Notification, Badge } from "@types";
 import { openCloudGiftModal } from "../shared-modals/cloud-gift-modal.events";
@@ -35,10 +32,7 @@ const parseNotificationUrl = (notificationUrl: string): string => {
     return `/badges/${badgeName}`;
   }
 
-  if (
-    url.pathname === "/profile/integrations/retroachievements" ||
-    url.pathname === "/profile/integrations/steam"
-  ) {
+  if (url.pathname === "/profile/integrations/steam") {
     return "/settings?tab=integrations";
   }
 
@@ -57,10 +51,7 @@ const parseNotificationUrl = (notificationUrl: string): string => {
 const getNotificationTarget = (notification: Notification) => {
   if (!notification.url) return null;
 
-  const target = parseNotificationUrl(notification.url);
-  if (notification.type !== "SOUVENIR_LIKE") return target;
-
-  return buildSouvenirNotificationTarget(target, notification.variables);
+  return parseNotificationUrl(notification.url);
 };
 
 interface NotificationItemProps {
@@ -150,32 +141,6 @@ export function NotificationItem({
             ),
           }),
         };
-      case "SOUVENIR_LIKE":
-        return {
-          title: t("souvenir_like_title", {
-            gameTitle: notification.variables.gameTitle,
-          }),
-          description: t("souvenir_like_description", {
-            count: Number(notification.variables.likeCount ?? 1),
-          }),
-        };
-      case "RETROACHIEVEMENTS_CREDENTIALS_RESTORED":
-        return {
-          title: t("retroachievements_credentials_restored_title"),
-          description: t("retroachievements_credentials_restored_description"),
-        };
-      case "RETROACHIEVEMENTS_CREDENTIALS_INVALID":
-        return {
-          title: t("retroachievements_credentials_invalid_title"),
-          description: t("retroachievements_credentials_invalid_description"),
-        };
-      case "RETROACHIEVEMENTS_SYNC_FAILED":
-        return {
-          title: t("retroachievements_sync_failed_title"),
-          description: t("retroachievements_sync_failed_description", {
-            gameTitle: notification.variables.gameTitle,
-          }),
-        };
       case "CLOUD_GIFT_RECEIVED": {
         const durationMonths = Number(notification.variables.durationMonths);
 
@@ -202,19 +167,10 @@ export function NotificationItem({
   const isReviewAnswer = notification.type === "REVIEW_ANSWER";
   const isReviewAnswerUpvote = notification.type === "REVIEW_ANSWER_UPVOTE";
   const isReview = isReviewUpvote || isReviewAnswer || isReviewAnswerUpvote;
-  const isSouvenirLike = notification.type === "SOUVENIR_LIKE";
-
-  const isRetroAchievements =
-    notification.type === "RETROACHIEVEMENTS_CREDENTIALS_RESTORED" ||
-    notification.type === "RETROACHIEVEMENTS_CREDENTIALS_INVALID" ||
-    notification.type === "RETROACHIEVEMENTS_SYNC_FAILED";
 
   const getIcon = () => {
     if (notification.pictureUrl) {
       return <img src={notification.pictureUrl} alt="" />;
-    }
-    if (isRetroAchievements) {
-      return <img src={retroAchievementsLogo} alt="" />;
     }
     if (isReviewUpvote || isReviewAnswerUpvote) {
       return <StarFillIcon size={24} />;
@@ -224,9 +180,6 @@ export function NotificationItem({
     }
     if (notification.type === "CLOUD_GIFT_RECEIVED") {
       return <GiftIcon size={24} />;
-    }
-    if (isSouvenirLike) {
-      return <HeartFillIcon size={24} />;
     }
     return <PersonIcon size={24} />;
   };
@@ -243,7 +196,6 @@ export function NotificationItem({
         className={cn("notification-item__picture", {
           "notification-item__badge-picture": isBadge,
           "notification-item__review-picture": isReview,
-          "notification-item__ra-picture": isRetroAchievements,
         })}
       >
         {getIcon()}

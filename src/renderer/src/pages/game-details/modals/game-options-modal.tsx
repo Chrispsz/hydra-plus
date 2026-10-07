@@ -38,7 +38,6 @@ import {
 } from "@renderer/hooks";
 import { useSubscription } from "@renderer/hooks/use-subscription";
 import { RemoveGameFromLibraryModal } from "./remove-from-library-modal";
-import { ResetAchievementsModal } from "./reset-achievements-modal";
 import { ChangeGamePlaytimeModal } from "./change-game-playtime-modal";
 import { ResetPlaytimeModal } from "./reset-playtime-modal";
 import {
@@ -104,7 +103,6 @@ export function GameOptionsModal({
     setShowRepacksModal,
     repacks,
     selectGameExecutable,
-    achievements,
     shopDetails,
     isTransferring,
   } = useContext(gameDetailsContext);
@@ -120,11 +118,8 @@ export function GameOptionsModal({
   const [gameTitle, setGameTitle] = useState(game.title ?? "");
   const [updatingGameTitle, setUpdatingGameTitle] = useState(false);
   const [launchOptions, setLaunchOptions] = useState(game.launchOptions ?? "");
-  const [showResetAchievementsModal, setShowResetAchievementsModal] =
-    useState(false);
   const [showChangePlaytimeModal, setShowChangePlaytimeModal] = useState(false);
   const [showResetPlaytimeModal, setShowResetPlaytimeModal] = useState(false);
-  const [isDeletingAchievements, setIsDeletingAchievements] = useState(false);
   const [automaticCloudSync, setAutomaticCloudSync] = useState(
     game.automaticCloudSync ?? false
   );
@@ -263,8 +258,6 @@ export function GameOptionsModal({
 
   const globalAutoRunGamemode = userPreferences?.autoRunGamemode === true;
   const globalAutoRunMangohud = userPreferences?.autoRunMangohud === true;
-  const hasAchievements =
-    (achievements?.filter((a) => a.unlocked).length ?? 0) > 0;
   const deleting = isGameDeleting(game.id);
   const { lastPacket } = useDownload();
   const isGameDownloading =
@@ -1041,22 +1034,6 @@ export function GameOptionsModal({
   const shouldShowCreateStartMenuShortcut =
     globalThis.window.electron.platform === "win32";
 
-  const handleResetAchievements = async () => {
-    setIsDeletingAchievements(true);
-    try {
-      await globalThis.window.electron.resetGameAchievements(
-        game.shop,
-        game.objectId
-      );
-      await updateGame();
-      showSuccessToast(t("reset_achievements_success"));
-    } catch {
-      showErrorToast(t("reset_achievements_error"));
-    } finally {
-      setIsDeletingAchievements(false);
-    }
-  };
-
   const handleChangePlaytime = async (sec: number) => {
     try {
       await globalThis.window.electron.changeGamePlayTime(
@@ -1205,12 +1182,6 @@ export function GameOptionsModal({
         removeGameFromLibrary={handleRemoveGameFromLibrary}
         game={game}
       />
-      <ResetAchievementsModal
-        visible={showResetAchievementsModal}
-        onClose={() => setShowResetAchievementsModal(false)}
-        resetAchievements={handleResetAchievements}
-        game={game}
-      />
       <ChangeGamePlaytimeModal
         visible={showChangePlaytimeModal}
         onClose={() => setShowChangePlaytimeModal(false)}
@@ -1340,14 +1311,9 @@ export function GameOptionsModal({
               <DangerZoneSection
                 game={game}
                 deleting={deleting}
-                isDeletingAchievements={isDeletingAchievements}
-                hasAchievements={hasAchievements}
                 isGameDownloading={isGameDownloading}
                 userDetails={userDetails}
                 onOpenRemoveFromLibrary={() => setShowRemoveGameModal(true)}
-                onOpenResetAchievements={() =>
-                  setShowResetAchievementsModal(true)
-                }
                 onOpenChangePlaytime={() => setShowChangePlaytimeModal(true)}
                 onOpenResetPlaytime={() => setShowResetPlaytimeModal(true)}
                 onOpenRemoveFiles={() => setShowDeleteModal(true)}

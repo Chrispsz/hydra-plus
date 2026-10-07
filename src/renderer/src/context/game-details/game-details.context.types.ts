@@ -4,7 +4,6 @@ import type {
   GameStats,
   LibraryGame,
   ShopDetailsWithAssets,
-  UserAchievement,
 } from "@types";
 
 export type GameOptionsCategoryId =
@@ -30,7 +29,6 @@ export interface GameDetailsContext {
   showGameOptionsModal: boolean;
   gameOptionsInitialCategory: GameOptionsCategoryId;
   stats: GameStats | null;
-  achievements: UserAchievement[] | null;
   hasNSFWContentBlocked: boolean;
   lastDownloadedOption: GameRepack | null;
   isTransferring: boolean;

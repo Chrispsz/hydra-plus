@@ -69,9 +69,6 @@ export interface Game {
   isHiddenFromOthers?: boolean;
   isConcealed?: boolean;
   isPinned?: boolean;
-  achievementCount?: number;
-  unlockedAchievementCount?: number;
-  reportedUnlockedAchievementCount?: number;
   pinnedDate?: Date | null;
   automaticCloudSync?: boolean;
   hasManuallyUpdatedPlaytime?: boolean;
@@ -116,14 +113,6 @@ export interface DownloadLayoutState {
   pausedOrder: string[];
 }
 
-export type AchievementCustomNotificationPosition =
-  | "top-left"
-  | "top-center"
-  | "top-right"
-  | "bottom-left"
-  | "bottom-center"
-  | "bottom-right";
-
 export interface DownloadDirectoryPreference {
   path: string;
   createdAt: string;
@@ -156,8 +145,6 @@ export interface UserPreferences {
   premiumizeApiToken?: string | null;
   allDebridApiToken?: string | null;
   torBoxApiToken?: string | null;
-  retroAchievementsWebApiKey?: string | null;
-  retroAchievementsUsername?: string | null;
   preferQuitInsteadOfHiding?: boolean;
   runAtStartup?: boolean;
   startMinimized?: boolean;
@@ -165,20 +152,12 @@ export interface UserPreferences {
   disableNsfwAlert?: boolean;
   enableAutoInstall?: boolean;
   seedAfterDownloadComplete?: boolean;
-  showHiddenAchievementsDescription?: boolean;
   showDownloadSpeedInMegabits?: boolean;
   downloadNotificationsEnabled?: boolean;
   repackUpdatesNotificationsEnabled?: boolean;
-  achievementNotificationsEnabled?: boolean;
-  achievementCustomNotificationsEnabled?: boolean;
-  achievementCustomNotificationPosition?: AchievementCustomNotificationPosition;
-  achievementSoundVolume?: number;
   showDownloadSpeedInMegabytes?: boolean;
   extractFilesByDefault?: boolean;
   deleteArchiveFilesAfterExtractionByDefault?: boolean;
-  enableSteamAchievements?: boolean;
-  enableAchievementSouvenirs?: boolean;
-  achievementScreenshotsPath?: string;
   autoplayGameTrailers?: boolean;
   hideToTrayOnGameStart?: boolean;
   enableNewDownloadOptionsBadges?: boolean;
@@ -198,7 +177,6 @@ export interface UserPreferences {
   hideLibraryReadySizeBadges?: boolean;
   hideLibraryClassicsBadges?: boolean;
   hideSteamLibraryBadges?: boolean;
-  hideLibraryAchievementProgress?: boolean;
   autoplayAnimatedArtwork?: boolean;
   persistFiltersAndSorting?: boolean;
 }

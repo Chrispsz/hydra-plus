@@ -1,6 +1,5 @@
 export type CollapsibleSettingsSection =
   | "steam"
-  | "retroachievements"
   | "realDebrid"
   | "premiumize"
   | "allDebrid"

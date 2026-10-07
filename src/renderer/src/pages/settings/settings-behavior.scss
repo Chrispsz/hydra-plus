@@ -2,21 +2,6 @@
 @use "../../scss/globals.scss";
 
 .settings-behavior {
-  &__screenshots-directory {
-    display: flex;
-    flex-direction: column;
-    gap: globals.$spacing-unit;
-  }
-
-  &__reset-screenshots-button {
-    min-width: 34px;
-    padding-inline: globals.$spacing-unit;
-  }
-
-  &__open-screenshots-button {
-    align-self: flex-start;
-  }
-
   &__hydra-cloud-row {
     display: flex;
     align-items: center;

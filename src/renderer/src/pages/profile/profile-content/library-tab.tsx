@@ -2,7 +2,6 @@ import Skeleton from "react-loading-skeleton";
 import { useTranslation } from "react-i18next";
 import {
   TelescopeIcon,
-  TrophyIcon,
   ClockIcon,
   HistoryIcon,
   StackIcon,
@@ -22,7 +21,7 @@ import { FilterDropdown, type FilterDropdownOption } from "./filter-dropdown";
 import { UserLibraryGameCard } from "./user-library-game-card";
 import "./profile-content.scss";
 
-type SortOption = "playtime" | "achievementCount" | "playedRecently";
+type SortOption = "playtime" | "playedRecently";
 export type ProfilePlatform = ProfilePlatformFilter;
 
 interface LibraryTabProps {
@@ -57,7 +56,6 @@ export function LibraryTab({
   userStats,
   onLoadMore,
   isMe,
-  hasActiveSubscription,
   titleKey = "library",
   panelKey = "library",
   count,
@@ -153,15 +151,6 @@ export function LibraryTab({
   ];
 
   const sortOptions: FilterDropdownOption<SortOption>[] = [
-    ...(hasActiveSubscription
-      ? [
-          {
-            value: "achievementCount" as const,
-            label: t("achievements_earned"),
-            icon: TrophyIcon,
-          },
-        ]
-      : []),
     { value: "playedRecently", label: t("played_recently"), icon: HistoryIcon },
     { value: "playtime", label: t("playtime"), icon: ClockIcon },
   ];

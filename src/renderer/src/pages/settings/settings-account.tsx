@@ -11,7 +11,6 @@ import type { ProfileVisibility } from "@types";
 interface FormValues {
   profileVisibility: ProfileVisibility;
   allowCloudGifts: boolean;
-  souvenirsVisibility: ProfileVisibility;
 }
 
 export function SettingsAccount() {
@@ -29,7 +28,6 @@ export function SettingsAccount() {
   } = useForm<FormValues>({
     defaultValues: {
       profileVisibility: "PUBLIC",
-      souvenirsVisibility: "PRIVATE",
     },
   });
 
@@ -45,9 +43,6 @@ export function SettingsAccount() {
     if (userDetails?.profileVisibility) {
       setValue("profileVisibility", userDetails.profileVisibility);
       setValue("allowCloudGifts", userDetails.allowCloudGifts);
-    }
-    if (userDetails?.souvenirsVisibility) {
-      setValue("souvenirsVisibility", userDetails.souvenirsVisibility);
     }
   }, [userDetails, setValue]);
 
@@ -68,15 +63,9 @@ export function SettingsAccount() {
 
   // FRIENDS visibility is a legacy server-side value: profiles stored with it
   // stay reachable only to the owner from the UI, so it is no longer offered
-  // for new selections. Souvenirs keep it while the souvenir feature exists.
+  // for new selections.
   const profileVisibilityOptions = [
     { value: "PUBLIC", label: t("public") },
-    { value: "PRIVATE", label: t("private") },
-  ];
-
-  const souvenirsVisibilityOptions = [
-    { value: "PUBLIC", label: t("public") },
-    { value: "FRIENDS", label: t("friends_only") },
     { value: "PRIVATE", label: t("private") },
   ];
 
@@ -158,35 +147,6 @@ export function SettingsAccount() {
                   key: visiblity.value,
                   value: visiblity.value,
                   label: visiblity.label,
-                }))}
-                disabled={isSubmitting}
-              />
-            </section>
-          );
-        }}
-      />
-
-      <Controller
-        control={control}
-        name="souvenirsVisibility"
-        render={({ field }) => {
-          const handleChange = (
-            event: React.ChangeEvent<HTMLSelectElement>
-          ) => {
-            field.onChange(event);
-            handleSubmit(onSubmit)();
-          };
-
-          return (
-            <section className="settings-account__section">
-              <SelectField
-                label={t("souvenirs_visibility")}
-                value={field.value}
-                onChange={handleChange}
-                options={souvenirsVisibilityOptions.map((visibility) => ({
-                  key: visibility.value,
-                  value: visibility.value,
-                  label: visibility.label,
                 }))}
                 disabled={isSubmitting}
               />

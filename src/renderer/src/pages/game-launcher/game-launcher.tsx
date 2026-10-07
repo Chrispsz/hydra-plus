@@ -1,19 +1,14 @@
 import { useCallback, useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import {
-  ImageIcon,
-  ClockIcon,
-  TrophyIcon,
-  ToolsIcon,
-} from "@primer/octicons-react";
+import { ImageIcon, ClockIcon, ToolsIcon } from "@primer/octicons-react";
 import HydraIcon from "@renderer/assets/icons/hydra.svg?react";
 import { MAX_MINUTES_TO_SHOW_IN_PLAYTIME } from "@renderer/constants";
 import { darkenColor } from "@renderer/helpers";
 import { logger } from "@renderer/logger";
 import { getDisplayedPlayTimeInMilliseconds } from "@shared";
 import { average } from "color.js";
-import type { Game, GameLauncherStatus, GameShop, ShopAssets } from "@types";
+import type { Game, GameShop, ShopAssets } from "@types";
 import "./game-launcher.scss";
 
 type PreflightStatus =
@@ -23,8 +18,6 @@ type PreflightStatus =
   | "installing"
   | "complete"
   | "error";
-
-type AchievementsExportStatus = GameLauncherStatus | "idle";
 
 export default function GameLauncher() {
   const { t } = useTranslation("game_launcher");
@@ -47,11 +40,6 @@ export default function GameLauncher() {
     useState<PreflightStatus>("idle");
   const [preflightDetail, setPreflightDetail] = useState<string | null>(null);
   const [preflightStarted, setPreflightStarted] = useState(false);
-  const [achievementsExportStatus, setAchievementsExportStatus] =
-    useState<AchievementsExportStatus>("idle");
-  const [achievementsExportDetail, setAchievementsExportDetail] = useState<
-    string | null
-  >(null);
   const [protonVersion, setProtonVersion] = useState<string | null>(null);
 
   const formatPlayTime = useCallback(
@@ -100,23 +88,6 @@ export default function GameLauncher() {
     return () => unsubscribe();
   }, []);
 
-  useEffect(() => {
-    if (!window.electron.onGameLauncherStatus) {
-      return;
-    }
-
-    const unsubscribe = window.electron.onGameLauncherStatus(
-      ({ gameKey, status, detail }) => {
-        if (gameKey !== `${shop}:${objectId}`) return;
-
-        setAchievementsExportStatus(status);
-        setAchievementsExportDetail(detail);
-      }
-    );
-
-    return () => unsubscribe();
-  }, [shop, objectId]);
-
   // Auto-close timer - only starts after preflight completes
   // Preflight is "done" when: it completed/errored, OR it never started (non-Windows or no preflight needed)
   const isPreflightDone =
@@ -135,12 +106,8 @@ export default function GameLauncher() {
     return () => clearTimeout(timer);
   }, [preflightStarted]);
 
-  const isGeneratingAchievements =
-    achievementsExportStatus === "generating_achievements";
-
   const canAutoClose =
-    (isPreflightDone || (!preflightStarted && preflightTimeout)) &&
-    !isGeneratingAchievements;
+    isPreflightDone || (!preflightStarted && preflightTimeout);
 
   useEffect(() => {
     // Don't start timer until window is shown AND preflight is done
@@ -179,8 +146,6 @@ export default function GameLauncher() {
     fallbackSteamCoverImage;
   const gameTitle = game?.title ?? gameAssets?.title ?? "";
   const playTime = game ? getDisplayedPlayTimeInMilliseconds(game) : 0;
-  const achievementCount = game?.achievementCount ?? 0;
-  const unlockedAchievements = game?.unlockedAchievementCount ?? 0;
   const isWindowsExecutable =
     game?.executablePath?.toLowerCase().endsWith(".exe") ?? false;
 
@@ -196,14 +161,10 @@ export default function GameLauncher() {
     }
   }, []);
 
-  const isPreflightRunning =
+  const isStatusRunning =
     preflightStatus === "checking" ||
     preflightStatus === "downloading" ||
     preflightStatus === "installing";
-
-  const isAchievementsExportRunning =
-    achievementsExportStatus === "generating_achievements" ||
-    achievementsExportStatus === "downloading_achievement_icons";
 
   const getStatusMessage = useCallback(() => {
     switch (preflightStatus) {
@@ -216,30 +177,9 @@ export default function GameLauncher() {
           ? t("preflight_installing_detail", { detail: preflightDetail })
           : t("preflight_installing");
       default:
-        break;
-    }
-
-    switch (achievementsExportStatus) {
-      case "generating_achievements":
-        return t("generating_achievements");
-      case "downloading_achievement_icons":
-        return achievementsExportDetail
-          ? t("downloading_achievement_icons_detail", {
-              detail: achievementsExportDetail,
-            })
-          : t("downloading_achievement_icons");
-      default:
         return t("launching_base");
     }
-  }, [
-    preflightStatus,
-    preflightDetail,
-    achievementsExportStatus,
-    achievementsExportDetail,
-    t,
-  ]);
-
-  const isStatusRunning = isPreflightRunning || isAchievementsExportRunning;
+  }, [preflightStatus, preflightDetail, t]);
 
   useEffect(() => {
     let cancelled = false;
@@ -405,21 +345,12 @@ export default function GameLauncher() {
             )}
           </div>
 
-          {(playTime > 0 || achievementCount > 0) && (
+          {playTime > 0 && (
             <div className="game-launcher__stats">
-              {playTime > 0 && (
-                <span className="game-launcher__stat">
-                  <ClockIcon size={14} />
-                  {formatPlayTime(playTime)}
-                </span>
-              )}
-
-              {achievementCount > 0 && (
-                <span className="game-launcher__stat">
-                  <TrophyIcon size={14} />
-                  {unlockedAchievements}/{achievementCount}
-                </span>
-              )}
+              <span className="game-launcher__stat">
+                <ClockIcon size={14} />
+                {formatPlayTime(playTime)}
+              </span>
 
               {protonVersion && (
                 <span className="game-launcher__stat">

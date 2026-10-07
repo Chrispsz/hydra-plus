@@ -9,25 +9,15 @@ const INTEGRATION_DISPLAY_KEYS = [
   "integration_reconnect",
   "integration_status_not_connected",
   "integration_sync",
-  "retroachievements_connect_title",
-  "retroachievements_status_invalid_credentials",
-  "retroachievements_invalid_credentials_description",
-  "retroachievements_last_checked",
   "steam_status_reconnect_required",
 ] as const;
 
 const INTEGRATION_SOURCE_FILES = [
   "src/renderer/src/pages/settings/settings-steam.tsx",
   "src/renderer/src/pages/settings/settings-steam-state.ts",
-  "src/renderer/src/pages/settings/settings-retroachievements.tsx",
-  "src/renderer/src/pages/retroachievements-connection-window/retroachievements-connection-window.tsx",
 ] as const;
 
-const LANGUAGE_NEUTRAL_KEYS = new Set([
-  "retroachievements",
-  "steam",
-  "steam_sync_progress",
-]);
+const LANGUAGE_NEUTRAL_KEYS = new Set(["steam", "steam_sync_progress"]);
 
 const readSettingsTranslations = (locale: string) => {
   const translationPath = path.resolve(
@@ -42,9 +32,8 @@ const readSettingsTranslations = (locale: string) => {
 };
 
 const getIntegrationKeys = () => {
-  const keys = new Set(["cancel", "retroachievements", "steam"]);
-  const integrationKeyPattern =
-    /["']((?:integration|retroachievements|steam)_[a-z0-9_]+)["']/g;
+  const keys = new Set(["cancel", "steam"]);
+  const integrationKeyPattern = /["']((?:integration|steam)_[a-z0-9_]+)["']/g;
 
   for (const sourceFile of INTEGRATION_SOURCE_FILES) {
     const source = fs.readFileSync(

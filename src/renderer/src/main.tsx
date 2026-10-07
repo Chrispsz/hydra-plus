@@ -33,14 +33,10 @@ import Downloads from "./pages/downloads/downloads";
 import GameDetails from "./pages/game-details/game-details";
 import Settings from "./pages/settings/settings";
 import Profile from "./pages/profile/profile";
-import Achievements from "./pages/achievements/achievements";
 import Library from "./pages/library/library";
 import Notifications from "./pages/notifications/notifications";
-import { AchievementNotification } from "./pages/achievements/notification/achievement-notification";
-import { AchievementNotificationOverlay } from "./components/achievements/notification/achievement-notification-overlay";
 import GameLauncher from "./pages/game-launcher/game-launcher";
 import AuthWindow from "./pages/auth-window/auth-window";
-import RetroAchievementsConnectionWindow from "./pages/retroachievements-connection-window/retroachievements-connection-window";
 
 console.log = logger.log;
 
@@ -107,7 +103,6 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
         <HashRouter>
           <CollectionContextMenuProvider>
             <GameOptionsModalProvider>
-              <AchievementNotificationOverlay />
               <Routes>
                 <Route element={<App />}>
                   <Route path="/" element={<Home />} />
@@ -120,20 +115,11 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
                   />
                   <Route path="/settings" element={<Settings />} />
                   <Route path="/profile/:userId" element={<Profile />} />
-                  <Route path="/achievements" element={<Achievements />} />
                   <Route path="/notifications" element={<Notifications />} />
                 </Route>
 
-                <Route
-                  path="/achievement-notification"
-                  element={<AchievementNotification />}
-                />
                 <Route path="/game-launcher" element={<GameLauncher />} />
                 <Route path="/auth-window" element={<AuthWindow />} />
-                <Route
-                  path="/retroachievements-connection"
-                  element={<RetroAchievementsConnectionWindow />}
-                />
               </Routes>
             </GameOptionsModalProvider>
           </CollectionContextMenuProvider>

@@ -19,8 +19,6 @@ import type {
   NotificationSync,
   GameArtifact,
   LudusaviBackup,
-  UserAchievement,
-  ComparedAchievements,
   LibraryGame,
   GameRunning,
   TorBoxUser,
@@ -28,9 +26,6 @@ import type {
   ShortcutLocation,
   ShopAssets,
   ShopDetailsWithAssets,
-  AchievementCustomNotificationPosition,
-  AchievementNotificationInfo,
-  AchievementNotificationRequest,
   Game,
   DiskUsage,
   NetworkInterface,
@@ -50,10 +45,6 @@ import type {
   CloudSaveConflictResolution,
   CloudSaveOverview,
   CloudSaveV2FileDetails,
-  AchievementSouvenirSyncCleanupResult,
-  AchievementSouvenirSyncDetails,
-  AchievementSouvenirSyncRetryResult,
-  AchievementSouvenirSyncStatus,
   CloudSaveSyncProgressPayload,
   SyncCloudSaveOnGamePageResult,
   SyncGameCloudSaveResult,
@@ -255,12 +246,6 @@ declare global {
       shop: GameShop,
       options?: { forceFresh?: boolean }
     ) => Promise<ShopAssets | null>;
-    onUpdateAchievements: (
-      objectId: string,
-      shop: GameShop,
-      cb: (achievements: UserAchievement[]) => void
-    ) => () => Electron.IpcRenderer;
-
     /* Library */
     toggleAutomaticCloudSync: (
       shop: GameShop,
@@ -468,7 +453,6 @@ declare global {
       cb: (syncing: boolean) => void
     ) => () => Electron.IpcRenderer;
     onDownloadsUpdated: (cb: () => void) => () => Electron.IpcRenderer;
-    resetGameAchievements: (shop: GameShop, objectId: string) => Promise<void>;
     changeGamePlayTime: (
       shop: GameShop,
       objectId: string,
@@ -632,20 +616,6 @@ declare global {
     isStaging: () => Promise<boolean>;
     ping: () => string;
     getDefaultDownloadsPath: () => Promise<string>;
-    getScreenshotsPath: () => Promise<string>;
-    getAchievementSouvenirSyncStatus: () => Promise<AchievementSouvenirSyncStatus>;
-    getAchievementSouvenirSyncDetails: () => Promise<AchievementSouvenirSyncDetails>;
-    retryAchievementSouvenirSync: () => Promise<AchievementSouvenirSyncRetryResult>;
-    cleanupAchievementSouvenirSync: () => Promise<AchievementSouvenirSyncCleanupResult>;
-    onAchievementSouvenirSyncStatus: (
-      cb: (status: AchievementSouvenirSyncStatus) => void
-    ) => () => Electron.IpcRenderer;
-    onAchievementSouvenirSyncCompleted: (
-      cb: (syncedCount: number) => void
-    ) => () => Electron.IpcRenderer;
-    onAchievementSouvenirScreenshotsMissing: (
-      cb: (count: number) => void
-    ) => () => Electron.IpcRenderer;
     openFolder: (folderPath: string) => Promise<string>;
     isPortableVersion: boolean;
     showOpenDialog: (
@@ -768,34 +738,6 @@ declare global {
     ) => () => Electron.IpcRenderer;
     onSignOut: (cb: () => void) => () => Electron.IpcRenderer;
 
-    /* User */
-    getComparedUnlockedAchievements: (
-      objectId: string,
-      shop: GameShop,
-      userId: string
-    ) => Promise<ComparedAchievements>;
-    getUnlockedAchievements: (
-      objectId: string,
-      shop: GameShop
-    ) => Promise<UserAchievement[]>;
-    deleteAchievementSouvenir: (payload: {
-      souvenirId: string;
-    }) => Promise<void>;
-    getRetroAchievementsAchievements: (
-      objectId: string,
-      shop: GameShop,
-      raGameId?: number
-    ) => Promise<UserAchievement[] | null>;
-    resetRetroAchievementsAchievements: (
-      pendingSouvenirsOnly?: boolean
-    ) => Promise<void>;
-    openRetroAchievementsConnectionWindow: () => Promise<void>;
-    minimizeRetroAchievementsConnectionWindow: () => Promise<void>;
-    closeRetroAchievementsConnectionWindow: () => Promise<void>;
-    completeRetroAchievementsConnectionWindow: () => Promise<void>;
-    onRetroAchievementsConnected: (
-      cb: () => void
-    ) => () => Electron.IpcRenderer;
     startSteamOAuth: (lng: string) => Promise<void>;
     disconnectSteam: (deleteImportedData: boolean) => Promise<void>;
     startSteamSync: () => Promise<SteamSyncState>;
@@ -856,34 +798,6 @@ declare global {
     onLocalNotificationCreated: (
       cb: (notification: LocalNotification) => void
     ) => () => Electron.IpcRenderer;
-    onAchievementUnlocked: (
-      cb: (
-        position?: AchievementCustomNotificationPosition,
-        achievements?: AchievementNotificationInfo[]
-      ) => void
-    ) => () => Electron.IpcRenderer;
-    onInAppAchievementUnlocked?: (
-      cb: (
-        position: AchievementCustomNotificationPosition,
-        achievements: AchievementNotificationInfo[]
-      ) => void
-    ) => () => Electron.IpcRenderer;
-    onPrepareAchievementNotification: (
-      cb: (request: AchievementNotificationRequest) => void
-    ) => () => Electron.IpcRenderer;
-    onStartAchievementNotification: (
-      cb: (requestId: string) => void
-    ) => () => Electron.IpcRenderer;
-    achievementNotificationHostReady: () => Promise<void>;
-    achievementNotificationContentReady: (requestId: string) => Promise<void>;
-    achievementNotificationFinished: (requestId: string) => Promise<void>;
-    achievementNotificationFailed: (
-      requestId?: string,
-      reason?: string
-    ) => Promise<void>;
-    updateAchievementCustomNotificationWindow: () => Promise<void>;
-    showAchievementTestNotification: () => Promise<void>;
-
     /* Game Launcher Window */
     showGameLauncherWindow: () => Promise<void>;
     closeGameLauncherWindow: () => Promise<void>;

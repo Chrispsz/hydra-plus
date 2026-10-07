@@ -12,13 +12,9 @@ import type {
   GameRunning,
   UpdateProfileRequest,
   SeedingStatus,
-  UserAchievement,
   NotificationSync,
   ShortcutLocation,
   CreateSteamShortcutOptions,
-  AchievementCustomNotificationPosition,
-  AchievementNotificationInfo,
-  AchievementNotificationRequest,
   ProtonVersion,
   TorrentFilesResponse,
   DownloadLayoutState,
@@ -46,7 +42,6 @@ import type {
   LegacySaveExportProgress,
   LegacySaveExportResult,
   OpenCheckoutOptions,
-  AchievementSouvenirSyncStatus,
   SteamSyncState,
   SteamSyncFinishedPayload,
   SteamSyncRunStatus,
@@ -396,22 +391,6 @@ contextBridge.exposeInMainWorld("electron", {
     shop: GameShop,
     options?: { forceFresh?: boolean }
   ) => ipcRenderer.invoke("getGameAssets", objectId, shop, options),
-  onUpdateAchievements: (
-    objectId: string,
-    shop: GameShop,
-    cb: (achievements: UserAchievement[]) => void
-  ) => {
-    const listener = (
-      _event: Electron.IpcRendererEvent,
-      achievements: UserAchievement[]
-    ) => cb(achievements);
-    ipcRenderer.on(`on-update-achievements-${objectId}-${shop}`, listener);
-    return () =>
-      ipcRenderer.removeListener(
-        `on-update-achievements-${objectId}-${shop}`,
-        listener
-      );
-  },
 
   /* User preferences */
   getUserPreferences: () => ipcRenderer.invoke("getUserPreferences"),
@@ -685,8 +664,6 @@ contextBridge.exposeInMainWorld("electron", {
     ipcRenderer.invoke("deleteGameFolder", shop, objectId),
   getGameByObjectId: (shop: GameShop, objectId: string) =>
     ipcRenderer.invoke("getGameByObjectId", shop, objectId),
-  resetGameAchievements: (shop: GameShop, objectId: string) =>
-    ipcRenderer.invoke("resetGameAchievements", shop, objectId),
   changeGamePlayTime: (shop: GameShop, objectId: string, playtime: number) =>
     ipcRenderer.invoke("changeGamePlayTime", shop, objectId, playtime),
   resetGamePlayTime: (shop: GameShop, objectId: string) =>
@@ -905,49 +882,6 @@ contextBridge.exposeInMainWorld("electron", {
   ping: () => ipcRenderer.invoke("ping"),
   getVersion: () => ipcRenderer.invoke("getVersion"),
   getDefaultDownloadsPath: () => ipcRenderer.invoke("getDefaultDownloadsPath"),
-  getScreenshotsPath: () => ipcRenderer.invoke("getScreenshotsPath"),
-  getAchievementSouvenirSyncStatus: () =>
-    ipcRenderer.invoke("getAchievementSouvenirSyncStatus"),
-  getAchievementSouvenirSyncDetails: () =>
-    ipcRenderer.invoke("getAchievementSouvenirSyncDetails"),
-  retryAchievementSouvenirSync: () =>
-    ipcRenderer.invoke("retryAchievementSouvenirSync"),
-  cleanupAchievementSouvenirSync: () =>
-    ipcRenderer.invoke("cleanupAchievementSouvenirSync"),
-  onAchievementSouvenirSyncStatus: (
-    cb: (status: AchievementSouvenirSyncStatus) => void
-  ) => {
-    const listener = (
-      _event: Electron.IpcRendererEvent,
-      status: AchievementSouvenirSyncStatus
-    ) => cb(status);
-    ipcRenderer.on("on-achievement-souvenir-sync-status", listener);
-    return () =>
-      ipcRenderer.removeListener(
-        "on-achievement-souvenir-sync-status",
-        listener
-      );
-  },
-  onAchievementSouvenirSyncCompleted: (cb: (syncedCount: number) => void) => {
-    const listener = (_event: Electron.IpcRendererEvent, syncedCount: number) =>
-      cb(syncedCount);
-    ipcRenderer.on("on-achievement-souvenir-sync-completed", listener);
-    return () =>
-      ipcRenderer.removeListener(
-        "on-achievement-souvenir-sync-completed",
-        listener
-      );
-  },
-  onAchievementSouvenirScreenshotsMissing: (cb: (count: number) => void) => {
-    const listener = (_event: Electron.IpcRendererEvent, count: number) =>
-      cb(count);
-    ipcRenderer.on("on-achievement-souvenir-screenshots-missing", listener);
-    return () =>
-      ipcRenderer.removeListener(
-        "on-achievement-souvenir-screenshots-missing",
-        listener
-      );
-  },
   openFolder: (folderPath: string) =>
     ipcRenderer.invoke("openFolder", folderPath),
   getAppSessionId: () => ipcRenderer.invoke("getAppSessionId"),
@@ -1170,52 +1104,6 @@ contextBridge.exposeInMainWorld("electron", {
     return () => ipcRenderer.removeListener("on-cloud-gift-resolved", listener);
   },
 
-  /* User */
-  getComparedUnlockedAchievements: (
-    objectId: string,
-    shop: GameShop,
-    userId: string
-  ) =>
-    ipcRenderer.invoke(
-      "getComparedUnlockedAchievements",
-      objectId,
-      shop,
-      userId
-    ),
-  getUnlockedAchievements: (objectId: string, shop: GameShop) =>
-    ipcRenderer.invoke("getUnlockedAchievements", objectId, shop),
-  deleteAchievementSouvenir: (payload: { souvenirId: string }) =>
-    ipcRenderer.invoke("deleteAchievementSouvenir", payload),
-  getRetroAchievementsAchievements: (
-    objectId: string,
-    shop: GameShop,
-    raGameId: number
-  ) =>
-    ipcRenderer.invoke(
-      "getRetroAchievementsAchievements",
-      objectId,
-      shop,
-      raGameId
-    ),
-  resetRetroAchievementsAchievements: (pendingSouvenirsOnly = false) =>
-    ipcRenderer.invoke(
-      "resetRetroAchievementsAchievements",
-      pendingSouvenirsOnly
-    ),
-  openRetroAchievementsConnectionWindow: () =>
-    ipcRenderer.invoke("openRetroAchievementsConnectionWindow"),
-  minimizeRetroAchievementsConnectionWindow: () =>
-    ipcRenderer.invoke("minimizeRetroAchievementsConnectionWindow"),
-  closeRetroAchievementsConnectionWindow: () =>
-    ipcRenderer.invoke("closeRetroAchievementsConnectionWindow"),
-  completeRetroAchievementsConnectionWindow: () =>
-    ipcRenderer.invoke("completeRetroAchievementsConnectionWindow"),
-  onRetroAchievementsConnected: (cb: () => void) => {
-    const listener = (_event: Electron.IpcRendererEvent) => cb();
-    ipcRenderer.on("on-retroachievements-connected", listener);
-    return () =>
-      ipcRenderer.removeListener("on-retroachievements-connected", listener);
-  },
   startSteamOAuth: (lng: string) => ipcRenderer.invoke("startSteamOAuth", lng),
   disconnectSteam: (deleteImportedData: boolean) =>
     ipcRenderer.invoke("disconnectSteam", deleteImportedData),
@@ -1308,67 +1196,6 @@ contextBridge.exposeInMainWorld("electron", {
     return () =>
       ipcRenderer.removeListener("on-local-notification-created", listener);
   },
-  onAchievementUnlocked: (
-    cb: (
-      position?: AchievementCustomNotificationPosition,
-      achievements?: AchievementNotificationInfo[]
-    ) => void
-  ) => {
-    const listener = (
-      _event: Electron.IpcRendererEvent,
-      position?: AchievementCustomNotificationPosition,
-      achievements?: AchievementNotificationInfo[]
-    ) => cb(position, achievements);
-    ipcRenderer.on("on-achievement-unlocked", listener);
-    return () =>
-      ipcRenderer.removeListener("on-achievement-unlocked", listener);
-  },
-  onInAppAchievementUnlocked: (
-    cb: (
-      position: AchievementCustomNotificationPosition,
-      achievements: AchievementNotificationInfo[]
-    ) => void
-  ) => {
-    const listener = (
-      _event: Electron.IpcRendererEvent,
-      position: AchievementCustomNotificationPosition,
-      achievements: AchievementNotificationInfo[]
-    ) => cb(position, achievements);
-    ipcRenderer.on("on-achievement-unlocked-in-app", listener);
-    return () =>
-      ipcRenderer.removeListener("on-achievement-unlocked-in-app", listener);
-  },
-  onPrepareAchievementNotification: (
-    cb: (request: AchievementNotificationRequest) => void
-  ) => {
-    const listener = (
-      _event: Electron.IpcRendererEvent,
-      request: AchievementNotificationRequest
-    ) => cb(request);
-    ipcRenderer.on("prepare-achievement-notification", listener);
-    return () =>
-      ipcRenderer.removeListener("prepare-achievement-notification", listener);
-  },
-  onStartAchievementNotification: (cb: (requestId: string) => void) => {
-    const listener = (_event: Electron.IpcRendererEvent, requestId: string) =>
-      cb(requestId);
-    ipcRenderer.on("start-achievement-notification", listener);
-    return () =>
-      ipcRenderer.removeListener("start-achievement-notification", listener);
-  },
-  achievementNotificationHostReady: () =>
-    ipcRenderer.invoke("achievementNotificationHostReady"),
-  achievementNotificationContentReady: (requestId: string) =>
-    ipcRenderer.invoke("achievementNotificationContentReady", requestId),
-  achievementNotificationFinished: (requestId: string) =>
-    ipcRenderer.invoke("achievementNotificationFinished", requestId),
-  achievementNotificationFailed: (requestId?: string, reason?: string) =>
-    ipcRenderer.invoke("achievementNotificationFailed", requestId, reason),
-  updateAchievementCustomNotificationWindow: () =>
-    ipcRenderer.invoke("updateAchievementCustomNotificationWindow"),
-  showAchievementTestNotification: () =>
-    ipcRenderer.invoke("showAchievementTestNotification"),
-
   onNewDownloadOptions: (
     cb: (gamesWithNewOptions: { gameId: string; count: number }[]) => void
   ) => {

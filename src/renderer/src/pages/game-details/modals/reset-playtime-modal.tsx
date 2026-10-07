@@ -4,7 +4,7 @@ import { Tooltip } from "react-tooltip";
 import { Button, Modal } from "@renderer/components";
 import type { Game } from "@types";
 import { PlaytimeBreakdownTable } from "./playtime-breakdown-table";
-import "./reset-achievements-modal.scss";
+import "./reset-playtime-modal.scss";
 
 type ResetPlaytimeModalProps = Readonly<{
   visible: boolean;
@@ -43,7 +43,7 @@ export function ResetPlaytimeModal({
       })}
     >
       {steamPlayTimeInMilliseconds > 0 ? (
-        <div className="reset-achievements-modal__playtime-breakdown">
+        <div className="reset-playtime-modal__playtime-breakdown">
           <PlaytimeBreakdownTable
             hydraPlayTimeInMilliseconds={game.playTimeInMilliseconds ?? 0}
             nextHydraPlayTimeInMilliseconds={0}
@@ -51,13 +51,13 @@ export function ResetPlaytimeModal({
           />
         </div>
       ) : null}
-      <div className="reset-achievements-modal__actions">
+      <div className="reset-playtime-modal__actions">
         <Button onClick={onClose} theme="outline">
           {t("cancel")}
         </Button>
 
         <span
-          className="reset-achievements-modal__action-tooltip"
+          className="reset-playtime-modal__action-tooltip"
           data-tooltip-id={hasNoPlaytime ? tooltipId : undefined}
           data-tooltip-content={
             hasNoPlaytime ? t("reset_playtime_disabled_tooltip") : undefined

@@ -4,7 +4,6 @@ import {
   DownloadIcon,
   PackageIcon,
   SyncIcon,
-  TrophyIcon,
   ClockIcon,
 } from "@primer/octicons-react";
 import { useTranslation } from "react-i18next";
@@ -56,8 +55,6 @@ export function LocalNotificationItem({
         return <PackageIcon size={24} />;
       case "UPDATE_AVAILABLE":
         return <SyncIcon size={24} />;
-      case "ACHIEVEMENT_UNLOCKED":
-        return <TrophyIcon size={24} />;
       case "SCAN_GAMES_COMPLETE":
         return <SyncIcon size={24} />;
       default:

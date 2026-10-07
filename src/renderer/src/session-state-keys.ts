@@ -27,8 +27,6 @@ const FILTER_SESSION_SCOPED_KEYS = [
   SIDEBAR_PLAYABLE_ONLY_STORAGE_KEY,
   "profile-sort-by",
   "profile-platform",
-  "profile-souvenir-sort-by",
-  "profile-souvenir-grouping",
 ];
 
 export const getSessionScopedKeysToClear = (

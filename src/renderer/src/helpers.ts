@@ -1,11 +1,10 @@
-import type { GameShop, LibraryGame, SouvenirSort } from "@types";
+import type { GameShop, LibraryGame } from "@types";
 
 import { getDisplayedPlayTimeInMilliseconds } from "@shared";
 
 import Color from "color";
 import i18next from "i18next";
 import { v4 as uuidv4 } from "uuid";
-import { levelDBService } from "./services/leveldb.service";
 import { logger } from "./logger";
 import type { SortOption } from "./pages/library/filter-options";
 import type { SkuRegion } from "./helpers/sku-region";
@@ -91,20 +90,6 @@ export const buildGameDetailsPath = (
   return `/game/${game.shop}/${game.objectId}?${searchParams.toString()}`;
 };
 
-export const buildGameAchievementPath = (
-  game: { shop: GameShop; objectId: string; title: string },
-  user?: { userId: string }
-) => {
-  const searchParams = new URLSearchParams({
-    title: game.title,
-    shop: game.shop,
-    objectId: game.objectId,
-    userId: user?.userId || "",
-  });
-
-  return `/achievements/?${searchParams.toString()}`;
-};
-
 export const darkenColor = (color: string, amount: number, alpha: number = 1) =>
   new Color(color).darken(amount).alpha(alpha).toString();
 
@@ -126,37 +111,8 @@ export const generateUUID = (): string => {
   return uuidv4();
 };
 
-export const getAchievementSoundUrl = async (): Promise<string> => {
-  const defaultSound = (await import("@renderer/assets/audio/achievement.wav"))
-    .default;
-
-  return defaultSound;
-};
-
-export const getAchievementSoundVolume = async (): Promise<number> => {
-  try {
-    const prefs = (await levelDBService.get(
-      "userPreferences",
-      null,
-      "json"
-    )) as { achievementSoundVolume?: number } | null;
-    return prefs?.achievementSoundVolume ?? 0.15;
-  } catch (error) {
-    console.error("Failed to get sound volume", error);
-    return 0.15;
-  }
-};
-
 export const getGameKey = (shop: GameShop, objectId: string): string => {
   return `${shop}:${objectId}`;
-};
-
-export const isGameCompleted = (
-  achievementCount?: number | null,
-  unlockedAchievementCount?: number | null
-): boolean => {
-  if (!achievementCount) return false;
-  return (unlockedAchievementCount ?? 0) >= achievementCount;
 };
 
 const SKU_REGION_FLAGS: Record<SkuRegion, string> = {
@@ -225,27 +181,6 @@ const getInstalledFirstDifference = (
   return 0;
 };
 
-const getAchievementRateDifference = (
-  a: LibraryGame,
-  b: LibraryGame
-): number => {
-  const aTotal = a.achievementCount ?? 0;
-  const bTotal = b.achievementCount ?? 0;
-
-  if (aTotal === 0 || bTotal === 0) {
-    if (aTotal === bTotal) return 0;
-    return aTotal === 0 ? 1 : -1;
-  }
-
-  const aUnlocked = a.unlockedAchievementCount ?? 0;
-  const bUnlocked = b.unlockedAchievementCount ?? 0;
-
-  const rateDifference = bUnlocked * aTotal - aUnlocked * bTotal;
-  if (rateDifference !== 0) return rateDifference;
-
-  return bUnlocked - aUnlocked;
-};
-
 const libraryTitleCollator = new Intl.Collator(undefined, {
   sensitivity: "base",
 });
@@ -273,12 +208,6 @@ export const sortLibraryGames = (
 
       case "most_played": {
         const difference = getMostPlayedDifference(a, b);
-        if (difference !== 0) return difference;
-        break;
-      }
-
-      case "achievements": {
-        const difference = getAchievementRateDifference(a, b);
         if (difference !== 0) return difference;
         break;
       }
@@ -354,18 +283,13 @@ export const resolveImageSource = (
   return normalizedPath;
 };
 
-export type ProfileSortOption =
-  | "playtime"
-  | "achievementCount"
-  | "playedRecently";
+export type ProfileSortOption = "playtime" | "playedRecently";
 
 export type ProfilePlatformFilter = LibraryCategory;
 
 export const readStoredProfileSort = (): ProfileSortOption => {
   const saved = localStorage.getItem("profile-sort-by");
-  return saved === "playtime" ||
-    saved === "achievementCount" ||
-    saved === "playedRecently"
+  return saved === "playtime" || saved === "playedRecently"
     ? saved
     : "playedRecently";
 };
@@ -375,20 +299,6 @@ export const readStoredProfilePlatform = (): ProfilePlatformFilter => {
   return saved === "pc" || saved === "classics" || saved === "all"
     ? saved
     : "all";
-};
-
-export type SouvenirGrouping = "game" | "none";
-
-export const readStoredSouvenirSort = (): SouvenirSort => {
-  const saved = localStorage.getItem("profile-souvenir-sort-by");
-  return saved === "recent" || saved === "oldest" || saved === "rare"
-    ? saved
-    : "recent";
-};
-
-export const readStoredSouvenirGrouping = (): SouvenirGrouping => {
-  const saved = localStorage.getItem("profile-souvenir-grouping");
-  return saved === "game" || saved === "none" ? saved : "none";
 };
 
 export const getShopsForProfilePlatform = (

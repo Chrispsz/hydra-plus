@@ -1,21 +1,14 @@
 import { UserGame } from "@types";
-import HydraIcon from "@renderer/assets/icons/hydra.svg?react";
-import { useFormat } from "@renderer/hooks";
 import { useNavigate } from "react-router-dom";
 import { useCallback, useContext } from "react";
-import {
-  buildGameAchievementPath,
-  buildGameDetailsPath,
-  formatDownloadProgress,
-  isGameCompleted,
-} from "@renderer/helpers";
+import { buildGameDetailsPath } from "@renderer/helpers";
 import { userProfileContext } from "@renderer/context";
-import { ClockIcon, TrophyIcon, AlertFillIcon } from "@primer/octicons-react";
+import { ClockIcon, AlertFillIcon } from "@primer/octicons-react";
 import { MAX_MINUTES_TO_SHOW_IN_PLAYTIME } from "@renderer/constants";
 import { Tooltip } from "react-tooltip";
 import { useTranslation } from "react-i18next";
 import { GameVisibilityBadge } from "@renderer/components/game-visibility-badge/game-visibility-badge";
-import { ProgressBar, VerticalCoverCard } from "@renderer/components";
+import { VerticalCoverCard } from "@renderer/components";
 import "./user-library-game-card.scss";
 
 interface UserLibraryGameCardProps {
@@ -26,58 +19,19 @@ interface UserLibraryGameCardProps {
 
 export function UserLibraryGameCard({
   game,
-  statIndex,
   onContextMenu,
 }: UserLibraryGameCardProps) {
-  const { userProfile, isMe } = useContext(userProfileContext);
+  const { isMe } = useContext(userProfileContext);
   const { t } = useTranslation("user_profile");
-  const { numberFormatter } = useFormat();
   const navigate = useNavigate();
 
   const coverImageUrl = game.customLibraryImageUrl ?? game.coverImageUrl;
 
-  const isCompleted = isGameCompleted(
-    game.achievementCount,
-    game.unlockedAchievementCount
-  );
-
-  const hasAchievementProgress =
-    Boolean(userProfile?.hasActiveSubscription) &&
-    (game.achievementCount ?? 0) > 0;
-
-  const getStatsItemCount = useCallback(() => {
-    let statsCount = 1;
-    if (game.achievementsPointsEarnedSum > 0) statsCount++;
-    return statsCount;
-  }, [game]);
-
-  const buildUserGameDetailsPath = useCallback(
-    (game: UserGame) => {
-      if (!userProfile?.hasActiveSubscription || game.achievementCount === 0) {
-        return buildGameDetailsPath({
-          ...game,
-          objectId: game.objectId,
-        });
-      }
-
-      const userParams = userProfile
-        ? {
-            userId: userProfile.id,
-          }
-        : undefined;
-
-      return buildGameAchievementPath({ ...game }, userParams);
-    },
-    [userProfile]
-  );
-
-  const formatAchievementPoints = (number: number) => {
-    if (number < 100_000) return numberFormatter.format(number);
-
-    if (number < 1_000_000) return `${(number / 1000).toFixed(1)}K`;
-
-    return `${(number / 1_000_000).toFixed(1)}M`;
-  };
+  const buildUserGameDetailsPath = (game: UserGame) =>
+    buildGameDetailsPath({
+      ...game,
+      objectId: game.objectId,
+    });
 
   const formatPlayTime = useCallback(
     (playTimeInSeconds = 0, isShort = false) => {
@@ -91,13 +45,11 @@ export function UserLibraryGameCard({
 
       const hours = minutes / 60;
       const hoursKey = isShort ? "amount_hours_short" : "amount_hours";
-      const hoursAmount = isShort
-        ? Math.floor(hours)
-        : numberFormatter.format(hours);
+      const hoursAmount = isShort ? Math.floor(hours) : hours.toFixed(0);
 
       return t(hoursKey, { amount: hoursAmount });
     },
-    [numberFormatter, t]
+    [t]
   );
 
   const handleContextMenu = (event: React.MouseEvent) => {
@@ -123,7 +75,7 @@ export function UserLibraryGameCard({
           onContextMenu={handleContextMenu}
         >
           <div
-            className={`user-library-game__overlay${game.shop === "launchbox" && !game.customLibraryImageUrl ? " user-library-game__overlay--classics" : ""}${hasAchievementProgress ? "" : " user-library-game__overlay--no-fade"}`}
+            className={`user-library-game__overlay user-library-game__overlay--no-fade${game.shop === "launchbox" && !game.customLibraryImageUrl ? " user-library-game__overlay--classics" : ""}`}
           >
             <div className="user-library-game__top-section">
               <div className="user-library-game__top-left">
@@ -158,63 +110,6 @@ export function UserLibraryGameCard({
                 </div>
               </div>
             </div>
-
-            {hasAchievementProgress && (
-              <div className="user-library-game__stats">
-                <div className="user-library-game__stats-header">
-                  <div className="user-library-game__stats-content">
-                    <div
-                      className="user-library-game__stats-item"
-                      style={{
-                        transform: `translateY(${-100 * (statIndex % getStatsItemCount())}%)`,
-                      }}
-                    >
-                      {!isCompleted && <TrophyIcon size={13} />}
-                      <span>
-                        {game.unlockedAchievementCount} /{" "}
-                        {game.achievementCount}
-                      </span>
-                    </div>
-
-                    {game.achievementsPointsEarnedSum > 0 && (
-                      <div
-                        className="user-library-game__stats-item"
-                        style={{
-                          transform: `translateY(${-100 * (statIndex % getStatsItemCount())}%)`,
-                        }}
-                      >
-                        <HydraIcon width={16} height={16} />
-                        {formatAchievementPoints(
-                          game.achievementsPointsEarnedSum
-                        )}
-                      </div>
-                    )}
-                  </div>
-
-                  <span
-                    className={`user-library-game__stats-percentage${isCompleted ? " user-library-game__stats-percentage--completed" : ""}`}
-                  >
-                    {isCompleted ? (
-                      <TrophyIcon size={13} />
-                    ) : (
-                      formatDownloadProgress(
-                        game.unlockedAchievementCount / game.achievementCount,
-                        1
-                      )
-                    )}
-                  </span>
-                </div>
-
-                <ProgressBar
-                  now={game.unlockedAchievementCount ?? 0}
-                  max={game.achievementCount ?? 1}
-                  label={`${game.title} achievements`}
-                  completed={isCompleted}
-                  trackClassName="user-library-game__achievements-progress-track"
-                  barClassName="user-library-game__achievements-progress"
-                />
-              </div>
-            )}
           </div>
         </VerticalCoverCard>
       </li>

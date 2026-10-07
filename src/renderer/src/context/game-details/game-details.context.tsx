@@ -4,12 +4,7 @@ import { setHeaderTitle } from "@renderer/features";
 import { levelDBService } from "@renderer/services/leveldb.service";
 import { ensureArray } from "@renderer/helpers";
 import { orderBy } from "lodash-es";
-import {
-  useAppDispatch,
-  useAppSelector,
-  useDownload,
-  useUserDetails,
-} from "@renderer/hooks";
+import { useAppDispatch, useAppSelector, useDownload } from "@renderer/hooks";
 
 import type {
   DownloadSource,
@@ -18,7 +13,6 @@ import type {
   GameStats,
   LibraryGame,
   ShopDetailsWithAssets,
-  UserAchievement,
 } from "@types";
 
 import { useTranslation } from "react-i18next";
@@ -48,7 +42,6 @@ export const gameDetailsContext = createContext<GameDetailsContext>({
   showGameOptionsModal: false,
   gameOptionsInitialCategory: "general",
   stats: null,
-  achievements: null,
   hasNSFWContentBlocked: false,
   lastDownloadedOption: null,
   isTransferring: false,
@@ -84,13 +77,9 @@ export function GameDetailsContextProvider({
   const [shopDetails, setShopDetails] = useState<ShopDetailsWithAssets | null>(
     null
   );
-  const [achievements, setAchievements] = useState<UserAchievement[] | null>(
-    null
-  );
   const [game, setGame] = useState<LibraryGame | null>(null);
   const [hasNSFWContentBlocked, setHasNSFWContentBlocked] = useState(false);
   const abortControllerRef = useRef<AbortController | null>(null);
-  const achievementUpdateCountRef = useRef(0);
   const [isTransferring, setIsTransferring] = useState(false);
   const [transferProgress, setTransferProgress] = useState(0);
 
@@ -110,7 +99,6 @@ export function GameDetailsContextProvider({
   const dispatch = useAppDispatch();
 
   const { lastPacket } = useDownload();
-  const { userDetails } = useUserDetails();
 
   const userPreferences = useAppSelector(
     (state) => state.userPreferences.value
@@ -146,40 +134,6 @@ export function GameDetailsContextProvider({
         if (result?.assets) {
           setIsLoading(false);
         }
-
-        if (userDetails && shop !== "custom") {
-          const achievementUpdateCount = achievementUpdateCountRef.current;
-          const isStaleAchievementResult = () =>
-            abortController.signal.aborted ||
-            achievementUpdateCount !== achievementUpdateCountRef.current;
-          const useRetroAchievements =
-            shop === "launchbox" &&
-            Boolean(userPreferences?.retroAchievementsWebApiKey);
-
-          if (useRetroAchievements) {
-            globalThis.window.electron
-              .getRetroAchievementsAchievements(
-                objectId,
-                shop,
-                result?.retroAchievementsGameId ?? undefined
-              )
-              .then((achievements) => {
-                if (isStaleAchievementResult()) return;
-                setAchievements(achievements ?? []);
-              })
-              .catch(() => {
-                if (!isStaleAchievementResult()) setAchievements([]);
-              });
-          } else {
-            globalThis.window.electron
-              .getUnlockedAchievements(objectId, shop)
-              .then((achievements) => {
-                if (isStaleAchievementResult()) return;
-                if (achievements) setAchievements(achievements);
-              })
-              .catch(() => void 0);
-          }
-        }
       });
 
     if (shop !== "custom") {
@@ -208,14 +162,7 @@ export function GameDetailsContextProvider({
         if (abortController.signal.aborted) return;
         setIsLoading(false);
       });
-  }, [
-    i18n.language,
-    objectId,
-    shop,
-    userDetails,
-    userPreferences?.disableNsfwAlert,
-    userPreferences?.retroAchievementsWebApiKey,
-  ]);
+  }, [i18n.language, objectId, shop, userPreferences?.disableNsfwAlert]);
 
   const refreshGameDetails = useCallback(async () => {
     await Promise.all([updateGame(), fetchGameDetails()]);
@@ -290,7 +237,6 @@ export function GameDetailsContextProvider({
     setGame(null);
     setIsLoading(true);
     setIsGameRunning(false);
-    setAchievements(null);
     setGameOptionsInitialCategory("general");
     if (syncHeaderTitle) dispatch(setHeaderTitle(gameTitle));
   }, [objectId, gameTitle, syncHeaderTitle, dispatch]);
@@ -398,22 +344,6 @@ export function GameDetailsContextProvider({
       }
     }
   }, [location]);
-
-  useEffect(() => {
-    const unsubscribe = window.electron.onUpdateAchievements(
-      objectId,
-      shop,
-      (achievements) => {
-        if (!userDetails) return;
-        achievementUpdateCountRef.current += 1;
-        setAchievements(achievements);
-      }
-    );
-
-    return () => {
-      unsubscribe();
-    };
-  }, [objectId, shop, userDetails]);
 
   useEffect(() => {
     if (shop === "custom") return;
@@ -526,7 +456,6 @@ export function GameDetailsContextProvider({
         gameOptionsInitialCategory,
         showRepacksModal,
         stats,
-        achievements,
         hasNSFWContentBlocked,
         lastDownloadedOption: null,
         isTransferring,

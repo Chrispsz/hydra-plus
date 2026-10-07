@@ -10,7 +10,6 @@ export interface SteamSyncRun {
   status: SteamSyncRunStatus;
   gamesFound: number;
   gamesUpserted: number;
-  achievementsUnlocked: number;
   error: string | null;
   startedAt: string | null;
   completedAt: string | null;
@@ -54,23 +53,11 @@ export interface SteamSourceLibraryGame {
   lastPlayedAt: string | null;
 }
 
-export interface SteamSourceAchievement {
-  name: string;
-  unlocked: boolean;
-  unlockTime: string | null;
-}
-
-export interface SteamSnapshotAchievement {
-  name: string;
-  unlockTime: string;
-}
-
 export interface SteamSnapshotGame {
   steamAppId: string;
   name: string;
   playTimeInSeconds: number;
   lastPlayedAt: string | null;
-  achievements?: SteamSnapshotAchievement[];
 }
 
 export interface SteamSnapshotPayload {
@@ -84,7 +71,6 @@ export interface SteamSnapshotChunkPayload extends SteamSnapshotPayload {
 export interface SteamGameSyncPayload {
   playTimeInSeconds: number;
   lastPlayedAt: string | null;
-  achievements?: SteamSnapshotAchievement[];
 }
 
 export type SteamSyncOrigin = "manual" | "startup";
@@ -92,7 +78,6 @@ export type SteamSyncOrigin = "manual" | "startup";
 export type SteamSyncPhase =
   | "starting"
   | "library"
-  | "achievements"
   | "publishing"
   | "merging"
   | "executables"

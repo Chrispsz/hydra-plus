@@ -21,7 +21,7 @@ import { isArchiveOrgFileUri } from "./archive-org";
 import { charMap } from "./char-map";
 import { Downloader } from "./constants";
 import { format } from "date-fns";
-import { AchievementNotificationInfo, GameRepack } from "@types";
+import { GameRepack } from "@types";
 
 export * from "./archive-org";
 export * from "./constants";
@@ -44,10 +44,7 @@ export * from "./download-directories";
 export * from "./html-sanitizer";
 export * from "./language-flags";
 export * from "./use-hls-video";
-export * from "./use-souvenir-content-warning";
 export * from "./tracker-list";
-export * from "./souvenirs";
-export * from "./souvenir-sync";
 
 export class UserNotLoggedInError extends Error {
   constructor() {
@@ -325,26 +322,4 @@ export const formatDate = (
 ): string => {
   if (isNaN(new Date(date).getDate())) return "N/A";
   return format(date, language == "en" ? "MM-dd-yyyy" : "dd/MM/yyyy");
-};
-
-export const generateAchievementCustomNotificationTest = (
-  t: any,
-  language?: string,
-  options: { isHidden?: boolean; isRare?: boolean; isPlatinum?: boolean } = {}
-): AchievementNotificationInfo => {
-  return {
-    title: t("test_achievement_notification_title", {
-      ns: "notifications",
-      lng: language ?? "en",
-    }),
-    description: t("test_achievement_notification_description", {
-      ns: "notifications",
-      lng: language ?? "en",
-    }),
-    iconUrl: "https://cdn.losbroxas.org/favicon.svg",
-    points: 2440,
-    isHidden: options.isHidden ?? false,
-    isRare: options.isRare ?? false,
-    isPlatinum: options.isPlatinum ?? false,
-  };
 };

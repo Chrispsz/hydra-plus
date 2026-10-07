@@ -1,23 +1,12 @@
-import type { Cracker, DownloadSourceStatus, Downloader } from "@shared";
+import type { DownloadSourceStatus, Downloader } from "@shared";
 import type { SteamAppDetails } from "./steam.types";
-import type {
-  AchievementCustomNotificationPosition,
-  Download,
-  Game,
-  Subscription,
-} from "./level.types";
-import type { GameShop, UnlockedAchievement } from "./game.types";
+import type { Download, Game, Subscription } from "./level.types";
+import type { GameShop } from "./game.types";
 import type { ArtworkAssetType } from "./artwork.types";
-import type { GameContentWarning } from "./souvenir.types";
 
 export * from "./download-contract";
 
-export type HydraCloudFeature =
-  | "achievements"
-  | "backup"
-  | "achievements-points"
-  | "customization"
-  | "vikingfile";
+export type HydraCloudFeature = "backup" | "customization" | "vikingfile";
 
 export interface DiskUsage {
   free: number;
@@ -71,7 +60,6 @@ export type ShopDetails = SteamAppDetails & {
   objectId: string;
   platform?: string;
   skus?: string[];
-  retroAchievementsGameId?: number | null;
   descriptionLanguage?: string;
 };
 
@@ -98,9 +86,6 @@ export type UserGame = {
   title: string;
   playTimeInSeconds: number;
   lastTimePlayed: Date | null;
-  unlockedAchievementCount: number;
-  achievementCount: number;
-  achievementsPointsEarnedSum: number;
   hasManuallyUpdatedPlaytime: boolean;
   hasActiveSteamImport?: boolean;
   isFavorite: boolean;
@@ -178,8 +163,6 @@ export type UserProfileCurrentGame = GameRunning &
   };
 
 export type ProfileVisibility = "PUBLIC" | "PRIVATE" | "FRIENDS";
-export type SouvenirSort = "recent" | "oldest" | "rare";
-export type SouvenirsHiddenReason = "FRIENDS_ONLY" | "PRIVATE" | null;
 
 export interface Badge {
   name: string;
@@ -199,73 +182,12 @@ export interface UserDetails {
   backgroundImageUrl: string | null;
   profileVisibility: ProfileVisibility;
   allowCloudGifts: boolean;
-  souvenirsVisibility: ProfileVisibility;
   bio: string;
   subscription: Subscription | null;
   karma: number;
   quirks?: {
     backupsPerGameLimit: number;
   };
-}
-
-export interface ProfileAchievement {
-  name: string;
-  displayName: string;
-  description: string;
-  imageUrl: string | null;
-  achievementIcon: string | null;
-  unlockTime: number;
-  points: number | null;
-  isRare: boolean | null;
-  isPlatinum: boolean;
-  gameUnlockedAchievementCount: number;
-  gameTotalAchievementCount: number;
-  visibility?: ProfileVisibility;
-  gameId: string;
-  objectId: string;
-  shop: GameShop;
-  gameTitle: string | null;
-  gameIconUrl: string | null;
-  gameContentWarning?: GameContentWarning;
-  gameContentDescriptorIds?: number[] | null;
-  likeCount: number;
-  likedByMe: boolean;
-}
-
-export interface ProfileSouvenirAchievement {
-  name: string;
-  displayName: string;
-  description: string;
-  achievementIcon: string | null;
-  unlockTime: number;
-  points: number | null;
-  isRare: boolean | null;
-  isPlatinum: boolean;
-}
-
-export interface ProfileSouvenir {
-  id: string;
-  imageUrl: string | null;
-  capturedAt: number;
-  primaryAchievementName: string;
-  achievements: ProfileSouvenirAchievement[];
-  visibility?: ProfileVisibility;
-  gameId: string;
-  objectId: string;
-  shop: GameShop;
-  gameTitle: string | null;
-  gameIconUrl: string | null;
-  gameContentWarning?: GameContentWarning;
-  gameContentDescriptorIds?: number[] | null;
-  likeCount: number;
-  likedByMe: boolean;
-}
-
-export interface SouvenirsResponse {
-  items: Array<ProfileSouvenir | ProfileAchievement>;
-  total: number;
-  hasReachedLimit: boolean;
-  hiddenReason: SouvenirsHiddenReason;
 }
 
 export interface UserProfile {
@@ -275,7 +197,6 @@ export interface UserProfile {
   email: string | null;
   backgroundImageUrl: string | null;
   profileVisibility: ProfileVisibility;
-  souvenirsVisibility: ProfileVisibility;
   libraryGames: UserGame[];
   recentGames: UserGame[];
   currentGame: UserProfileCurrentGame | null;
@@ -295,7 +216,6 @@ export interface UserProfile {
 export interface UpdateProfileRequest {
   displayName?: string;
   profileVisibility?: ProfileVisibility;
-  souvenirsVisibility?: ProfileVisibility;
   profileImageUrl?: string | null;
   backgroundImageUrl?: string | null;
   bio?: string;
@@ -383,73 +303,15 @@ export interface UserStatsPercentile {
 export interface UserStats {
   libraryCount: number;
   totalPlayTimeInSeconds: UserStatsPercentile;
-  achievementsPointsEarnedSum?: UserStatsPercentile;
-  unlockedAchievementSum?: number;
 }
 
-export interface UpdatedUnlockedAchievements {
-  objectId: string;
-  shop: GameShop;
-  achievements: UnlockedAchievement[];
-  souvenirs?: Array<{
-    clientId: string;
-    id: string;
-  }>;
-}
-
-export interface AchievementFile {
-  type: Cracker;
-  filePath: string;
-}
-
-export type GameAchievementFiles = {
-  [id: string]: AchievementFile[];
-};
-
-export interface AchievementMetadataEntry {
-  description: string;
-  displayName: string;
-  hidden: 0 | 1;
-  icon: string;
-  icongray: string;
-  name: string;
-}
-
-export type GameLauncherStatus =
-  | "generating_achievements"
-  | "downloading_achievement_icons"
-  | "complete";
+export type GameLauncherStatus = "complete";
 
 export interface GameLauncherStatusPayload {
   gameKey: string;
   status: GameLauncherStatus;
   detail: string | null;
 }
-
-export interface AchievementNotificationInfo {
-  title: string;
-  description?: string;
-  iconUrl: string;
-  isHidden: boolean;
-  isRare: boolean;
-  isPlatinum: boolean;
-  points?: number;
-}
-
-export type AchievementNotificationRequest = {
-  id: string;
-  position: AchievementCustomNotificationPosition;
-} & (
-  | {
-      type: "achievement";
-      achievement: AchievementNotificationInfo;
-    }
-  | {
-      type: "combined";
-      gameCount: number;
-      achievementCount: number;
-    }
-);
 
 export interface GameArtifact {
   id: string;
@@ -483,17 +345,12 @@ export type NotificationType =
   | "REVIEW_UPVOTE"
   | "REVIEW_ANSWER"
   | "REVIEW_ANSWER_UPVOTE"
-  | "SOUVENIR_LIKE"
-  | "RETROACHIEVEMENTS_CREDENTIALS_RESTORED"
-  | "RETROACHIEVEMENTS_CREDENTIALS_INVALID"
-  | "RETROACHIEVEMENTS_SYNC_FAILED"
   | "CLOUD_GIFT_RECEIVED";
 
 export type LocalNotificationType =
   | "EXTRACTION_COMPLETE"
   | "DOWNLOAD_COMPLETE"
   | "UPDATE_AVAILABLE"
-  | "ACHIEVEMENT_UNLOCKED"
   | "SCAN_GAMES_COMPLETE";
 
 export interface Notification {
@@ -539,36 +396,6 @@ export interface NotificationCountResponse {
 export interface NotificationsChangedDetail {
   apiUnreadDelta?: number;
   resetApiUnread?: boolean;
-}
-
-export interface ComparedAchievements {
-  achievementsPointsTotal: number;
-  owner: {
-    totalAchievementCount: number;
-    unlockedAchievementCount: number;
-    achievementsPointsEarnedSum?: number;
-  };
-  target: {
-    displayName: string;
-    profileImageUrl: string;
-    totalAchievementCount: number;
-    unlockedAchievementCount: number;
-    achievementsPointsEarnedSum: number;
-  };
-  achievements: {
-    hidden: boolean;
-    icon: string;
-    displayName: string;
-    description: string;
-    ownerStat?: {
-      unlocked: boolean;
-      unlockTime: number;
-    };
-    targetStat: {
-      unlocked: boolean;
-      unlockTime: number;
-    };
-  }[];
 }
 
 export interface CatalogueSearchPayload {
@@ -632,15 +459,11 @@ export type LibraryGame = Game &
   Partial<ShopAssets> & {
     id: string;
     download: Download | null;
-    unlockedAchievementCount?: number;
-    achievementCount?: number;
   };
 
 export type UserGameDetails = ShopAssets & {
   id: string;
   playTimeInSeconds: number;
-  unlockedAchievementCount: number;
-  achievementsPointsEarnedSum: number;
   lastTimePlayed: Date | null;
   isDeleted: boolean;
   isFavorite: boolean;
@@ -656,7 +479,6 @@ export * from "./level.types";
 export * from "./emulator.types";
 export * from "./artwork.types";
 export * from "./cloud-save.types";
-export * from "./souvenir.types";
 
 export type ExtractionFailure =
   | { reason: "unsupported-format"; format: string }

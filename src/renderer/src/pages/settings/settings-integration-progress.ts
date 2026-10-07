@@ -24,8 +24,7 @@ export type SteamProgressPresentation =
 const PHASE_PROGRESS_RANGES: Partial<
   Record<SteamSyncPhase, readonly [number, number]>
 > = {
-  achievements: [0, 60],
-  publishing: [60, 70],
+  publishing: [0, 70],
   merging: [70, 95],
   executables: [95, 100],
   finishing: [100, 100],
@@ -40,7 +39,6 @@ const PHASE_LABEL_KEYS: Partial<Record<SteamSyncPhase, SteamProgressLabelKey>> =
   };
 
 const PHASES_WITH_GAME_COUNT = new Set<SteamSyncPhase>([
-  "achievements",
   "merging",
   "executables",
 ]);
@@ -65,7 +63,7 @@ export const getSteamProgressPresentation = (
   const range = PHASE_PROGRESS_RANGES[state.phase];
   const hasKnownTotal = state.gamesFound > 0;
 
-  if (!range || (state.phase === "achievements" && !hasKnownTotal)) {
+  if (!range) {
     return {
       mode: "indeterminate",
       percentage: null,
