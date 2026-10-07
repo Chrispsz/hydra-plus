@@ -35,7 +35,7 @@ Escopo pedido: **`drive.file` apenas** — o app só enxerga e gerencia os arqui
 
 1. Criar projeto → **APIs & Services → Library** → habilitar **Google Drive API**.
 2. **OAuth consent screen**: External, modo **Testing** (até 100 usuários de teste; para distribuição ampla é preciso verificar o app). Adicionar o scope `.../auth/drive.file`.
-3. **Credentials → Create credentials → OAuth client ID → Desktop app** → copiar o *Client ID* (não há client secret no fluxo PKCE para apps instalados).
+3. **Credentials → Create credentials → OAuth client ID → Desktop app** → copiar o _Client ID_ (não há client secret no fluxo PKCE para apps instalados).
 4. Build: `MAIN_VITE_GOOGLE_CLIENT_ID=<client-id>` (local: `.env`; CI: secret do repo).
 
 ## Escolha do provider

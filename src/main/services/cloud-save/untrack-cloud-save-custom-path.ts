@@ -16,6 +16,10 @@ import { executeCloudSaveCustomPathUntracking } from "./custom-path-untracking-p
 import { getCloudSaveGameContext } from "./cloud-save-game-context.js";
 import { getEmulatorSaveProvider } from "./emulator-save-provider.js";
 import { buildDeleteGameCloudSaveSnapshotsUrl } from "./delete-game-cloud-save-data-policy.js";
+import {
+  getCloudSaveRemoteStore,
+  isGoogleDriveCloudActive,
+} from "./remote-store/index.js";
 import { listRemoteGameSnapshots } from "./list-remote-game-snapshots.js";
 import {
   cloudSaveOperationGate,
@@ -36,7 +40,10 @@ const publishCustomPathRemoval = async (
     const activeSnapshot = (await listRemoteGameSnapshots(objectId, shop))[0];
     if (!activeSnapshot) return;
 
-    const manifest = await getRemoteSnapshotRestoreManifest(activeSnapshot);
+    const manifest = await getRemoteSnapshotRestoreManifest(activeSnapshot, {
+      objectId,
+      shop,
+    });
     const proposal = buildCloudSaveCustomPathRemovalProposal(manifest, rawPath);
     if (getEmulatorSaveProvider(context.game) === "rpcs3") {
       const { assertRpcs3DiscIdentity, assertRpcs3SnapshotIdentity } =
@@ -49,14 +56,21 @@ const publishCustomPathRemoval = async (
     }
     await executeCloudSaveCustomPathRemoteRemoval({
       proposal,
-      deleteSnapshot: () =>
-        HydraApi.delete<void>(
+      deleteSnapshot: async () => {
+        // Hydra Plus: same removal semantics as deleting all cloud data.
+        if (await isGoogleDriveCloudActive()) {
+          const store = await getCloudSaveRemoteStore();
+          await store.deleteGameCloudData({ objectId, shop });
+          return;
+        }
+        await HydraApi.delete<void>(
           buildDeleteGameCloudSaveSnapshotsUrl(objectId, shop),
           {
             needsAuth: true,
             needsSubscription: true,
           }
-        ),
+        );
+      },
       updateSnapshot: async () => {
         const aggregateHash = buildCloudSaveAggregateHash({
           variants: proposal.variants,

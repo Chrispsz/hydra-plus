@@ -19,6 +19,7 @@ import {
 } from "@primer/octicons-react";
 import { Gamepad2, Wrench } from "lucide-react";
 import { SettingsContextGeneral } from "./settings-context-general";
+import { SettingsContextCloud } from "./settings-context-cloud";
 import { SettingsContextDownloads } from "./settings-context-downloads";
 import { SettingsContextDownloadSources } from "./settings-context-download-sources";
 import { SettingsContextNotifications } from "./settings-context-notifications";
@@ -44,6 +45,11 @@ export default function Settings() {
         id: "downloads" as const,
         label: t("downloads"),
         icon: <DownloadIcon size={16} />,
+      },
+      {
+        id: "cloud" as const,
+        label: t("cloud"),
+        icon: <CloudIcon size={16} />,
       },
       {
         id: "download_sources" as const,
@@ -122,6 +128,10 @@ export default function Settings() {
 
             if (selectedCategoryId === "content_gameplay") {
               return <SettingsContextContentGameplay />;
+            }
+
+            if (selectedCategoryId === "cloud") {
+              return <SettingsContextCloud />;
             }
 
             if (selectedCategoryId === "integrations") {

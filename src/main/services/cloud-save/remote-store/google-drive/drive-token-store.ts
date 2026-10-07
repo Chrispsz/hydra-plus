@@ -3,7 +3,7 @@ import axios from "axios";
 import { db, levelKeys } from "@main/level";
 import { logger } from "@main/services/logger";
 
-import { getGoogleClientId } from "./config";
+import { resolveGoogleClientId } from "./config";
 
 /**
  * Persistence for Google OAuth tokens.
@@ -120,7 +120,7 @@ const requestFreshAccessToken = async (): Promise<string> => {
   }>(
     TOKEN_ENDPOINT,
     new URLSearchParams({
-      client_id: getGoogleClientId(),
+      client_id: await resolveGoogleClientId(),
       refresh_token: refreshToken,
       grant_type: "refresh_token",
     })
@@ -164,3 +164,10 @@ export const getValidGoogleDriveAccessToken = async (): Promise<string> => {
 /** Forces a refresh even if the cached token looks valid (401 recovery). */
 export const forceRefreshGoogleDriveAccessToken = async (): Promise<string> =>
   requestFreshAccessToken();
+
+/** True when the stored refresh token lacks OS-level encryption. */
+export const isGoogleDriveTokenPlaintextFallback =
+  async (): Promise<boolean> => {
+    const tokens = await readTokens();
+    return Boolean(tokens?.plaintextFallback);
+  };

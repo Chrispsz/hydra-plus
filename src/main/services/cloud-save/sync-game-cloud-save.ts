@@ -989,7 +989,7 @@ const prepareRpcs3SyncContext = async (
   }
   const snapshots = await listRemoteGameSnapshots(objectId, shop);
   const manifest = snapshots[0]
-    ? await getRemoteSnapshotRestoreManifest(snapshots[0])
+    ? await getRemoteSnapshotRestoreManifest(snapshots[0], { objectId, shop })
     : null;
   if (
     manifest &&
@@ -1022,7 +1022,7 @@ export const syncGameCloudSave = async (
   suppliedContext?: Awaited<ReturnType<typeof getCloudSaveGameContext>>,
   expectedRemoteHash?: string | null
 ) => {
-  assertCloudSaveSubscription();
+  await assertCloudSaveSubscription();
   await assertCloudSaveRuntimeAvailable(objectId, shop);
   if (isGameRunning(objectId, shop)) {
     throw new Error("cloud_save_game_running");
@@ -1072,7 +1072,7 @@ export const resolveCloudSaveConflict = async (
   resolution: CloudSaveConflictResolution,
   onProgress?: ProgressCallback
 ) => {
-  assertCloudSaveSubscription();
+  await assertCloudSaveSubscription();
   await assertCloudSaveRuntimeAvailable(objectId, shop);
 
   if (isGameRunning(objectId, shop)) {

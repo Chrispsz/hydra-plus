@@ -1,0 +1,112 @@
+@use "../../scss/globals.scss";
+
+.settings-cloud__providers {
+  display: grid;
+  gap: calc(globals.$spacing-unit * 1.5);
+
+  @media (min-width: 700px) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.settings-cloud__provider-card {
+  display: flex;
+  flex-direction: column;
+  gap: calc(globals.$spacing-unit * 1.5);
+  padding: calc(globals.$spacing-unit * 2);
+  text-align: left;
+  border: 1px solid globals.$border-color;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.02);
+  color: inherit;
+  cursor: pointer;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.05);
+  }
+
+  &--active {
+    border-color: globals.$brand-teal;
+    background: rgba(255, 255, 255, 0.05);
+  }
+}
+
+.settings-cloud__provider-header {
+  display: flex;
+  align-items: center;
+  gap: globals.$spacing-unit;
+
+  strong {
+    font-size: 14px;
+  }
+}
+
+.settings-cloud__provider-card > span:last-child {
+  font-size: 12px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+.settings-cloud__account {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: calc(globals.$spacing-unit * 2);
+  flex-wrap: wrap;
+  margin-bottom: calc(globals.$spacing-unit * 2);
+}
+
+.settings-cloud__account-email {
+  display: flex;
+  align-items: center;
+  gap: globals.$spacing-unit;
+  font-size: 13px;
+}
+
+.settings-cloud__icon-ok {
+  color: globals.$success-color;
+}
+
+.settings-cloud__icon-error {
+  color: var(--danger, #ff5c5c);
+}
+
+.settings-cloud__description,
+.settings-cloud__hint {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin: 0 0 globals.$spacing-unit;
+  line-height: 1.6;
+}
+
+.settings-cloud__setup {
+  display: flex;
+  flex-direction: column;
+  gap: calc(globals.$spacing-unit * 2);
+  margin-top: calc(globals.$spacing-unit * 2);
+  padding: calc(globals.$spacing-unit * 2);
+  border: 1px dashed globals.$border-color;
+  border-radius: 8px;
+
+  p {
+    margin: 0;
+    font-size: 12px;
+  }
+
+  ol {
+    margin: 0;
+    padding-left: 20px;
+    font-size: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: calc(globals.$spacing-unit * 1.5);
+  }
+}
+
+.settings-cloud__setup-hint {
+  color: var(--text-secondary);
+  margin: calc(globals.$spacing-unit / 2) 0 0;
+}

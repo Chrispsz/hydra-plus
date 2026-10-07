@@ -58,7 +58,7 @@ const legacyBatteryCandidates = async (objectId: string, shop: GameShop) => {
   await retroArchGame(objectId, shop);
   const snapshots = await listRemoteGameSnapshots(objectId, shop);
   const manifest = snapshots[0]
-    ? await getRemoteSnapshotRestoreManifest(snapshots[0])
+    ? await getRemoteSnapshotRestoreManifest(snapshots[0], { objectId, shop })
     : null;
   const grouped = new Map<
     string,

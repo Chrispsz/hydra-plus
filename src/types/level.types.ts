@@ -147,6 +147,13 @@ export interface UserPreferences {
    * Google Drive (free). Default: "hydra".
    */
   cloudProvider?: CloudStorageProvider;
+  /**
+   * Self-serve Google OAuth "Desktop app" client used to link the user's
+   * Drive when the build shipped without MAIN_VITE_GOOGLE_CLIENT_ID.
+   * For desktop clients the secret is public data (PKCE protects the flow).
+   */
+  googleDriveClientId?: string;
+  googleDriveClientSecret?: string;
   downloadsPath?: string | null;
   defaultWinePrefixPath?: string | null;
   downloadDirectories?: DownloadDirectoryPreference[];

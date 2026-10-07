@@ -7,6 +7,7 @@ import { defaultDownloadsPath } from "@main/constants";
 import { db, gamesSublevel, levelKeys } from "@main/level";
 import { patchUserProfile } from "../profile/update-profile";
 import { DownloadManager, Wine } from "@main/services";
+import { invalidateRemoteStoreCache } from "@main/services/cloud-save/remote-store/provider-resolver";
 import { WindowManager } from "@main/services/window-manager";
 import { getDownloadDirectoryPreferences } from "@shared";
 import {
@@ -155,6 +156,15 @@ const updateUserPreferences = async (
   );
 
   Wine.syncUserPreferences(updatedPreferences);
+
+  // Hydra Plus: provider/OAuth-client changes must not reuse stale stores.
+  if (
+    Object.hasOwn(preferences, "cloudProvider") ||
+    Object.hasOwn(preferences, "googleDriveClientId") ||
+    Object.hasOwn(preferences, "googleDriveClientSecret")
+  ) {
+    invalidateRemoteStoreCache();
+  }
 
   await updateAchievementSouvenirPreference(preferences);
 

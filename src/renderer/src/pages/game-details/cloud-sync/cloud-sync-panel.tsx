@@ -20,6 +20,7 @@ import {
   useAppSelector,
   useDate,
   useFormat,
+  useGoogleDriveCloud,
   useToast,
   useUserDetails,
 } from "@renderer/hooks";
@@ -54,6 +55,7 @@ export function CloudSyncPanel({
   const { formatDate, formatDateTime } = useDate();
   const { formatNumber } = useFormat();
   const { hasActiveSubscription } = useUserDetails();
+  const { isDriveCloudActive } = useGoogleDriveCloud();
 
   const {
     artifacts,
@@ -107,7 +109,7 @@ export function CloudSyncPanel({
   }, [objectId, shop]);
 
   useEffect(() => {
-    if (!hasActiveSubscription) return;
+    if (!hasActiveSubscription && !isDriveCloudActive) return;
 
     getGameBackupPreview();
     getGameArtifacts();

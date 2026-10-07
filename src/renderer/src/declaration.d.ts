@@ -3,6 +3,7 @@ import type {
   SystemPowerAction,
   AppUpdaterEvent,
   GameShop,
+  GoogleDriveCloudStatus,
   Steam250Game,
   DownloadProgress,
   SeedingStatus,
@@ -1168,6 +1169,9 @@ declare global {
     getAuth: () => Promise<Auth | null>;
     signOut: () => Promise<void>;
     openAuthWindow: (page: AuthPage) => Promise<void>;
+    startGoogleAuth: () => Promise<{ linked: true }>;
+    disconnectGoogleDrive: () => Promise<{ ok: boolean }>;
+    getGoogleDriveStatus: () => Promise<GoogleDriveCloudStatus>;
     minimizeAuthWindow: () => Promise<void>;
     closeAuthWindow: () => Promise<void>;
     getSessionHash: () => Promise<string | null>;

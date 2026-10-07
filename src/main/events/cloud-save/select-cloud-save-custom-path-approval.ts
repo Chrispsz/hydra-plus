@@ -18,7 +18,7 @@ registerEvent(
     selectedPath?: string,
     selectionMode: "file" | "dir" = "dir"
   ): Promise<SelectCloudSaveCustomPathApprovalResult> => {
-    assertCloudSaveSubscription();
+    await assertCloudSaveSubscription();
     const approval = getPendingCloudSaveCustomPathApprovalById(approvalId);
     if (
       !["file", "dir"].includes(selectionMode) ||

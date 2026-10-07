@@ -1,4 +1,5 @@
 import type { GameShop } from "./game.types";
+import type { CloudStorageProvider } from "./level.types";
 
 export interface CloudSaveGameId {
   shop: GameShop;
@@ -843,4 +844,24 @@ export interface CloudSaveMergeResult {
   deleteLocalEntryIds: string[];
   unresolvedRemoteEntryIds: string[];
   partial: boolean;
+}
+
+/**
+ * Hydra Plus: Google Drive cloud provider status for the UI.
+ */
+export interface GoogleDriveCloudStatus {
+  /** Which remote backend the cloud-save engine will use right now. */
+  provider: CloudStorageProvider;
+  /** True when the user selected Google Drive in Settings → Cloud. */
+  providerSelected: boolean;
+  /** True when a Drive account is linked (refresh token present). */
+  linked: boolean;
+  /** E-mail of the linked Drive account, when available. */
+  email: string | null;
+  /** True when an OAuth client id is available (build time or user setup). */
+  clientIdConfigured: boolean;
+  /** True when the client id was NOT baked at build time (user setup needed). */
+  requiresClientSetup: boolean;
+  /** True when the refresh token could not be encrypted by the OS keyring. */
+  plaintextTokenFallback: boolean;
 }

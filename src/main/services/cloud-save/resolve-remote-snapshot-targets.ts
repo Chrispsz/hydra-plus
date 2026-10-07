@@ -5,11 +5,17 @@ import { Wine } from "@main/services/wine";
 import type {
   CloudSaveCustomPathBindings,
   CloudSavePathContext,
+  CloudSaveGameId,
   RemoteGameSnapshot,
   RemoteSnapshotSummary,
   RestoreManifestResponse,
   ResolveRestoreTargetsResult,
 } from "@types";
+
+import {
+  getCloudSaveRemoteStore,
+  isGoogleDriveCloudActive,
+} from "./remote-store";
 
 import { NativeAddon } from "../native-addon";
 import { validateRestoreManifest } from "./cloud-save-contract";
@@ -37,8 +43,28 @@ const isWinePrefixValid = (winePrefixPath?: string) => {
 };
 
 export const getRemoteSnapshotRestoreManifest = async (
-  snapshot: RemoteSnapshotSummary | RemoteGameSnapshot
+  snapshot: RemoteSnapshotSummary | RemoteGameSnapshot,
+  gameId?: CloudSaveGameId
 ): Promise<RestoreManifestResponse> => {
+  // Hydra Plus: Google Drive stores the manifest as a file inside the
+  // user's Drive; the store reads it straight from there.
+  if (await isGoogleDriveCloudActive()) {
+    if (!gameId) {
+      throw new Error("cloud_save_game_id_required_for_restore");
+    }
+    const store = await getCloudSaveRemoteStore();
+    const manifest = validateRestoreManifest(
+      await store.getRestoreManifest(gameId)
+    );
+    if (
+      manifest.snapshot.id !== snapshot.id ||
+      manifest.snapshot.version !== snapshot.version
+    ) {
+      throw new Error("Restore manifest does not match its snapshot summary");
+    }
+    return manifest;
+  }
+
   const manifest = validateRestoreManifest(
     await HydraApi.get<unknown>(
       "/profile/cloud-saves/snapshot-restore-manifest",

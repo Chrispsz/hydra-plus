@@ -23,7 +23,7 @@ registerEvent(
     rawPath: string,
     kind: EmulatorDestinationKind
   ) => {
-    assertCloudSaveSubscription();
+    await assertCloudSaveSubscription();
     if (kind !== "save" && kind !== "state") {
       throw new Error("cloud_save_emulator_destination_invalid");
     }

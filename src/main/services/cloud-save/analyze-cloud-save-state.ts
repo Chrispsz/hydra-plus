@@ -74,7 +74,10 @@ export const analyzeCloudSaveState = async (
       : suppliedOrCurrentContext;
   const activeRemoteSnapshot = remoteSnapshots[0] ?? null;
   const originalRemoteManifest = activeRemoteSnapshot
-    ? await getRemoteSnapshotRestoreManifest(activeRemoteSnapshot)
+    ? await getRemoteSnapshotRestoreManifest(activeRemoteSnapshot, {
+        objectId,
+        shop,
+      })
     : null;
   const retroArchGame =
     initialContext.game &&

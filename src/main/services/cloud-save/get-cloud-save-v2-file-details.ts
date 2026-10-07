@@ -76,7 +76,7 @@ export const getCloudSaveV2FileDetails = async (
   objectId: string,
   shop: GameShop
 ): Promise<CloudSaveV2FileDetails> => {
-  assertCloudSaveSubscription();
+  await assertCloudSaveSubscription();
 
   const analysis = await analyzeCloudSaveState(objectId, shop);
   const customPathContext = cloudSaveCustomPathContextFromPathContext(
@@ -113,7 +113,7 @@ export const getCloudSaveV2FileDetails = async (
     async (snapshot) =>
       analysis.remoteManifest?.snapshot.id === snapshot.id
         ? analysis.remoteManifest
-        : getRemoteSnapshotRestoreManifest(snapshot)
+        : getRemoteSnapshotRestoreManifest(snapshot, { objectId, shop })
   );
   const provider = getEmulatorSaveProvider(analysis.context.game);
   if (provider === "retroarch" && analysis.context.game) {

@@ -8,12 +8,12 @@ import { registerEvent } from "../register-event";
 
 registerEvent(
   "getPendingCloudSaveCustomPathApproval",
-  (
+  async (
     _event: Electron.IpcMainInvokeEvent,
     objectId: string,
     shop: GameShop
-  ): CloudSaveCustomPathApproval | null => {
-    assertCloudSaveSubscription();
+  ): Promise<CloudSaveCustomPathApproval | null> => {
+    await assertCloudSaveSubscription();
     return getPendingCloudSaveCustomPathApproval(shop, objectId);
   }
 );

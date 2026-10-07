@@ -30,6 +30,7 @@ import {
   useAppSelector,
   useDownload,
   useGameCollections,
+  useGoogleDriveCloud,
   useIsNonSteamExecutable,
   useLibrary,
   useToast,
@@ -238,11 +239,13 @@ export function GameOptionsModal({
     cancelDownload,
   } = useDownload();
   const { userDetails, hasActiveSubscription } = useUserDetails();
+  const { isDriveCloudActive } = useGoogleDriveCloud();
   const { artifacts } = useContext(cloudSyncContext);
   const { showHydraCloudModal } = useSubscription();
   const cloudSaveAccessAction = getCloudSaveAccessAction(
     Boolean(userDetails),
-    hasActiveSubscription
+    hasActiveSubscription,
+    isDriveCloudActive
   );
   const cloudSaveSettings = getCloudSaveVisibility(
     game.shop,

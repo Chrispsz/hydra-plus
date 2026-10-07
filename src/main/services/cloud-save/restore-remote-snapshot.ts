@@ -191,7 +191,7 @@ export const restoreRemoteSnapshot = async (
   versionChangeAttempt = 0,
   assertEnvironmentCurrent?: () => Promise<void>
 ): Promise<RestoreRemoteSnapshotResult> => {
-  assertCloudSaveSubscription();
+  await assertCloudSaveSubscription();
 
   const emitProgress = (
     stage: RestoreProgressPayload["stage"],
@@ -208,7 +208,10 @@ export const restoreRemoteSnapshot = async (
   const tempSnapshotId = `${snapshot.id}-${snapshot.version}`;
 
   emitProgress("starting", 0, 0);
-  const originalManifest = await getRemoteSnapshotRestoreManifest(snapshot);
+  const originalManifest = await getRemoteSnapshotRestoreManifest(
+    snapshot,
+    gameId
+  );
   if (
     originalManifest.snapshot.shop !== gameId.shop ||
     originalManifest.snapshot.objectId !== gameId.objectId
@@ -297,7 +300,8 @@ export const restoreRemoteSnapshot = async (
         migration?.sourceFilesByEntryId
       ),
       (processedFiles, totalFiles) =>
-        emitProgress("downloading", processedFiles, totalFiles)
+        emitProgress("downloading", processedFiles, totalFiles),
+      gameId
     );
     await verifyDownloadedRestoreFiles(downloadedFiles, emitProgress);
 

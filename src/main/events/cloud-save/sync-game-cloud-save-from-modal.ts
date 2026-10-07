@@ -49,7 +49,7 @@ registerEvent(
     }
     if (approvalId) assertApprovalCanContinue();
 
-    assertCloudSaveSubscription();
+    await assertCloudSaveSubscription();
     await assertCloudSaveRuntimeAvailable(objectId, shop);
 
     const onProgress = (progress: CloudSaveSyncProgressPayload) => {

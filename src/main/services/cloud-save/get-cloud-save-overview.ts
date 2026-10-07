@@ -15,7 +15,7 @@ export const getCloudSaveOverview = async (
   objectId: string,
   shop: GameShop
 ): Promise<CloudSaveOverview> => {
-  assertCloudSaveSubscription();
+  await assertCloudSaveSubscription();
 
   const [analysis, isAutomaticSyncEnabled] = await Promise.all([
     analyzeCloudSaveState(objectId, shop),

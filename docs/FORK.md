@@ -9,14 +9,14 @@ Licença: MIT (herdada do upstream). Este fork **não é afiliado** à Hydra / L
 
 ## Status das fases
 
-| Fase | Escopo | Status |
-|---|---|---|
-| **0** | CI/CD completo (workflows reutilizáveis, ARM64-ready, smoke test, provenance) | ✅ concluída |
+| Fase  | Escopo                                                                                                                                                                    | Status                 |
+| ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------- |
+| **0** | CI/CD completo (workflows reutilizáveis, ARM64-ready, smoke test, provenance)                                                                                             | ✅ concluída           |
 | **1** | Interface `CloudSaveRemoteStore` + provedor Hydra + provedor Google Drive (OAuth PKCE, tokens em safeStorage, dedup por hash) + IPC/preload + preferência `cloudProvider` | ✅ esqueleto concluído |
-| **2** | Migração dos call-sites do motor de sync para a interface (ver checklist abaixo) | ⬜ próxima |
-| **3** | UI: aba "Nuvem" nas configurações (Hydra ⬜ / Google ⬜), bypass do paywall no renderer | ⬜ |
-| **4** | Remoções seguras (Big Picture, social, themes, emuladores, conquistas) — ver matriz no relatório de análise | ⬜ |
-| **5** | Extras: compressão zstd, criptografia E2E opcional, GC de blobs, histórico de versões | ⬜ |
+| **2** | Migração dos call-sites do motor de sync para a interface (ver checklist abaixo)                                                                                          | ⬜ próxima             |
+| **3** | UI: aba "Nuvem" nas configurações (Hydra ⬜ / Google ⬜), bypass do paywall no renderer                                                                                   | ⬜                     |
+| **4** | Remoções seguras (Big Picture, social, themes, emuladores, conquistas) — ver matriz no relatório de análise                                                               | ⬜                     |
+| **5** | Extras: compressão zstd, criptografia E2E opcional, GC de blobs, histórico de versões                                                                                     | ⬜                     |
 
 ---
 
@@ -76,7 +76,7 @@ Ver **docs/google-drive-cloud.md**. Resumo: projeto no Google Cloud → habilita
 - CI: `.github/workflows/ci.yml` (PR/push) → quality gate (typecheck+test+lint) → build matriz Windows/Linux (cache Rust+vcpkg preservado do upstream) → smoke test no Linux.
 - Release: tag `v*` → build → **attest-build-provenance** → draft release com `latest.yml` (auto-update do electron-updater aponta para o repo do fork via `MAIN_VITE_UPDATE_OWNER`/`MAIN_VITE_UPDATE_REPO`).
 - Nightly: cron 05:00 UTC, artifacts com retenção curta.
-- Configurar nos *Repository variables/secrets*: `MAIN_VITE_API_URL`, `MAIN_VITE_AUTH_URL`, `MAIN_VITE_UPDATE_OWNER`, `MAIN_VITE_UPDATE_REPO`, secret `MAIN_VITE_GOOGLE_CLIENT_ID`.
+- Configurar nos _Repository variables/secrets_: `MAIN_VITE_API_URL`, `MAIN_VITE_AUTH_URL`, `MAIN_VITE_UPDATE_OWNER`, `MAIN_VITE_UPDATE_REPO`, secret `MAIN_VITE_GOOGLE_CLIENT_ID`.
 
 ### Acompanhar o upstream (importante!)
 

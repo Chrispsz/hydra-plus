@@ -4,6 +4,10 @@ import { HydraApi } from "../hydra-api";
 import { analyzeCloudSaveState } from "./analyze-cloud-save-state";
 import { clearCloudSaveLocalState } from "./clear-cloud-save-local-state";
 import { assertCloudSaveSubscription } from "./cloud-save-access";
+import {
+  getCloudSaveRemoteStore,
+  isGoogleDriveCloudActive,
+} from "./remote-store";
 import { cloudSaveFileKey } from "./cloud-save-contract";
 import { getCloudSaveGameContext } from "./cloud-save-game-context";
 import { cloudSaveCustomPathContextFromPathContext } from "./custom-path";
@@ -30,7 +34,24 @@ export const deleteGameCloudSaveData = async (
   shop: GameShop,
   assertGameNotRunning: () => void
 ) => {
-  assertCloudSaveSubscription();
+  await assertCloudSaveSubscription();
+
+  const deleteRemoteSnapshots = async () => {
+    // Hydra Plus: the user's Drive provider only trashes the game manifest
+    // (content-addressed blobs stay, they may serve other games).
+    if (await isGoogleDriveCloudActive()) {
+      const store = await getCloudSaveRemoteStore();
+      await store.deleteGameCloudData({ objectId, shop });
+      return;
+    }
+    await HydraApi.delete<void>(
+      buildDeleteGameCloudSaveSnapshotsUrl(objectId, shop),
+      {
+        needsAuth: true,
+        needsSubscription: true,
+      }
+    );
+  };
 
   return cloudSaveOperationGate.runDeletion(
     cloudSaveOperationScopeKey(objectId, shop),
@@ -97,14 +118,7 @@ export const deleteGameCloudSaveData = async (
           );
         },
         assertGameNotRunning,
-        deleteRemoteSnapshots: () =>
-          HydraApi.delete<void>(
-            buildDeleteGameCloudSaveSnapshotsUrl(objectId, shop),
-            {
-              needsAuth: true,
-              needsSubscription: true,
-            }
-          ),
+        deleteRemoteSnapshots,
       })
   );
 };

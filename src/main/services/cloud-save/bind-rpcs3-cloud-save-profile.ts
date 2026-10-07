@@ -21,7 +21,7 @@ export const bindRpcs3CloudSaveProfile = async (
   shop: GameShop,
   cloudProfileId: string
 ) => {
-  assertCloudSaveSubscription();
+  await assertCloudSaveSubscription();
   return cloudSaveOperationGate.runSync(
     cloudSaveOperationScopeKey(objectId, shop),
     "bind-rpcs3-profile",
@@ -47,7 +47,10 @@ export const bindRpcs3CloudSaveProfile = async (
 
       const snapshots = await listRemoteGameSnapshots(objectId, shop);
       const manifest = snapshots[0]
-        ? await getRemoteSnapshotRestoreManifest(snapshots[0])
+        ? await getRemoteSnapshotRestoreManifest(snapshots[0], {
+            objectId,
+            shop,
+          })
         : null;
       const cloudProfiles = listRpcs3CloudProfileIds(manifest?.files ?? []);
       if (

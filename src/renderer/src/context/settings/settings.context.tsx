@@ -11,6 +11,7 @@ import { SETTINGS_CATEGORY_STORAGE_KEY } from "@renderer/session-state";
 export type SettingsCategoryId =
   | "general"
   | "downloads"
+  | "cloud"
   | "download_sources"
   | "notifications"
   | "content_gameplay"
@@ -33,6 +34,7 @@ const isSettingsCategoryId = (value: string): value is SettingsCategoryId => {
   return [
     "general",
     "downloads",
+    "cloud",
     "download_sources",
     "notifications",
     "content_gameplay",

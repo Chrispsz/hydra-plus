@@ -280,6 +280,21 @@ export const trashFile = async (fileId: string): Promise<void> => {
   }
 };
 
+/** Returns the e-mail of the linked Drive account (about.get). */
+export const getDriveAccountEmail = async (): Promise<string | null> => {
+  try {
+    const { data } = await authedRequest({
+      url: `${DRIVE_API}/about`,
+      params: { fields: "user" },
+    });
+    const user = (data as { user?: { emailAddress?: string } }).user;
+    return user?.emailAddress ?? null;
+  } catch (error) {
+    logger.warn("Failed to resolve Google Drive account e-mail", error);
+    return null;
+  }
+};
+
 export const resetFolderStructureCache = () => {
   folderStructure = null;
 };

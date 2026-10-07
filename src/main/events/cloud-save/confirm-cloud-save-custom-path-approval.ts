@@ -14,7 +14,7 @@ registerEvent(
     _event: Electron.IpcMainInvokeEvent,
     approvalId: string
   ): Promise<ConfirmCloudSaveCustomPathApprovalResult> => {
-    assertCloudSaveSubscription();
+    await assertCloudSaveSubscription();
     const launchOptions =
       await confirmPendingCloudSaveCustomPathApproval(approvalId);
 

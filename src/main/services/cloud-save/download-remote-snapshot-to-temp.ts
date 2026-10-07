@@ -1,11 +1,16 @@
 import { HydraApi } from "@main/services/hydra-api";
 import { SystemPath } from "@main/services/system-path";
 import type {
+  CloudSaveGameId,
   DownloadedRestoreFile,
   RestoreDownloadUrlFile,
   RestoreManifestFile,
 } from "@types";
 
+import {
+  getCloudSaveRemoteStore,
+  isGoogleDriveCloudActive,
+} from "./remote-store";
 import { NativeAddon } from "../native-addon";
 import {
   cloudSaveFileKey,
@@ -20,9 +25,27 @@ export const downloadRemoteSnapshotToTemp = async (
   snapshotId: string,
   snapshotVersion: number,
   requestedFiles?: RestoreManifestFile[],
-  onProgress?: (processedFiles: number, totalFiles: number) => void
+  onProgress?: (processedFiles: number, totalFiles: number) => void,
+  gameId?: CloudSaveGameId
 ): Promise<DownloadedRestoreFile[]> => {
   if (requestedFiles?.length === 0) return [];
+
+  // Hydra Plus: blobs live in the user's Drive; the store downloads them
+  // by content hash into the same temp layout expected by the restore
+  // pipeline.
+  if (await isGoogleDriveCloudActive()) {
+    if (!gameId) {
+      throw new Error("cloud_save_game_id_required_for_restore");
+    }
+    const store = await getCloudSaveRemoteStore();
+    const manifest = await store.getRestoreManifest(gameId);
+    return store.downloadRestoreBlobs({
+      manifest,
+      requestedFiles,
+      onProgress,
+    });
+  }
+
   const files = validateRestoreDownloadUrls(
     await HydraApi.get<unknown>(
       "/profile/cloud-saves/snapshot-download-urls",

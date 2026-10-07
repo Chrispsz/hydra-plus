@@ -26,7 +26,7 @@ registerEvent(
     shop: GameShop,
     kind: "file" | "dir" = "dir"
   ): Promise<SelectCloudSaveCustomPathResult> => {
-    assertCloudSaveSubscription();
+    await assertCloudSaveSubscription();
     if (kind !== "file" && kind !== "dir") {
       throw new Error("cloud_save_custom_path_invalid_kind");
     }

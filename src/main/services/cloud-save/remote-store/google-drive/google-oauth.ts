@@ -9,7 +9,7 @@ import {
   getGoogleDriveRefreshToken,
   saveGoogleDriveTokens,
 } from "./drive-token-store";
-import { getGoogleClientId, hasGoogleClientId } from "./config";
+import { resolveGoogleClientId, resolveGoogleClientSecret } from "./config";
 
 /**
  * Google OAuth 2.0 for installed apps (PKCE + loopback redirect).
@@ -52,11 +52,14 @@ const withTimeout = async <T>(
 };
 
 export const startGoogleDriveAuth = async (): Promise<{ linked: true }> => {
-  if (!hasGoogleClientId()) {
+  const [clientId, clientSecret] = await Promise.all([
+    resolveGoogleClientId(),
+    resolveGoogleClientSecret(),
+  ]);
+
+  if (!clientId) {
     throw new Error("google_oauth_client_id_missing");
   }
-
-  const clientId = getGoogleClientId();
   const codeVerifier = base64url(crypto.randomBytes(48));
   const codeChallenge = base64url(
     crypto.createHash("sha256").update(codeVerifier).digest()
@@ -133,15 +136,21 @@ export const startGoogleDriveAuth = async (): Promise<{ linked: true }> => {
       "google_oauth_timeout"
     );
 
+    // Google issues a client secret for desktop clients too; it is public
+    // data for installed apps, but some projects require it on the token
+    // exchange. Send it only when the user provided one.
+    const tokenRequest = new URLSearchParams({
+      code,
+      client_id: clientId,
+      redirect_uri: redirectUri,
+      grant_type: "authorization_code",
+      code_verifier: codeVerifier,
+    });
+    if (clientSecret) tokenRequest.set("client_secret", clientSecret);
+
     const { data } = await axios.post<TokenExchangeResponse>(
       TOKEN_ENDPOINT,
-      new URLSearchParams({
-        code,
-        client_id: clientId,
-        redirect_uri: redirectUri,
-        grant_type: "authorization_code",
-        code_verifier: codeVerifier,
-      })
+      tokenRequest
     );
 
     if (!data.refresh_token) {
