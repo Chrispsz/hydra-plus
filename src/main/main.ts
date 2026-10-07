@@ -37,6 +37,7 @@ import { startSteamSyncOnStartup } from "./services/steam-integration/steam-star
 import { migrateEmulatorCloudSaveDefaults } from "./services/cloud-save/automatic-sync-emulator-migration";
 import { watchSteamLibraries } from "./services/steam-integration/steam-install-watcher";
 import { migrateGameVisibilityFields } from "./services/library-sync/game-visibility-migration";
+import { defaultDownloadsPath } from "@main/constants";
 
 const hasMissingSeedFiles = async (download: Download): Promise<boolean> => {
   if (!download.folderName) return false;
@@ -75,6 +76,14 @@ export const loadState = async () => {
   );
 
   Wine.syncUserPreferences(userPreferences);
+
+  // Ensure the default games library directory exists so fresh installs
+  // have a clean, dedicated place to install games (~/Games/Hydra).
+  if (!userPreferences?.downloadsPath) {
+    await fs.promises
+      .mkdir(defaultDownloadsPath, { recursive: true })
+      .catch(() => undefined);
+  }
 
   await import("./events");
 

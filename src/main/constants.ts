@@ -2,7 +2,17 @@ import { app } from "electron";
 import path from "node:path";
 import { SystemPath } from "./services/system-path";
 
-export const defaultDownloadsPath = SystemPath.getPath("downloads");
+/**
+ * Default games library directory.
+ * Deliberately NOT the OS "Downloads" folder: games are large, folder-polluting
+ * content. Fresh installs point to a dedicated per-user games directory.
+ * Existing user preferences are never overridden.
+ */
+export const defaultDownloadsPath = path.join(
+  SystemPath.getPath("home"),
+  "Games",
+  "Hydra"
+);
 
 export const isStaging = import.meta.env.MAIN_VITE_API_URL.includes("staging");
 
