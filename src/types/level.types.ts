@@ -1,7 +1,18 @@
 import type { Downloader } from "@shared";
 import type { GameShop } from "./game.types";
 import type { DownloadStatus } from "./download.types";
-import type { ClassicsDisc } from "./emulator.types";
+
+/*
+ * LaunchBox "classics" discs. `discs` / `selectedDiscPath` are still live:
+ * game shortcuts (Steam + desktop), delete-game-folder and the library UI pick
+ * which disc launches.
+ */
+export interface ClassicsDisc {
+  path: string;
+  label: string;
+  fileName: string;
+  sku?: string | null;
+}
 
 export type SubscriptionStatus = "active" | "pending" | "cancelled";
 

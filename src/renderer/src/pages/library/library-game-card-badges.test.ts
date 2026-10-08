@@ -69,9 +69,6 @@ function renderCard(
     "@renderer/context": { userProfileContext: profileContext },
     "@renderer/constants": { MAX_MINUTES_TO_SHOW_IN_PLAYTIME: 120 },
     "@renderer/assets/icons/hydra.svg?react": { default: () => null },
-    "@renderer/pages/settings/emulation/emulator-icons": {
-      EMULATOR_ICONS: {},
-    },
     "@renderer/logger": { logger: { warn: () => {} } },
     "react-i18next": { useTranslation: () => ({ t: (key: string) => key }) },
     "react-router-dom": { useNavigate: () => () => {} },
