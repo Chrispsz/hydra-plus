@@ -1009,7 +1009,11 @@
     "delete_shortcut_success": "Steam shortcut deleted successfully",
     "delete_shortcut_error": "Failed to delete Steam shortcut",
     "delete_steam_shortcut": "Delete Steam shortcut",
-    "google_drive_legacy_unavailable": "Google Drive is active for the modern save sync. The legacy backups in this section are a Hydra Cloud feature."
+    "google_drive_legacy_unavailable": "Google Drive is active for the modern save sync. The legacy backups in this section are a Hydra Cloud feature.",
+    "google_drive_connect_required": "Link your Google Drive to sync this game's saves with your own Drive — free, and the files stay in your account.",
+    "google_drive_connect_required_title": "Link your Google Drive",
+    "google_drive_connect_required_description": "Pick a Google account to sync saves with your own Drive, in the “Hydra Plus Saves” folder. Free — no subscription, and only this app can see those files (drive.file scope).",
+    "google_drive_linked_toast": "Google Drive linked"
   },
   "activation": {
     "title": "Activate Hydra",
@@ -1640,6 +1644,10 @@
     "google_drive_permission_denied": "Google denied access. Please authorize Drive access.",
     "google_drive_auth_timeout": "Timed out waiting for Google authorization.",
     "google_drive_auth_failed": "Could not connect to Google Drive",
+    "google_drive_access_blocked": "Google blocked access (Error 403). In the Google Cloud Console, publish the OAuth consent screen to Production, or add this account as a test user.",
+    "google_drive_invalid_grant": "The authorization expired or was already used. Click connect and try again.",
+    "google_drive_exchange_failed": "Google refused the authorization. Check the OAuth client settings and try again.",
+    "google_drive_api_disabled": "The Google Drive API is disabled for the project. Enable it in Google Cloud Console → APIs & Services → Library.",
     "google_drive_hint": "Saves live in the \"Hydra Plus Saves\" folder of your Drive, visible only to this app (drive.file scope). Automatic sync uses the same provider.",
     "hydra_cloud_provider_hint": "The official Hydra cloud requires an active Hydra Cloud subscription. Learn more at ",
     "cloud_privacy_note": "Hydra Plus has no telemetry: your saves go only to the provider you choose.",

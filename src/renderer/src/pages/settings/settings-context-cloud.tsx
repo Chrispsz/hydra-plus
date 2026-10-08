@@ -8,6 +8,7 @@ import {
 } from "@primer/octicons-react";
 import { Badge, Button, Link, RadioField } from "@renderer/components";
 import { useGoogleDriveCloud, useToast } from "@renderer/hooks";
+import { reportGoogleDriveConnectError } from "@renderer/helpers/google-drive-connect";
 import { settingsContext } from "@renderer/context";
 import "./settings-context-cloud.scss";
 import type { CloudStorageProvider } from "@types";
@@ -41,18 +42,7 @@ export function SettingsContextCloud() {
       await connect();
       showSuccessToast(t("google_drive_linked"));
     } catch (error) {
-      const message =
-        error instanceof Error ? error.message : "google_auth_failed";
-
-      if (message.includes("client_id_missing")) {
-        showErrorToast(t("google_drive_client_id_missing"));
-      } else if (message.includes("denied")) {
-        showErrorToast(t("google_drive_permission_denied"));
-      } else if (message.includes("timeout")) {
-        showErrorToast(t("google_drive_auth_timeout"));
-      } else {
-        showErrorToast(t("google_drive_auth_failed"));
-      }
+      reportGoogleDriveConnectError(error, showErrorToast, t);
     } finally {
       setIsConnecting(false);
     }

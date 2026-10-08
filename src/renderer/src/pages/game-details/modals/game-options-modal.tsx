@@ -63,6 +63,7 @@ import { DownloadsSettingsSection } from "./game-options-modal/downloads-section
 import { DangerZoneSection } from "./game-options-modal/danger-zone-section";
 import { HydraCloudLegacySettingsSection } from "./game-options-modal/hydra-cloud-section";
 import { HydraCloudV2SettingsSection } from "./game-options-modal/hydra-cloud-v2-section";
+import { DriveCloudConnectCta } from "./game-options-modal/drive-connect-cta";
 import type { GameSettingsCategoryId } from "./game-options-modal/types";
 import { CreateSteamShortcutModal } from "./create-steam-shortcut-modal";
 import {
@@ -234,13 +235,14 @@ export function GameOptionsModal({
     cancelDownload,
   } = useDownload();
   const { userDetails, hasActiveSubscription } = useUserDetails();
-  const { isDriveCloudActive } = useGoogleDriveCloud();
+  const { isDriveCloudActive, requiresClientSetup } = useGoogleDriveCloud();
   const { artifacts } = useContext(cloudSyncContext);
   const { showHydraCloudModal } = useSubscription();
   const cloudSaveAccessAction = getCloudSaveAccessAction(
     Boolean(userDetails),
     hasActiveSubscription,
-    isDriveCloudActive
+    isDriveCloudActive,
+    !requiresClientSetup
   );
   const cloudSaveSettings = getCloudSaveVisibility(
     game.shop,
@@ -1022,7 +1024,8 @@ export function GameOptionsModal({
 
     if (
       (category === "hydra_cloud" || category === "hydra_cloud_legacy") &&
-      cloudSaveAccessAction !== "open"
+      cloudSaveAccessAction !== "open" &&
+      cloudSaveAccessAction !== "connect-drive"
     ) {
       if (cloudSaveAccessAction === "paywall") {
         showHydraCloudModal("backup");
@@ -1248,22 +1251,29 @@ export function GameOptionsModal({
                 onGameUpdated={updateGame}
               />
             )}
-            {selectedCategory === "hydra_cloud" && showCloudSaveV2Settings && (
-              <HydraCloudV2SettingsSection
-                onSelectExecutable={() =>
-                  setSelectedCategory(isLaunchbox ? "general" : "locations")
-                }
-              />
-            )}
+            {selectedCategory === "hydra_cloud" &&
+              showCloudSaveV2Settings &&
+              (cloudSaveAccessAction === "connect-drive" ? (
+                <DriveCloudConnectCta />
+              ) : (
+                <HydraCloudV2SettingsSection
+                  onSelectExecutable={() =>
+                    setSelectedCategory(isLaunchbox ? "general" : "locations")
+                  }
+                />
+              ))}
             {selectedCategory === "hydra_cloud_legacy" &&
               showLegacyCloudSaveSettings &&
-              legacyPurpose === "active" && (
+              legacyPurpose === "active" &&
+              (cloudSaveAccessAction === "connect-drive" ? (
+                <DriveCloudConnectCta />
+              ) : (
                 <HydraCloudLegacySettingsSection
                   game={game}
                   automaticCloudSync={automaticCloudSync}
                   onToggleAutomaticCloudSync={handleToggleAutomaticCloudSync}
                 />
-              )}
+              ))}
             {selectedCategory === "hydra_cloud_legacy" &&
               showLegacyCloudSaveSettings &&
               legacyPurpose === "archive" && (

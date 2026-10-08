@@ -295,6 +295,45 @@ export const getDriveAccountEmail = async (): Promise<string | null> => {
   }
 };
 
+/**
+ * One-shot health check used right after linking: confirms the token works
+ * AND that the Google Drive API is enabled on the OAuth client's project.
+ * Only a definitive "API disabled" rejection blocks the link — any other
+ * probe hiccup is logged and tolerated so linking never fails spuriously.
+ */
+export const probeGoogleDriveAccess = async (): Promise<void> => {
+  try {
+    await authedRequest({
+      url: `${DRIVE_API}/about`,
+      params: { fields: "user" },
+    });
+  } catch (error) {
+    if (isAxiosError(error)) {
+      const message = (
+        error.response?.data as { error?: { message?: string } } | undefined
+      )?.error?.message?.trim();
+
+      if (error.response?.status === 403 && message) {
+        if (/has not been used|is disabled|disabled/i.test(message)) {
+          throw new Error("google_drive_api_disabled");
+        }
+        logger.warn(
+          "Google Drive probe rejected with 403, tolerating:",
+          message
+        );
+        return;
+      }
+
+      logger.warn(
+        "Google Drive probe failed (non-blocking):",
+        error.response?.status ?? error.message
+      );
+      return;
+    }
+    throw error;
+  }
+};
+
 export const resetFolderStructureCache = () => {
   folderStructure = null;
 };

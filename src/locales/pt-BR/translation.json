@@ -975,7 +975,11 @@
     "previous_media": "Anterior",
     "next_media": "Próximo",
     "not_enough_space_on_disk": "Espaço insuficiente neste disco. Necessário {{required}}, disponível {{available}}.",
-    "google_drive_legacy_unavailable": "O Google Drive está ativo para a sincronização moderna de salvamentos. Os backups legados desta seção são um recurso da Hydra Cloud."
+    "google_drive_legacy_unavailable": "O Google Drive está ativo para a sincronização moderna de salvamentos. Os backups legados desta seção são um recurso da Hydra Cloud.",
+    "google_drive_connect_required": "Conecte o seu Google Drive para sincronizar os salvamentos deste jogo com o seu próprio Drive — grátis, e os arquivos ficam na sua conta.",
+    "google_drive_connect_required_title": "Conecte o seu Google Drive",
+    "google_drive_connect_required_description": "Escolha uma conta do Google para sincronizar os salvamentos com o seu Drive, na pasta “Hydra Plus Saves”. Grátis — sem assinatura, e só este app enxerga esses arquivos (permissão drive.file).",
+    "google_drive_linked_toast": "Google Drive conectado"
   },
   "activation": {
     "title": "Ativação",
@@ -1610,6 +1614,10 @@
     "google_drive_permission_denied": "Permissão negada no Google. Autorize o acesso ao Drive.",
     "google_drive_auth_timeout": "Tempo esgotado ao aguardar a autorização do Google.",
     "google_drive_auth_failed": "Não foi possível conectar ao Google Drive",
+    "google_drive_access_blocked": "Acesso bloqueado pelo Google (Erro 403). No Google Cloud Console, publique a tela de consentimento OAuth em Produção ou adicione esta conta como testadora.",
+    "google_drive_invalid_grant": "A autorização expirou ou já foi utilizada. Clique em conectar e tente novamente.",
+    "google_drive_exchange_failed": "O Google recusou a autorização. Verifique a configuração do cliente OAuth e tente novamente.",
+    "google_drive_api_disabled": "A Google Drive API está desativada no projeto. Ative-a no Google Cloud Console → APIs e Serviços → Biblioteca.",
     "google_drive_hint": "Os salvamentos ficam na pasta \"Hydra Plus Saves\" do seu Drive, visível apenas por este app (permissão drive.file). A sincronização automática usa o mesmo provedor.",
     "hydra_cloud_provider_hint": "A nuvem oficial do Hydra requer assinatura Hydra Cloud ativa. Saiba mais em ",
     "cloud_privacy_note": "Hydra Plus não telemetria: seus salvamentos vão apenas para o provedor que você escolher.",

@@ -27,6 +27,7 @@ import {
 import { useTranslation } from "react-i18next";
 import { AxiosProgressEvent } from "axios";
 import { formatDownloadProgress } from "@renderer/helpers";
+import { reportGoogleDriveConnectError } from "@renderer/helpers/google-drive-connect";
 import { CloudSyncRenameArtifactModal } from "../cloud-sync-rename-artifact-modal/cloud-sync-rename-artifact-modal";
 import { GameArtifact } from "@types";
 import { orderBy } from "lodash-es";
@@ -51,11 +52,12 @@ export function CloudSyncPanel({
   );
 
   const { t } = useTranslation("game_details");
-  const { t: tHydraCloud } = useTranslation("hydra_cloud");
+  const { t: tSettings } = useTranslation("settings");
   const { formatDate, formatDateTime } = useDate();
   const { formatNumber } = useFormat();
   const { hasActiveSubscription } = useUserDetails();
-  const { isDriveCloudActive } = useGoogleDriveCloud();
+  const { isDriveCloudActive, connect, requiresClientSetup } =
+    useGoogleDriveCloud();
 
   const {
     artifacts,
@@ -77,6 +79,19 @@ export function CloudSyncPanel({
     useContext(gameDetailsContext);
 
   const { showSuccessToast, showErrorToast } = useToast();
+  const [isConnectingDrive, setIsConnectingDrive] = useState(false);
+
+  const handleConnectDrive = async () => {
+    setIsConnectingDrive(true);
+    try {
+      await connect();
+      showSuccessToast(t("google_drive_linked_toast"));
+    } catch (error) {
+      reportGoogleDriveConnectError(error, showErrorToast, tSettings);
+    } finally {
+      setIsConnectingDrive(false);
+    }
+  };
 
   const userDetails = useAppSelector((state) => state.userDetails.userDetails);
   const backupsPerGameLimit = userDetails?.quirks?.backupsPerGameLimit ?? 0;
@@ -196,7 +211,7 @@ export function CloudSyncPanel({
   if (!hasActiveSubscription) {
     if (isDriveCloudActive) {
       // Google Drive handles the modern sync (v2). The legacy artifact
-      // backups in this panel are a Hydra Cloud only feature.
+      // backups in this panel were a Hydra Cloud only feature.
       return (
         <div className="cloud-sync-panel__upgrade">
           <p>{t("google_drive_legacy_unavailable")}</p>
@@ -204,12 +219,21 @@ export function CloudSyncPanel({
       );
     }
 
+    // No subscription and no linked Drive: the free path in Hydra Plus is
+    // linking the user's own Google Drive — never the Hydra Cloud paywall.
     return (
       <div className="cloud-sync-panel__upgrade">
-        <p>{tHydraCloud("hydra_cloud_feature_found")}</p>
-        <Button onClick={() => window.electron.openCheckout()}>
-          {tHydraCloud("learn_more")}
-        </Button>
+        <p>{t("google_drive_connect_required")}</p>
+        {!requiresClientSetup && (
+          <Button
+            onClick={() => void handleConnectDrive()}
+            disabled={isConnectingDrive}
+          >
+            {isConnectingDrive
+              ? tSettings("google_drive_connecting")
+              : tSettings("google_drive_connect")}
+          </Button>
+        )}
       </div>
     );
   }

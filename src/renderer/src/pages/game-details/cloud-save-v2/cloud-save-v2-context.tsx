@@ -152,7 +152,8 @@ export function CloudSaveV2Provider({
   const { t } = useTranslation("game_details");
   const [searchParams, setSearchParams] = useSearchParams();
   const { userDetails, hasActiveSubscription } = useUserDetails();
-  const { isDriveCloudActive } = useGoogleDriveCloud();
+  const { isDriveCloudActive, requiresClientSetup, connect } =
+    useGoogleDriveCloud();
   const { showHydraCloudModal } = useSubscription();
   const { showErrorToast, showSuccessToast, showWarningToast } = useToast();
   const {
@@ -164,7 +165,8 @@ export function CloudSaveV2Provider({
   const cloudSaveAccessAction = getCloudSaveAccessAction(
     Boolean(userDetails),
     hasActiveSubscription,
-    isDriveCloudActive
+    isDriveCloudActive,
+    !requiresClientSetup
   );
   const canUseCloudSaves = cloudSaveAccessAction === "open";
   const isV2Eligible = isCloudSaveV2Eligible(shop, game?.platform);
@@ -296,12 +298,17 @@ export function CloudSaveV2Provider({
       showHydraCloudModal("backup");
       return;
     }
+    if (cloudSaveAccessAction === "connect-drive") {
+      void connect();
+      return;
+    }
 
     setIsFileBrowserVisible(false);
     setWasOpenedFromLaunchConflict(true);
     setIsModalVisible(true);
   }, [
     cloudSaveAccessAction,
+    connect,
     isV2Eligible,
     searchParams,
     setSearchParams,
@@ -327,9 +334,14 @@ export function CloudSaveV2Provider({
       showHydraCloudModal("backup");
       return;
     }
+    if (cloudSaveAccessAction === "connect-drive") {
+      void connect();
+      return;
+    }
     setIsFileBrowserVisible(true);
   }, [
     cloudSaveAccessAction,
+    connect,
     isV2Eligible,
     searchParams,
     setSearchParams,
@@ -502,9 +514,13 @@ export function CloudSaveV2Provider({
       showHydraCloudModal("backup");
       return;
     }
+    if (cloudSaveAccessAction === "connect-drive") {
+      void connect();
+      return;
+    }
     setWasOpenedFromLaunchConflict(false);
     setIsModalVisible(true);
-  }, [cloudSaveAccessAction, showHydraCloudModal]);
+  }, [cloudSaveAccessAction, connect, showHydraCloudModal]);
 
   const handleSelectExecutable = () => {
     setIsModalVisible(false);
@@ -646,10 +662,12 @@ export function CloudSaveV2Provider({
       if (cloudSaveAccessAction !== "open") {
         if (cloudSaveAccessAction === "sign-in") {
           window.electron.openAuthWindow(AuthPage.SignIn);
-        } else {
+        } else if (cloudSaveAccessAction === "paywall") {
           showHydraCloudModal("backup");
+        } else {
+          void connect();
         }
-        throw new Error("Cloud Saves require an active subscription");
+        throw new Error("Cloud Saves require a linked cloud provider");
       }
       try {
         await window.electron.setCloudSaveAutomaticSyncEnabled(
@@ -668,6 +686,7 @@ export function CloudSaveV2Provider({
     },
     [
       cloudSaveAccessAction,
+      connect,
       objectId,
       refresh,
       shop,
@@ -908,10 +927,12 @@ export function CloudSaveV2Provider({
       setIsFileBrowserVisible(true);
     } else if (cloudSaveAccessAction === "sign-in") {
       window.electron.openAuthWindow(AuthPage.SignIn);
-    } else {
+    } else if (cloudSaveAccessAction === "paywall") {
       showHydraCloudModal("backup");
+    } else {
+      void connect();
     }
-  }, [cloudSaveAccessAction, showHydraCloudModal]);
+  }, [cloudSaveAccessAction, connect, showHydraCloudModal]);
   const value = useMemo<CloudSaveV2ContextValue>(
     () => ({
       overview,

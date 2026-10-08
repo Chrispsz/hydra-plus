@@ -9,6 +9,7 @@ import {
   getGoogleDriveRefreshToken,
   saveGoogleDriveTokens,
 } from "./drive-token-store";
+import { probeGoogleDriveAccess } from "./drive-client";
 import { resolveGoogleClientId, resolveGoogleClientSecret } from "./config";
 
 /**
@@ -148,20 +149,47 @@ export const startGoogleDriveAuth = async (): Promise<{ linked: true }> => {
     });
     if (clientSecret) tokenRequest.set("client_secret", clientSecret);
 
-    const { data } = await axios.post<TokenExchangeResponse>(
-      TOKEN_ENDPOINT,
-      tokenRequest
-    );
+    try {
+      const { data } = await axios.post<TokenExchangeResponse>(
+        TOKEN_ENDPOINT,
+        tokenRequest
+      );
 
-    if (!data.refresh_token) {
-      throw new Error("google_oauth_refresh_token_missing");
+      if (!data.refresh_token) {
+        throw new Error("google_oauth_refresh_token_missing");
+      }
+
+      // Fail fast with an actionable error when the OAuth client's project
+      // does not have the Google Drive API enabled.
+      await probeGoogleDriveAccess();
+
+      await saveGoogleDriveTokens({
+        refreshToken: data.refresh_token,
+        accessToken: data.access_token,
+        expiresIn: data.expires_in,
+      });
+    } catch (error) {
+      if (error instanceof Error && error.message.startsWith("google_")) {
+        throw error;
+      }
+
+      if (axios.isAxiosError(error)) {
+        const data = error.response?.data as
+          | { error?: string; error_description?: string }
+          | undefined;
+        logger.error(
+          "Google Drive token exchange failed",
+          error.response?.status,
+          data?.error,
+          data?.error_description
+        );
+        throw new Error(
+          `google_oauth_exchange_failed:${data?.error ?? error.code ?? "network"}`
+        );
+      }
+
+      throw error;
     }
-
-    await saveGoogleDriveTokens({
-      refreshToken: data.refresh_token,
-      accessToken: data.access_token,
-      expiresIn: data.expires_in,
-    });
 
     logger.log("Google Drive account linked successfully");
     return { linked: true };
