@@ -550,7 +550,6 @@ const launchResolvedGame = async (
   gameKey: string,
   shop: GameShop,
   objectId: string,
-  gameTitle: string,
   parsedPath: string,
   compatibilityContext: LinuxCompatibilityLaunchContext | null,
   launchOptions: string | null | undefined,
@@ -577,14 +576,7 @@ const launchResolvedGame = async (
       useGamemode
     );
     if (launched) return null;
-
-    // Both umu-run (Proton) and the system Wine fallback failed. Surface the
-    // failure to the user with a pointer to the umu.log diagnostics instead
-    // of failing silently.
     clearCloudSaveLaunchGuard(objectId, shop);
-    WindowManager.closeGameLauncherWindow();
-    WindowManager.sendToAppWindows("on-compatibility-launch-failed", gameTitle);
-    return null;
   }
 
   const pid = launchNatively(
@@ -818,7 +810,6 @@ const launchGameWithCloudSaveChecks = async (
           gameKey,
           shop,
           objectId,
-          launchGameRecord?.title ?? objectId,
           parsedPath,
           compatibilityContext,
           launchOptions,
@@ -851,7 +842,6 @@ const launchGameWithCloudSaveChecks = async (
     gameKey,
     shop,
     objectId,
-    launchGameRecord?.title ?? objectId,
     parsedPath,
     compatibilityContext,
     launchOptions,

@@ -113,36 +113,6 @@ export class Umu {
     return isValidProtonDirectory(protonPath);
   }
 
-  /** Bundled umu-run location (packaged resources or dev binaries). */
-  public static getBinaryPath() {
-    return getUmuBinaryPath();
-  }
-
-  /** Resolved umu.log location for the current user data dir. */
-  public static getLogPath() {
-    return getUmuLogPath();
-  }
-
-  /** Python interpreter (>= 3.10) used to run umu-run, when found. */
-  public static getCompatiblePythonPath() {
-    return getCompatiblePythonPath();
-  }
-
-  /** Last lines of umu.log for diagnostics surfaces. */
-  public static readLogTail(maxLines = 60): string {
-    const umuLogPath = getUmuLogPath();
-
-    try {
-      if (!fs.existsSync(umuLogPath)) return "";
-
-      const content = fs.readFileSync(umuLogPath, "utf8");
-      const lines = content.split("\n");
-      return lines.slice(-maxLines).join("\n").trimEnd();
-    } catch {
-      return "";
-    }
-  }
-
   public static async getInstalledProtonVersions(): Promise<ProtonVersion[]> {
     const homePath = SystemPath.getPath("home");
     const steamRoots = STEAM_ROOT_SEGMENTS.map((segments) =>

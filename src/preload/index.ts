@@ -16,7 +16,6 @@ import type {
   ShortcutLocation,
   CreateSteamShortcutOptions,
   ProtonVersion,
-  CompatibilityDiagnostic,
   TorrentFilesResponse,
   DownloadLayoutState,
   ArtworkAssetType,
@@ -615,11 +614,6 @@ contextBridge.exposeInMainWorld("electron", {
     ipcRenderer.invoke("getInstalledProtonVersions") as Promise<
       ProtonVersion[]
     >,
-  getCompatibilityDiagnostics: () =>
-    ipcRenderer.invoke(
-      "getCompatibilityDiagnostics"
-    ) as Promise<CompatibilityDiagnostic>,
-  openLogsFolder: () => ipcRenderer.invoke("openLogsFolder") as Promise<void>,
   getGameLaunchProtonVersion: (shop: GameShop, objectId: string) =>
     ipcRenderer.invoke("getGameLaunchProtonVersion", shop, objectId),
   verifyExecutablePathInUse: (executablePath: string) =>
@@ -787,13 +781,6 @@ contextBridge.exposeInMainWorld("electron", {
     ipcRenderer.on("on-game-executable-not-found", listener);
     return () =>
       ipcRenderer.removeListener("on-game-executable-not-found", listener);
-  },
-  onCompatibilityLaunchFailed: (cb: (gameTitle: string) => void) => {
-    const listener = (_event: Electron.IpcRendererEvent, gameTitle: string) =>
-      cb(gameTitle);
-    ipcRenderer.on("on-compatibility-launch-failed", listener);
-    return () =>
-      ipcRenderer.removeListener("on-compatibility-launch-failed", listener);
   },
   onArchiveDeletionPrompt: (cb: (archivePaths: string[]) => void) => {
     const listener = (
