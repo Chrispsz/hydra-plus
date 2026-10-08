@@ -61,6 +61,14 @@ export const startGoogleDriveAuth = async (): Promise<{ linked: true }> => {
   if (!clientId) {
     throw new Error("google_oauth_client_id_missing");
   }
+
+  // Google's token endpoint refuses the authorization-code exchange without
+  // the client secret — even for installed/desktop clients ("client_secret
+  // is missing"). Fail fast with an actionable error instead of letting the
+  // user go through consent just to hit an opaque exchange failure.
+  if (!clientSecret) {
+    throw new Error("google_oauth_client_secret_missing");
+  }
   const codeVerifier = base64url(crypto.randomBytes(48));
   const codeChallenge = base64url(
     crypto.createHash("sha256").update(codeVerifier).digest()
@@ -137,17 +145,14 @@ export const startGoogleDriveAuth = async (): Promise<{ linked: true }> => {
       "google_oauth_timeout"
     );
 
-    // Google issues a client secret for desktop clients too; it is public
-    // data for installed apps, but some projects require it on the token
-    // exchange. Send it only when the user provided one.
     const tokenRequest = new URLSearchParams({
       code,
       client_id: clientId,
+      client_secret: clientSecret,
       redirect_uri: redirectUri,
       grant_type: "authorization_code",
       code_verifier: codeVerifier,
     });
-    if (clientSecret) tokenRequest.set("client_secret", clientSecret);
 
     try {
       const { data } = await axios.post<TokenExchangeResponse>(
@@ -159,15 +164,27 @@ export const startGoogleDriveAuth = async (): Promise<{ linked: true }> => {
         throw new Error("google_oauth_refresh_token_missing");
       }
 
-      // Fail fast with an actionable error when the OAuth client's project
-      // does not have the Google Drive API enabled.
-      await probeGoogleDriveAccess();
-
       await saveGoogleDriveTokens({
         refreshToken: data.refresh_token,
         accessToken: data.access_token,
         expiresIn: data.expires_in,
       });
+
+      // Fail fast with an actionable error when the OAuth client's project
+      // does not have the Google Drive API enabled. The probe reads the
+      // token store, so it must run AFTER the tokens are saved; on failure
+      // the link is rolled back so the UI never shows a broken connection.
+      try {
+        await probeGoogleDriveAccess();
+      } catch (probeError) {
+        if (
+          probeError instanceof Error &&
+          probeError.message === "google_drive_api_disabled"
+        ) {
+          await clearGoogleDriveTokens();
+        }
+        throw probeError;
+      }
     } catch (error) {
       if (error instanceof Error && error.message.startsWith("google_")) {
         throw error;

@@ -95,6 +95,7 @@ jobs:
           MAIN_VITE_UPDATE_OWNER: ${{ vars.MAIN_VITE_UPDATE_OWNER }}
           MAIN_VITE_UPDATE_REPO: ${{ vars.MAIN_VITE_UPDATE_REPO }}
           MAIN_VITE_GOOGLE_CLIENT_ID: ${{ secrets.MAIN_VITE_GOOGLE_CLIENT_ID }}
+          MAIN_VITE_GOOGLE_CLIENT_SECRET: ${{ secrets.MAIN_VITE_GOOGLE_CLIENT_SECRET }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build Windows
@@ -106,6 +107,7 @@ jobs:
           MAIN_VITE_UPDATE_OWNER: ${{ vars.MAIN_VITE_UPDATE_OWNER }}
           MAIN_VITE_UPDATE_REPO: ${{ vars.MAIN_VITE_UPDATE_REPO }}
           MAIN_VITE_GOOGLE_CLIENT_ID: ${{ secrets.MAIN_VITE_GOOGLE_CLIENT_ID }}
+          MAIN_VITE_GOOGLE_CLIENT_SECRET: ${{ secrets.MAIN_VITE_GOOGLE_CLIENT_SECRET }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Smoke test build

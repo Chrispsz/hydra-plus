@@ -4,20 +4,22 @@ import type { UserPreferences } from "@types";
 /**
  * Google OAuth client configuration for the fork.
  *
- * Two ways to configure the "Desktop app" OAuth client used to link the
- * user's Drive (console.cloud.google.com → APIs & Services → Credentials,
- * Drive API enabled):
+ * Uses the "Desktop app" OAuth client used to link the user's Drive
+ * (console.cloud.google.com → APIs & Services → Credentials, Drive API
+ * enabled). Google's token endpoint requires the client secret on the
+ * authorization-code exchange — even for installed/desktop clients — so the
+ * secret MUST be available for linking to work. Like rclone and other OSS,
+ * for desktop clients the secret is public data (PKCE protects the flow).
+ *
+ * Two ways to configure the pair:
  *
  *   1. Build time — MAIN_VITE_GOOGLE_CLIENT_ID / MAIN_VITE_GOOGLE_CLIENT_SECRET
  *      environment variables (what the official builds use);
- *   2. Runtime — the user pastes their own client id (and, optionally,
- *      secret) in Settings → Cloud. Stored in LevelDB alongside the other
- *      preferences. For desktop OAuth clients the secret is public data
- *      per Google's documentation (PKCE protects the flow), so storing it
- *      locally is acceptable.
+ *   2. Runtime — the user pastes their own client id and secret in
+ *      Settings → Cloud. Stored in LevelDB alongside the other preferences.
  *
  * Runtime configuration wins over the build-time one only when the build
- * shipped without a client id.
+ * shipped without the pair.
  */
 
 const readOAuthPreference = async () => {
@@ -40,6 +42,7 @@ export const resolveGoogleClientId = async (): Promise<string> =>
   (await readOAuthPreference()).clientId;
 
 export const resolveGoogleClientSecret = async (): Promise<string> =>
+  import.meta.env.MAIN_VITE_GOOGLE_CLIENT_SECRET ||
   (await readOAuthPreference()).clientSecret;
 
 export const hasGoogleClientId = async (): Promise<boolean> =>

@@ -39,7 +39,8 @@ Veja o roadmap detalhado em [`docs/FORK.md`](docs/FORK.md).
 ```bash
 yarn install          # requer yarn 1.19+ e Rust stable (addon nativo)
 cp .env.example .env  # MAIN_VITE_API_URL + MAIN_VITE_AUTH_URL (login Hydra)
-                      # MAIN_VITE_GOOGLE_CLIENT_ID (nuvem Google, opcional)
+                      # MAIN_VITE_GOOGLE_CLIENT_ID + MAIN_VITE_GOOGLE_CLIENT_SECRET
+                      #   (nuvem Google — Drive do próprio usuário, grátis)
 yarn dev
 yarn build:win | yarn build:linux
 ```

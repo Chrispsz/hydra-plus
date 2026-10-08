@@ -10,6 +10,7 @@ interface ImportMetaEnv {
   readonly MAIN_VITE_UPDATE_OWNER: string;
   readonly MAIN_VITE_UPDATE_REPO: string;
   readonly MAIN_VITE_GOOGLE_CLIENT_ID: string;
+  readonly MAIN_VITE_GOOGLE_CLIENT_SECRET: string;
   readonly ELECTRON_RENDERER_URL: string;
 }
 
