@@ -232,6 +232,15 @@ export default function Catalogue() {
 
   const PAGE_SIZE = 30;
 
+  const protonThresholdValue =
+    protonCompatibilityThresholds.find((threshold) =>
+      areSameValues(threshold.values, filters.protondbSupportBadges)
+    )?.value ?? "";
+  const isDeckCompatible = areSameValues(filters.deckCompatibility, [
+    "playable",
+    "verified",
+  ]);
+
   const groupedFilters = useMemo(() => {
     return [
       ...filters.genres.map((genre) => ({
@@ -324,6 +333,8 @@ export default function Catalogue() {
     steamGenresMapping,
     language,
     shouldShowProtonFeatures,
+    protonThresholdValue,
+    isDeckCompatible,
     t,
   ]);
 
@@ -427,15 +438,6 @@ export default function Catalogue() {
   );
 
   const selectedSortValue = `${filters.sortBy}:${filters.sortOrder}`;
-
-  const protonThresholdValue =
-    protonCompatibilityThresholds.find((threshold) =>
-      areSameValues(threshold.values, filters.protondbSupportBadges)
-    )?.value ?? "";
-  const isDeckCompatible = areSameValues(filters.deckCompatibility, [
-    "playable",
-    "verified",
-  ]);
 
   return (
     <div className="catalogue" ref={cataloguePageRef}>
