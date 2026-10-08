@@ -32,6 +32,7 @@ import type {
   DownloadSource,
   LocalNotification,
   ProtonVersion,
+  CompatibilityDiagnostic,
   CreateSteamShortcutOptions,
   TorrentFilesResponse,
   DownloadLayoutState,
@@ -394,6 +395,8 @@ declare global {
       protonPath: string | null
     ) => Promise<void>;
     getInstalledProtonVersions: () => Promise<ProtonVersion[]>;
+    getCompatibilityDiagnostics: () => Promise<CompatibilityDiagnostic>;
+    openLogsFolder: () => Promise<void>;
     getGameLaunchProtonVersion: (
       shop: GameShop,
       objectId: string
@@ -526,6 +529,9 @@ declare global {
     ) => () => Electron.IpcRenderer;
     onGameExecutableNotFound: (
       cb: (shop: GameShop, objectId: string) => void
+    ) => () => Electron.IpcRenderer;
+    onCompatibilityLaunchFailed: (
+      cb: (gameTitle: string) => void
     ) => () => Electron.IpcRenderer;
     onArchiveDeletionPrompt: (
       cb: (archivePaths: string[]) => void

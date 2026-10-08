@@ -869,6 +869,8 @@
     "settings_category_locations": "Localizações",
     "executable_not_found_title": "Executável não encontrado",
     "executable_not_found_description": "O executável no caminho selecionado não foi encontrado. Selecione outro na aba Gerenciar > Localizações.",
+    "compatibility_launch_failed_title": "Não foi possível abrir {{title}}",
+    "compatibility_launch_failed_description": "Tanto o Proton (umu-run) quanto o Wine falharam ao iniciar o jogo. Abra Ajustes > Compatibilidade para executar o diagnóstico e ver o umu.log com a causa exata.",
     "settings_category_general_description": "Caminho do executável, opções de inicialização e atalhos",
     "settings_category_customization": "Personalização",
     "customize_game": "Personalizar",
@@ -1625,7 +1627,18 @@
     "google_drive_hint": "Os salvamentos ficam na pasta \"Hydra Plus Saves\" do seu Drive, visível apenas por este app (permissão drive.file). A sincronização automática usa o mesmo provedor.",
     "hydra_cloud_provider_hint": "A nuvem oficial do Hydra requer assinatura Hydra Cloud ativa. Saiba mais em ",
     "cloud_privacy_note": "Hydra Plus não telemetria: seus salvamentos vão apenas para o provedor que você escolher.",
-    "google_drive_requires_setup": "Esta build não vem com um cliente OAuth do Google, então a conexão com o Drive está indisponível."
+    "google_drive_requires_setup": "Esta build não vem com um cliente OAuth do Google, então a conexão com o Drive está indisponível.",
+    "compatibility_diagnostics_title": "Diagnóstico de compatibilidade",
+    "compatibility_diagnostics_description": "Verificações usadas para abrir jogos do Windows via Proton (umu-run) no Linux. Se um jogo não abre, os itens abaixo mostram exatamente o que está faltando.",
+    "compatibility_diagnostics_umu": "umu-run (embutido no app):",
+    "compatibility_diagnostics_python": "Python 3.10+ (exigido pelo umu-run):",
+    "compatibility_diagnostics_proton": "Proton padrão:",
+    "compatibility_diagnostics_proton_auto": "Automático — o umu baixa o UMU-Proton na primeira execução (precisa de internet)",
+    "compatibility_diagnostics_proton_invalid": "O caminho selecionado não é uma instalação válida de Proton",
+    "compatibility_diagnostics_wine": "Wine do sistema (reserva):",
+    "compatibility_diagnostics_refresh": "Verificar novamente",
+    "compatibility_diagnostics_open_logs": "Abrir pasta de logs",
+    "compatibility_diagnostics_no_log": "umu.log não encontrado — nenhuma tentativa de execução com compatibilidade foi feita ainda."
   },
   "notifications": {
     "download_complete": "Download concluído",

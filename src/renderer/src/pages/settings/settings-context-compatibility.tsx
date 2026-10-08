@@ -11,13 +11,19 @@ import {
 } from "@renderer/components";
 import { settingsContext } from "@renderer/context";
 import { useAppSelector } from "@renderer/hooks";
-import type { ProtonVersion } from "@types";
-import { DesktopDownloadIcon, LinkExternalIcon } from "@primer/octicons-react";
+import type { CompatibilityDiagnostic, ProtonVersion } from "@types";
+import {
+  CheckCircleFillIcon,
+  DesktopDownloadIcon,
+  LinkExternalIcon,
+  XCircleFillIcon,
+} from "@primer/octicons-react";
 import { logger } from "@renderer/logger";
 import { Tooltip } from "react-tooltip";
 
 import "./settings-behavior.scss";
 import "./settings-general.scss";
+import "./settings-context-compatibility.scss";
 
 let lastKnownCanInstallCommonRedist = false;
 
@@ -54,6 +60,23 @@ export function SettingsContextCompatibility() {
   );
   const [gamemodeAvailable, setGamemodeAvailable] = useState(false);
   const [mangohudAvailable, setMangohudAvailable] = useState(false);
+  const [diagnostics, setDiagnostics] =
+    useState<CompatibilityDiagnostic | null>(null);
+
+  const loadCompatibilityDiagnostics = () => {
+    window.electron
+      .getCompatibilityDiagnostics()
+      .then(setDiagnostics)
+      .catch((error) => {
+        logger.warn("Failed to load compatibility diagnostics", error);
+        setDiagnostics(null);
+      });
+  };
+
+  useEffect(() => {
+    if (window.electron.platform !== "linux") return;
+    loadCompatibilityDiagnostics();
+  }, []);
 
   useEffect(() => {
     if (!shouldShowCommonRedist) return;
@@ -223,6 +246,123 @@ export function SettingsContextCompatibility() {
 
   return (
     <div className="settings-context-panel settings-context-compatibility">
+      {window.electron.platform === "linux" && diagnostics && (
+        <div className="settings-context-panel__group">
+          <h3>{t("compatibility_diagnostics_title")}</h3>
+
+          <p className="settings-general__common-redist-description">
+            {t("compatibility_diagnostics_description")}
+          </p>
+
+          <div className="settings-context-compatibility__diagnostics">
+            <div
+              className={`settings-context-compatibility__diagnostic-row ${
+                diagnostics.umuRunFound
+                  ? "settings-context-compatibility__diagnostic-row--ok"
+                  : "settings-context-compatibility__diagnostic-row--fail"
+              }`}
+            >
+              {diagnostics.umuRunFound ? (
+                <CheckCircleFillIcon />
+              ) : (
+                <XCircleFillIcon />
+              )}
+              <span>
+                {t("compatibility_diagnostics_umu")}{" "}
+                <span className="settings-context-compatibility__diagnostic-path">
+                  {diagnostics.umuRunPath}
+                </span>
+              </span>
+            </div>
+
+            <div
+              className={`settings-context-compatibility__diagnostic-row ${
+                diagnostics.pythonPath
+                  ? "settings-context-compatibility__diagnostic-row--ok"
+                  : "settings-context-compatibility__diagnostic-row--fail"
+              }`}
+            >
+              {diagnostics.pythonPath ? (
+                <CheckCircleFillIcon />
+              ) : (
+                <XCircleFillIcon />
+              )}
+              <span>
+                {t("compatibility_diagnostics_python")}
+                {diagnostics.pythonPath ? ` — ${diagnostics.pythonPath}` : ""}
+              </span>
+            </div>
+
+            <div
+              className={`settings-context-compatibility__diagnostic-row ${
+                !diagnostics.defaultProtonPath || diagnostics.defaultProtonValid
+                  ? "settings-context-compatibility__diagnostic-row--ok"
+                  : "settings-context-compatibility__diagnostic-row--fail"
+              }`}
+            >
+              {!diagnostics.defaultProtonPath ||
+              diagnostics.defaultProtonValid ? (
+                <CheckCircleFillIcon />
+              ) : (
+                <XCircleFillIcon />
+              )}
+              <span>
+                {t("compatibility_diagnostics_proton")}{" "}
+                <span className="settings-context-compatibility__diagnostic-path">
+                  {diagnostics.defaultProtonPath
+                    ? diagnostics.defaultProtonValid
+                      ? diagnostics.defaultProtonPath
+                      : t("compatibility_diagnostics_proton_invalid")
+                    : t("compatibility_diagnostics_proton_auto")}
+                </span>
+              </span>
+            </div>
+
+            <div
+              className={`settings-context-compatibility__diagnostic-row ${
+                diagnostics.wineAvailable
+                  ? "settings-context-compatibility__diagnostic-row--ok"
+                  : "settings-context-compatibility__diagnostic-row--fail"
+              }`}
+            >
+              {diagnostics.wineAvailable ? (
+                <CheckCircleFillIcon />
+              ) : (
+                <XCircleFillIcon />
+              )}
+              <span>{t("compatibility_diagnostics_wine")}</span>
+            </div>
+          </div>
+
+          <div className="settings-context-compatibility__diagnostic-actions">
+            <Button
+              type="button"
+              theme="outline"
+              onClick={loadCompatibilityDiagnostics}
+            >
+              {t("compatibility_diagnostics_refresh")}
+            </Button>
+            <Button
+              type="button"
+              theme="outline"
+              onClick={() => window.electron.openLogsFolder()}
+            >
+              {t("compatibility_diagnostics_open_logs")}
+            </Button>
+          </div>
+
+          {diagnostics.umuLogExists && diagnostics.umuLogTail ? (
+            <pre className="settings-context-compatibility__diagnostic-log">
+              {diagnostics.umuLogTail}
+            </pre>
+          ) : (
+            <p className="settings-general__common-redist-description">
+              {t("compatibility_diagnostics_no_log")}
+            </p>
+          )}
+        </div>
+      )}
+
       {window.electron.platform === "linux" && (
         <div className="settings-context-panel__group">
           <div className="settings-context-compatibility__stack">

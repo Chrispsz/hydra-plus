@@ -42,6 +42,18 @@ export interface ProtonVersion {
   source?: "steam" | "compatibility_tools" | "unknown";
 }
 
+export interface CompatibilityDiagnostic {
+  umuRunPath: string;
+  umuRunFound: boolean;
+  pythonPath: string | null;
+  defaultProtonPath: string | null;
+  defaultProtonValid: boolean;
+  wineAvailable: boolean;
+  umuLogPath: string;
+  umuLogExists: boolean;
+  umuLogTail: string;
+}
+
 export interface ShopAssets {
   objectId: string;
   shop: GameShop;

@@ -283,6 +283,15 @@ export function App() {
           t("executable_not_found_description", { ns: "game_details" })
         );
       }),
+      window.electron.onCompatibilityLaunchFailed((gameTitle) => {
+        showErrorToast(
+          t("compatibility_launch_failed_title", { ns: "game_details" }),
+          t("compatibility_launch_failed_description", {
+            ns: "game_details",
+            title: gameTitle,
+          })
+        );
+      }),
       window.electron.onDownloadHalted((gameTitle) => {
         updateLibrary();
         showErrorToast(
