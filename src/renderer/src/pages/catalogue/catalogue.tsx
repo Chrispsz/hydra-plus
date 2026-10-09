@@ -21,6 +21,7 @@ import { Button } from "@renderer/components/button/button";
 import { SelectField } from "@renderer/components/select-field/select-field";
 import { setFilters, setPage } from "@renderer/features";
 import { useCatalogue } from "@renderer/hooks/use-catalogue";
+import { logger } from "@renderer/logger";
 import { debounce } from "lodash-es";
 import { useTranslation } from "react-i18next";
 import Skeleton, { SkeletonTheme } from "react-loading-skeleton";
@@ -40,6 +41,7 @@ const ReleaseYearSection = lazy(async () => {
 });
 
 const MIN_RELEASE_YEAR = 1970;
+const PAGE_SIZE = 30;
 
 type CompatibilityThreshold<Value extends string> = {
   value: string;
@@ -150,19 +152,32 @@ export default function Catalogue() {
           ),
         };
 
-        const response = await window.electron.hydraApi.post<{
-          edges: CatalogueSearchResult[];
-          count: number;
-        }>("/catalogue/search", {
-          data: requestData,
-          needsAuth: false,
-        });
+        try {
+          const response = await window.electron.hydraApi.post<{
+            edges: CatalogueSearchResult[];
+            count: number;
+          }>("/catalogue/search", {
+            data: requestData,
+            needsAuth: false,
+          });
 
-        if (requestId !== requestSequenceRef.current) return;
+          if (requestId !== requestSequenceRef.current) return;
 
-        setResults(response.edges);
-        setItemsCount(response.count);
-        setIsLoading(false);
+          setResults(response.edges);
+          setItemsCount(response.count);
+          setIsLoading(false);
+        } catch (error) {
+          if (requestId !== requestSequenceRef.current) return;
+
+          logger.error("Catalogue search failed", error);
+
+          if (!hasResultsRef.current) {
+            setResults([]);
+            setItemsCount(0);
+          }
+
+          setIsLoading(false);
+        }
       },
       500
     )
@@ -229,8 +244,6 @@ export default function Catalogue() {
         checked: filters.tags.includes(value),
       }));
   }, [steamUserTags, filters.tags, language]);
-
-  const PAGE_SIZE = 30;
 
   const protonThresholdValue =
     protonCompatibilityThresholds.find((threshold) =>
