@@ -1,6 +1,6 @@
 # Hydra Plus — guia do fork
 
-> Fork minimalista do [Hydra Launcher](https://github.com/hydralauncher/hydra) (v4.1.4, commit base `c4eec13`).
+> Fork minimalista do [Hydra Launcher](https://github.com/hydralauncher/hydra) (v4.1.6, commit base `c4eec13`).
 > Objetivo: **um launcher para baixar e iniciar jogos em qualquer sistema, com backup de saves no Google Drive do usuário** — sem servidores próprios, sem paywall para a nuvem pessoal, e sem quebrar o login e os serviços oficiais da Hydra para quem quiser continuar usando-os.
 
 Licença: MIT (herdada do upstream). Este fork **não é afiliado** à Hydra / Los Broxas.
