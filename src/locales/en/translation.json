@@ -1695,18 +1695,6 @@
   "modal": {
     "close": "Close button"
   },
-  "classics_onboarding": {
-    "title": "Welcome to Hydra Classics",
-    "step1_heading": "Meet Hydra Classics",
-    "step1_body": "Your Classics library, organized, matched, and ready to launch. Hydra Classics turns your ROM folders into a clean catalogue with covers, metadata, and one-click play.",
-    "step2_heading": "Scan your own ROMs",
-    "step2_body": "Point us at the folders where you keep your games, that's it. Your files stay on your machine.",
-    "step3_heading": "Launch, play, sync",
-    "step3_body": "Hydra Classics works with a wide range of emulators. Launch any matched game in one click. Hydra Cloud members can safely back up their save data, on all supported emulators, across any devices.",
-    "next": "Next",
-    "explore": "Explore",
-    "dont_show_again": "Don't show again"
-  },
   "forms": {
     "toggle_password_visibility": "Toggle password visibility"
   },

@@ -1320,18 +1320,6 @@
   "modal": {
     "close": "Tombol tutup"
   },
-  "classics_onboarding": {
-    "title": "Selamat datang di Hydra Klasik!",
-    "step1_heading": "Kenali Hydra Klasik",
-    "step1_body": "Pustaka PS1, PS2, dan PS3 kamu yang terorganisir, dicocokkan, dan siap diluncurkan. Hydra Klasik mengubah folder ROM kamu menjadi katalog yang rapi, lengkap dengan cover, metadata, dan kemudahan bermain hanya dengan sekali klik.",
-    "step2_heading": "Bawa ROM kamu sendiri",
-    "step2_body": "Hydra tidak menampung, mengunduh, atau mendistribusikan ROM atau file BIOS. Cukup arahkan kami ke folder tempat kamu menyimpan game kamu, itu saja. File kamu tetap di mesin kamu.",
-    "step3_heading": "Luncurkan, mainkan, sinkronkan",
-    "step3_body": "Hydra Klasik bekerja dengan DuckStation, PCSX2, dan RPCS3. Luncurkan game apa pun yang cocok hanya dengan sekali klik. Pemain PS2 di Hydra Cloud bahkan bisa mencadangkan kartu memori di berbagai perangkat.",
-    "next": "Berikutnya",
-    "explore": "Jelajahi",
-    "dont_show_again": "Jangan tampilkan lagi"
-  },
   "forms": {
     "toggle_password_visibility": "Tampilkan/sembunyikan kata sandi"
   },

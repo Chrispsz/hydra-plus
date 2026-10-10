@@ -16,8 +16,9 @@ Baixe e inicie jogos em Windows e Linux, com os saves sincronizados **no seu pr�
 ## Destaques
 
 - ☁️ **Cloud saves dual-provider**: escolha entre a nuvem oficial da Hydra (assinatura) e o **Google Drive pessoal** (grátis, 15 GB, pasta `Hydra Plus Saves/` organizada por jogo, dedup por SHA-256).
+- 🪶 **Minimalista**: sem emuladores (RetroArch/RPCS3/Classics), sem conquistas, sem rede social, sem big picture — foco em baixar, jogar e manter seus saves.
 - 🔐 **Privacidade**: sem Sentry, sem SDKs de telemetria, sem scripts remotos — login Hydra apenas quando você escolher usar os serviços deles.
-- 🔑 **Login Hydra intacto**: biblioteca, amigos de download-sources e a nuvem oficial funcionam normalmente para quem já é assinante.
+- 🔑 **Login Hydra intacto**: biblioteca, downloads de fontes de terceiros e a nuvem oficial funcionam normalmente para quem já é assinante.
 - 🛠️ **CI completo**: GitHub Actions com workflow reutilizável (Windows/Linux), smoke test pós-build, provenance de build e canal de auto-update próprio.
 - 📄 Licença MIT, herdada do upstream. Projeto **não afiliado** à Hydra / Los Broxas.
 
@@ -26,9 +27,8 @@ Baixe e inicie jogos em Windows e Linux, com os saves sincronizados **no seu pr�
 **☁️ Cloud saves no Google Drive estão funcionais!** Em `Configurações → Nuvem`:
 
 1. Selecione **Google Drive** como provedor.
-2. Conecte sua conta Google (OAuth no navegador, permissão `drive.file` — o app só vê os arquivos que ele mesmo criou).
-3. Se o build não vier com um cliente OAuth embutido, cole o seu próprio ID do cliente (instruções dentro da tela, ~3 minutos no Google Cloud Console).
-4. Pronto: sincronização automática e manual passam a usar o seu Drive — **sem assinatura Hydra Cloud**. A nuvem oficial continua disponível para assinantes.
+2. Conecte sua conta Google (OAuth no navegador, permissão `drive.file` — o app só vê os arquivos que ele mesmo criou). Nos **builds oficiais** o cliente OAuth já vem embutido; buildando por conta própria, preencha `MAIN_VITE_GOOGLE_CLIENT_ID` + `MAIN_VITE_GOOGLE_CLIENT_SECRET` no `.env`.
+3. Pronto: sincronização automática e manual passam a usar o seu Drive — **sem assinatura Hydra Cloud**. A nuvem oficial continua disponível para assinantes.
 
 Tecnicamente: mesmo motor de sync v2 do upstream (merge de três vias, sync anchors, dedup por hash), com o transporte remoto trocável — Hydra API ou a pasta `Hydra Plus Saves/` do seu Drive (`games/`, `blobs/`). Detalhes em [`docs/google-drive-cloud.md`](docs/google-drive-cloud.md).
 

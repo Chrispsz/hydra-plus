@@ -2152,17 +2152,5 @@
     "copied": "¡Copiado!",
     "minimize": "Minimizar",
     "close": "Cerrar"
-  },
-  "classics_onboarding": {
-    "title": "Te damos la bienvenida a Hydra Classics",
-    "step1_heading": "Conoce Hydra Classics",
-    "step1_body": "Tu librería Classics, organizada, emparejada y lista para iniciar. Hydra Classics convierte tus carpetas de ROMs en un catálogo limpio con carátulas, metadatos y juego con un clic.",
-    "step2_heading": "Escanea tus propias ROMs",
-    "step2_body": "Indícanos las carpetas donde guardas tus juegos, eso es todo. Tus archivos permanecen en tu equipo.",
-    "step3_heading": "Inicia, juega, sincroniza",
-    "step3_body": "Hydra Classics funciona con una amplia variedad de emuladores. Inicia cualquier juego emparejado con un clic. Los miembros de Hydra Cloud pueden hacer copias de seguridad de sus partidas guardadas de forma segura, en todos los emuladores compatibles, en cualquier dispositivo.",
-    "next": "Siguiente",
-    "explore": "Explorar",
-    "dont_show_again": "No mostrar de nuevo"
   }
 }

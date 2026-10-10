@@ -1380,18 +1380,6 @@
   "modal": {
     "close": "Przycisk zamykania"
   },
-  "classics_onboarding": {
-    "title": "Witamy w Hydra Classics",
-    "step1_heading": "Poznaj Hydra Classics",
-    "step1_body": "Twoja biblioteka gier PS1, PS2 i PS3 — uporządkowana, dopasowana i gotowa do uruchomienia. Hydra Classics zmienia foldery ROM-ów w przejrzysty katalog z okładkami, metadanymi i uruchamianiem jednym kliknięciem.",
-    "step2_heading": "Użyj własnych ROM-ów",
-    "step2_body": "Hydra nie hostuje, nie pobiera ani nie rozpowszechnia plików ROM lub BIOS. Po prostu wskaż foldery, w których przechowujesz gry. Twoje pliki pozostają na Twoim komputerze.",
-    "step3_heading": "Uruchamiaj, graj, synchronizuj",
-    "step3_body": "Hydra Classics współpracuje z DuckStation, PCSX2 i RPCS3. Uruchom dowolną dopasowaną grę jednym kliknięciem. Gracze PS2 z Hydra Cloud mogą nawet tworzyć kopie zapasowe kart pamięci między urządzeniami.",
-    "next": "Dalej",
-    "explore": "Odkrywaj",
-    "dont_show_again": "Nie pokazuj ponownie"
-  },
   "forms": {
     "toggle_password_visibility": "Przełącz widoczność hasła"
   },

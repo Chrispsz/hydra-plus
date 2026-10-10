@@ -1970,17 +1970,5 @@
     "preflight_downloading": "Baixando dependências",
     "preflight_installing": "Instalando dependências",
     "preflight_installing_detail": "{{detail}}"
-  },
-  "classics_onboarding": {
-    "title": "Bem-vindo ao Hydra Classics",
-    "step1_heading": "Conheça o Hydra Classics",
-    "step1_body": "Sua biblioteca Classics organizada, combinada e pronta para iniciar. O Hydra Classics transforma suas pastas de ROM em um catálogo limpo com capas, metadados e jogo com um clique.",
-    "step2_heading": "Escaneie suas próprias ROMs",
-    "step2_body": "Aponte-nos para as pastas onde você guarda seus jogos, só isso. Seus arquivos permanecem na sua máquina.",
-    "step3_heading": "Inicie, jogue, sincronize",
-    "step3_body": "O Hydra Classics funciona com uma ampla variedade de emuladores. Inicie qualquer jogo combinado com um clique. Membros do Hydra Cloud podem fazer backup dos seus dados salvos com segurança, em todos os emuladores compatíveis, em qualquer dispositivo.",
-    "next": "Próximo",
-    "explore": "Explorar",
-    "dont_show_again": "Não mostrar novamente"
   }
 }
