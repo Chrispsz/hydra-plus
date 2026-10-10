@@ -13,13 +13,11 @@ import { useDate } from "@renderer/hooks";
 import cn from "classnames";
 
 import type { Notification, Badge } from "@types";
-import { openCloudGiftModal } from "../shared-modals/cloud-gift-modal.events";
 import "./notification-item.scss";
 
-const parseNotificationUrl = (notificationUrl: string): string => {
+const parseNotificationUrl = (notificationUrl: string): string | null => {
   const url = new URL(notificationUrl, "http://localhost");
   const userId = url.searchParams.get("userId");
-  const badgeName = url.searchParams.get("name");
   const gameTitle = url.searchParams.get("title");
   const showReviews = url.searchParams.get("reviews");
   const reviewId = url.searchParams.get("reviewId");
@@ -28,8 +26,10 @@ const parseNotificationUrl = (notificationUrl: string): string => {
     return `/profile/${userId}`;
   }
 
-  if (url.pathname === "/badges" && badgeName) {
-    return `/badges/${badgeName}`;
+  // There is no badges route in the renderer: keep badge notifications
+  // non-navigable instead of linking to a dead path.
+  if (url.pathname === "/badges") {
+    return null;
   }
 
   if (url.pathname === "/profile/integrations/steam") {
@@ -79,14 +79,6 @@ export function NotificationItem({
   const handleClick = useCallback(() => {
     if (!notification.isRead) {
       onMarkAsRead(notification.id);
-    }
-
-    if (
-      notification.type === "CLOUD_GIFT_RECEIVED" &&
-      notification.variables.giftId
-    ) {
-      openCloudGiftModal(notification);
-      return;
     }
 
     const target = getNotificationTarget(notification);

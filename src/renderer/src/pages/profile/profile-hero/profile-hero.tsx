@@ -1,6 +1,6 @@
 import { useCallback, useContext, useMemo, useState } from "react";
 import { userProfileContext } from "@renderer/context";
-import { GiftIcon, PencilIcon, SignOutIcon } from "@primer/octicons-react";
+import { PencilIcon, SignOutIcon } from "@primer/octicons-react";
 import { buildGameDetailsPath } from "@renderer/helpers";
 import {
   Avatar,
@@ -18,7 +18,6 @@ import {
 } from "@renderer/hooks";
 import { addSeconds } from "date-fns";
 import { useNavigate } from "react-router-dom";
-import { AuthPage } from "@shared";
 import { GameVisibilityBadge } from "@renderer/components/game-visibility-badge/game-visibility-badge";
 
 import { EditProfileModal } from "../edit-profile-modal/edit-profile-modal";
@@ -34,7 +33,7 @@ export function ProfileHero() {
 
   const { isMe, userProfile, heroBackground, backgroundImage } =
     useContext(userProfileContext);
-  const { signOut, userDetails } = useUserDetails();
+  const { signOut } = useUserDetails();
 
   const { gameRunning } = useAppSelector((state) => state.gameRunning);
 
@@ -58,31 +57,6 @@ export function ProfileHero() {
     }
     navigate("/");
   }, [navigate, signOut, showSuccessToast, t]);
-
-  const giftAction = useMemo(() => {
-    if (!userProfile || isMe || !userProfile.canReceiveCloudGift) return null;
-
-    return (
-      <Button
-        theme="cloud"
-        onClick={() => {
-          if (!userDetails) {
-            window.electron.openAuthWindow(AuthPage.SignIn);
-            return;
-          }
-
-          window.electron.openCheckout({
-            path: "/gift",
-            recipientId: userProfile.id,
-          });
-        }}
-        disabled={isPerformingAction}
-      >
-        <GiftIcon size={16} className="profile-hero__gift-icon" />
-        {t("gift_cloud")}
-      </Button>
-    );
-  }, [isMe, isPerformingAction, t, userDetails, userProfile]);
 
   const profileActions = useMemo(() => {
     if (!userProfile || !isMe) return null;
@@ -163,10 +137,6 @@ export function ProfileHero() {
         className="profile-hero__content-box"
         style={{ background: !backgroundImage ? heroBackground : undefined }}
       >
-        {giftAction && (
-          <div className="profile-hero__gift-action">{giftAction}</div>
-        )}
-
         {backgroundImage && (
           <img
             src={backgroundImage}

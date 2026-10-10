@@ -132,7 +132,6 @@ export function Header() {
     if (location.pathname.startsWith("/notifications")) return headerTitle;
     if (location.pathname.startsWith("/library"))
       return headerTitle || t("library");
-    if (location.pathname.startsWith("/search")) return t("search_results");
 
     return t(pathTitle[location.pathname]);
   }, [location.pathname, headerTitle, t]);

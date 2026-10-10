@@ -18,14 +18,4 @@
     gap: globals.$spacing-unit;
     margin-top: globals.$spacing-unit;
   }
-
-  &__subscription-info {
-    display: flex;
-    flex-direction: column;
-    gap: calc(globals.$spacing-unit * 2);
-  }
-
-  &__subscription-button {
-    place-self: flex-start;
-  }
 }

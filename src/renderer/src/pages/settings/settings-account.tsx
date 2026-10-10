@@ -1,25 +1,21 @@
-import { Button, CheckboxField, SelectField } from "@renderer/components";
+import { Button, SelectField } from "@renderer/components";
 import { Controller, useForm } from "react-hook-form";
 import { useTranslation } from "react-i18next";
-import { useDate, useToast, useUserDetails } from "@renderer/hooks";
+import { useToast, useUserDetails } from "@renderer/hooks";
 import { useEffect } from "react";
-import { CloudIcon, KeyIcon, MailIcon } from "@primer/octicons-react";
+import { KeyIcon, MailIcon } from "@primer/octicons-react";
 import { AuthPage } from "@shared";
 import "./settings-account.scss";
 import type { ProfileVisibility } from "@types";
 
 interface FormValues {
   profileVisibility: ProfileVisibility;
-  allowCloudGifts: boolean;
 }
 
 export function SettingsAccount() {
   const { t } = useTranslation("settings");
 
   const { showSuccessToast } = useToast();
-
-  const { formatDate } = useDate();
-
   const {
     control,
     formState: { isSubmitting },
@@ -31,18 +27,12 @@ export function SettingsAccount() {
     },
   });
 
-  const {
-    userDetails,
-    hasActiveSubscription,
-    patchUser,
-    fetchUserDetails,
-    updateUserDetails,
-  } = useUserDetails();
+  const { userDetails, patchUser, fetchUserDetails, updateUserDetails } =
+    useUserDetails();
 
   useEffect(() => {
     if (userDetails?.profileVisibility) {
       setValue("profileVisibility", userDetails.profileVisibility);
-      setValue("allowCloudGifts", userDetails.allowCloudGifts);
     }
   }, [userDetails, setValue]);
 
@@ -72,54 +62,6 @@ export function SettingsAccount() {
   const onSubmit = async (values: FormValues) => {
     await patchUser(values);
     showSuccessToast(t("changes_saved"));
-  };
-
-  const getHydraCloudSectionContent = () => {
-    const hasSubscribedBefore = Boolean(userDetails?.subscription?.expiresAt);
-    const isRenewalActive = userDetails?.subscription?.status === "active";
-
-    if (!hasSubscribedBefore) {
-      return {
-        description: <small>{t("no_subscription")}</small>,
-        callToAction: t("become_subscriber"),
-      };
-    }
-
-    if (hasActiveSubscription) {
-      return {
-        description: isRenewalActive ? (
-          <>
-            <small>
-              {t("subscription_renews_on", {
-                date: formatDate(userDetails.subscription!.expiresAt!),
-              })}
-            </small>
-            <small>{t("bill_sent_until")}</small>
-          </>
-        ) : (
-          <>
-            <small>{t("subscription_renew_cancelled")}</small>
-            <small>
-              {t("subscription_active_until", {
-                date: formatDate(userDetails!.subscription!.expiresAt!),
-              })}
-            </small>
-          </>
-        ),
-        callToAction: t("manage_subscription"),
-      };
-    }
-
-    return {
-      description: (
-        <small>
-          {t("subscription_expired_at", {
-            date: formatDate(userDetails!.subscription!.expiresAt!),
-          })}
-        </small>
-      ),
-      callToAction: t("renew_subscription"),
-    };
   };
 
   if (!userDetails) return null;
@@ -182,41 +124,6 @@ export function SettingsAccount() {
           </Button>
         </div>
       </section>
-
-      <section className="settings-account__section">
-        <h3>{t("hydra_cloud")}</h3>
-        <div className="settings-account__subscription-info">
-          {getHydraCloudSectionContent().description}
-        </div>
-
-        <Button
-          className="settings-account__subscription-button"
-          theme="outline"
-          onClick={() => window.electron.openCheckout()}
-        >
-          <CloudIcon />
-          {getHydraCloudSectionContent().callToAction}
-        </Button>
-      </section>
-
-      <Controller
-        control={control}
-        name="allowCloudGifts"
-        render={({ field }) => (
-          <section className="settings-account__section">
-            <h3>{t("cloud_gifts")}</h3>
-            <CheckboxField
-              checked={field.value ?? true}
-              disabled={isSubmitting}
-              label={t("allow_cloud_gifts")}
-              onChange={(event) => {
-                field.onChange(event.target.checked);
-                void handleSubmit(onSubmit)();
-              }}
-            />
-          </section>
-        )}
-      />
     </form>
   );
 }

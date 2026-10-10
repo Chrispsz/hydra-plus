@@ -409,36 +409,6 @@ contextBridge.exposeInMainWorld("electron", {
       objectId,
       direction
     ),
-  setDownloadQueuePosition: (
-    shop: GameShop,
-    objectId: string,
-    targetIndex: number
-  ) =>
-    ipcRenderer.invoke("setDownloadQueuePosition", shop, objectId, targetIndex),
-  setPausedDownloadPosition: (
-    shop: GameShop,
-    objectId: string,
-    targetIndex: number
-  ) =>
-    ipcRenderer.invoke(
-      "setPausedDownloadPosition",
-      shop,
-      objectId,
-      targetIndex
-    ),
-  moveDownloadPlacement: (
-    shop: GameShop,
-    objectId: string,
-    targetArea: "hero" | "queue" | "paused",
-    targetIndex?: number
-  ) =>
-    ipcRenderer.invoke(
-      "moveDownloadPlacement",
-      shop,
-      objectId,
-      targetArea,
-      targetIndex
-    ),
   getDownloadLayoutState: () =>
     ipcRenderer.invoke(
       "getDownloadLayoutState"
@@ -911,8 +881,6 @@ contextBridge.exposeInMainWorld("electron", {
   openExternal: (src: string) => ipcRenderer.invoke("openExternal", src),
   openCheckout: (options?: OpenCheckoutOptions) =>
     ipcRenderer.invoke("openCheckout", options),
-  notifyCloudGiftResolved: (giftId: string) =>
-    ipcRenderer.invoke("notifyCloudGiftResolved", giftId),
   getCloudIframeUrl: () => ipcRenderer.invoke("getCloudIframeUrl"),
   showOpenDialog: (options: Electron.OpenDialogOptions) =>
     ipcRenderer.invoke("showOpenDialog", options),
@@ -1118,12 +1086,6 @@ contextBridge.exposeInMainWorld("electron", {
     return () =>
       ipcRenderer.removeListener("on-sync-notification-count", listener);
   },
-  onCloudGiftResolved: (cb: (giftId: string) => void) => {
-    const listener = (_event: Electron.IpcRendererEvent, giftId: string) =>
-      cb(giftId);
-    ipcRenderer.on("on-cloud-gift-resolved", listener);
-    return () => ipcRenderer.removeListener("on-cloud-gift-resolved", listener);
-  },
 
   startSteamOAuth: (lng: string) => ipcRenderer.invoke("startSteamOAuth", lng),
   disconnectSteam: (deleteImportedData: boolean) =>
@@ -1153,7 +1115,6 @@ contextBridge.exposeInMainWorld("electron", {
   },
 
   /* Auth */
-  getAuth: () => ipcRenderer.invoke("getAuth"),
   signOut: () => ipcRenderer.invoke("signOut"),
   openAuthWindow: (page: AuthPage) =>
     ipcRenderer.invoke("openAuthWindow", page),
@@ -1288,11 +1249,6 @@ contextBridge.exposeInMainWorld("electron", {
       ipcRenderer.invoke("leveldbIterator", sublevelName),
   },
 
-  //UPDATEDD
-  pauseGameTransfer: (shop: GameShop, objectId: string) =>
-    ipcRenderer.invoke("pauseGameTransfer", shop, objectId),
-  resumeGameTransfer: (shop: GameShop, objectId: string) =>
-    ipcRenderer.invoke("resumeGameTransfer", shop, objectId),
   cancelGameTransfer: (shop: GameShop, objectId: string) =>
     ipcRenderer.invoke("cancelGameTransfer", shop, objectId),
 

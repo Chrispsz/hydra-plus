@@ -13,11 +13,8 @@ const buildForm = (preferences: UserPreferences | null) => ({
   disableNsfwAlert: preferences?.disableNsfwAlert ?? false,
   enableNewDownloadOptionsBadges:
     preferences?.enableNewDownloadOptionsBadges ?? true,
-  hideClassicsBookmark: preferences?.hideClassicsBookmark ?? false,
-  classicsUseHeroLayout: preferences?.classicsUseHeroLayout ?? false,
   hideLibraryGameBadges: preferences?.hideLibraryGameBadges ?? false,
   hideLibraryReadySizeBadges: preferences?.hideLibraryReadySizeBadges ?? false,
-  hideLibraryClassicsBadges: preferences?.hideLibraryClassicsBadges ?? false,
   hideSteamLibraryBadges: preferences?.hideSteamLibraryBadges ?? false,
   autoplayAnimatedArtwork: preferences?.autoplayAnimatedArtwork ?? false,
   persistFiltersAndSorting: preferences?.persistFiltersAndSorting ?? false,
@@ -107,16 +104,6 @@ export function SettingsContextContentGameplay() {
         />
 
         <CheckboxField
-          label={t("hide_library_classics_badges")}
-          checked={form.hideLibraryClassicsBadges}
-          onChange={() =>
-            handleChange({
-              hideLibraryClassicsBadges: !form.hideLibraryClassicsBadges,
-            })
-          }
-        />
-
-        <CheckboxField
           label={t("hide_library_steam_badges")}
           checked={form.hideSteamLibraryBadges}
           onChange={() =>
@@ -132,30 +119,6 @@ export function SettingsContextContentGameplay() {
           onChange={() =>
             handleChange({
               autoplayAnimatedArtwork: !form.autoplayAnimatedArtwork,
-            })
-          }
-        />
-      </div>
-
-      <div className="settings-context-panel__group">
-        <h3>{t("classics_appearance")}</h3>
-
-        <CheckboxField
-          label={t("hide_classics_bookmark")}
-          checked={form.hideClassicsBookmark}
-          onChange={() =>
-            handleChange({
-              hideClassicsBookmark: !form.hideClassicsBookmark,
-            })
-          }
-        />
-
-        <CheckboxField
-          label={t("classics_use_hero_layout")}
-          checked={form.classicsUseHeroLayout}
-          onChange={() =>
-            handleChange({
-              classicsUseHeroLayout: !form.classicsUseHeroLayout,
             })
           }
         />

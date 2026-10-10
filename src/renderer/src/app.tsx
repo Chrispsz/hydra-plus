@@ -34,7 +34,6 @@ import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useSubscription } from "./hooks/use-subscription";
 import { ArchiveDeletionModal } from "./pages/downloads/archive-deletion-error-modal";
 import { CloudSubscriptionModal } from "./pages/shared-modals/hydra-cloud/cloud-subscription-modal";
-import { CloudGiftNotificationModal } from "./pages/shared-modals/cloud-gift-notification-modal";
 
 import type { UserPreferences } from "@types";
 import "./app.scss";
@@ -54,12 +53,8 @@ export function App() {
 
   const { clearDownload, setLastPacket, lastPacket } = useDownload();
 
-  const {
-    hasActiveSubscription,
-    fetchUserDetails,
-    updateUserDetails,
-    clearUserDetails,
-  } = useUserDetails();
+  const { fetchUserDetails, updateUserDetails, clearUserDetails } =
+    useUserDetails();
 
   const { hideHydraCloudModal, isHydraCloudModalVisible, hydraCloudFeature } =
     useSubscription();
@@ -372,12 +367,7 @@ export function App() {
             window.electron.platform === "win32" ? " title-bar--windows" : ""
           }`}
         >
-          <h4>
-            Hydra
-            {hasActiveSubscription && (
-              <span className="title-bar__cloud-text"> Cloud</span>
-            )}
-          </h4>
+          <h4>Hydra</h4>
 
           {window.electron.platform === "linux" && (
             <div className="title-bar__window-controls">
@@ -435,8 +425,6 @@ export function App() {
         onClose={hideHydraCloudModal}
         feature={hydraCloudFeature || undefined}
       />
-
-      <CloudGiftNotificationModal />
 
       <ArchiveDeletionModal
         visible={showArchiveDeletionModal}

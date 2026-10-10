@@ -1,4 +1,3 @@
-import "./get-auth";
 import "./start-steam-oauth";
 import "./disconnect-steam";
 import "./start-google-auth";

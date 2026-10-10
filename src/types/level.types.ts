@@ -190,11 +190,8 @@ export interface UserPreferences {
   defaultProtonPath?: string | null;
   autoRunMangohud?: boolean;
   autoRunGamemode?: boolean;
-  hideClassicsBookmark?: boolean;
-  classicsUseHeroLayout?: boolean;
   hideLibraryGameBadges?: boolean;
   hideLibraryReadySizeBadges?: boolean;
-  hideLibraryClassicsBadges?: boolean;
   hideSteamLibraryBadges?: boolean;
   autoplayAnimatedArtwork?: boolean;
   persistFiltersAndSorting?: boolean;

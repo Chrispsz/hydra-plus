@@ -20,7 +20,6 @@ import type {
   LibraryGame,
   GameRunning,
   TorBoxUser,
-  Auth,
   ShortcutLocation,
   ShopAssets,
   ShopDetailsWithAssets,
@@ -255,22 +254,6 @@ declare global {
       shop: GameShop,
       objectId: string,
       direction: "up" | "down"
-    ) => Promise<boolean>;
-    setDownloadQueuePosition: (
-      shop: GameShop,
-      objectId: string,
-      targetIndex: number
-    ) => Promise<boolean>;
-    setPausedDownloadPosition: (
-      shop: GameShop,
-      objectId: string,
-      targetIndex: number
-    ) => Promise<boolean>;
-    moveDownloadPlacement: (
-      shop: GameShop,
-      objectId: string,
-      targetArea: "hero" | "queue" | "paused",
-      targetIndex?: number
     ) => Promise<boolean>;
     getDownloadLayoutState: () => Promise<DownloadLayoutState>;
     onDownloadProgress: (
@@ -730,7 +713,6 @@ declare global {
     restartAndInstallUpdate: () => Promise<void>;
 
     /* Auth */
-    getAuth: () => Promise<Auth | null>;
     signOut: () => Promise<void>;
     openAuthWindow: (page: AuthPage) => Promise<void>;
     startGoogleAuth: () => Promise<{ linked: true }>;
@@ -790,10 +772,6 @@ declare global {
     onSyncNotificationCount: (
       cb: (notification: NotificationSync) => void
     ) => () => Electron.IpcRenderer;
-    onCloudGiftResolved: (
-      cb: (giftId: string) => void
-    ) => () => Electron.IpcRenderer;
-    notifyCloudGiftResolved: (giftId: string) => Promise<void>;
 
     /* Notifications */
     publishNewRepacksNotification: (newRepacksCount: number) => Promise<void>;

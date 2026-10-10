@@ -58,7 +58,5 @@ import "./verify-executable-path";
 import "./delete-steam-shortcut";
 import "./check-steam-shortcut";
 
-//UPDATEDD
-
 import "./transfer-game-files";
 import "./get-available-drives";
