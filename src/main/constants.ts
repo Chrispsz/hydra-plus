@@ -16,6 +16,13 @@ export const defaultDownloadsPath = path.join(
 
 export const isStaging = import.meta.env.MAIN_VITE_API_URL.includes("staging");
 
+/**
+ * Set to "1" by the debug release workflow and `build:linux:debug`.
+ * Debug builds ship a live debug console, skip auto-updates and use an
+ * isolated productName/userData so they can run next to the stable install.
+ */
+export const IS_DEBUG_BUILD = import.meta.env.MAIN_VITE_DEBUG_BUILD === "1";
+
 export const windowsStartMenuPath = path.join(
   SystemPath.getPath("appData"),
   "Microsoft",

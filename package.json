@@ -32,6 +32,7 @@
     "build:win": "npm run build:native && electron-vite build && electron-builder --win --publish never",
     "build:mac": "npm run build:native && electron-vite build && electron-builder --mac",
     "build:linux": "npm run build:native && electron-vite build && electron-builder --linux --publish never",
+    "build:linux:debug": "npm run build:native && electron-vite build && electron-builder --linux --publish never -c.appId=gg.hydraplus.launcher.debug -c.productName='Hydra Plus Debug' -c.linux.executableName='hydra-plus-debug' -c.appImage.artifactName='${name}-${version}-debug.${ext}'",
     "prepare": "husky"
   },
   "dependencies": {

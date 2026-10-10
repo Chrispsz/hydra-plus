@@ -1,4 +1,5 @@
 export * from "./logger";
+export * from "./debug-console";
 export * from "./steam";
 export * from "./steam-250";
 export * from "./window-manager";

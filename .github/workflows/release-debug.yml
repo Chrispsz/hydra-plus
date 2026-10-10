@@ -1,0 +1,126 @@
+name: Release Debug
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+on:
+  push:
+    tags:
+      - "debug-v*"
+
+permissions:
+  contents: read
+
+jobs:
+  build-debug:
+    runs-on: ubuntu-latest
+
+    timeout-minutes: 120
+
+    steps:
+      - name: Check out Git repository
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+
+      - name: Install Node.js
+        uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
+        with:
+          node-version: 22.21.0
+          cache: "yarn"
+
+      - name: Enable Corepack (Yarn)
+        run: corepack enable
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Prepare native caches
+        id: native-cache
+        run: |
+          cacheDir="$RUNNER_TEMP/hydra-vcpkg-archives"
+          mkdir -p "$cacheDir"
+          echo "VCPKG_DEFAULT_BINARY_CACHE=$cacheDir" >> "$GITHUB_ENV"
+          arch=$(echo "$RUNNER_ARCH" | tr '[:upper:]' '[:lower:]')
+          image="$ImageOS-$ImageVersion"
+          echo "image=$image" >> "$GITHUB_OUTPUT"
+          echo "prefix=v1-vcpkg-$RUNNER_OS-$image-$arch-$arch-linux" >> "$GITHUB_OUTPUT"
+
+      - name: Cache Rust dependencies
+        uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
+        with:
+          workspaces: native/hydra-native -> target
+          shared-key: native-${{ runner.os }}-${{ runner.arch }}-${{ steps.native-cache.outputs.image }}
+          cache-bin: false
+
+      - name: Restore vcpkg binary packages
+        id: vcpkg-cache
+        uses: actions/cache/restore@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0
+        with:
+          path: ${{ env.VCPKG_DEFAULT_BINARY_CACHE }}
+          key: ${{ steps.native-cache.outputs.prefix }}-${{ hashFiles('native/torrent-bridge/**/vcpkg*.json', 'native/torrent-bridge/**/triplets/**') }}
+          restore-keys: |
+            ${{ steps.native-cache.outputs.prefix }}-
+
+      - name: Install Linux native build prerequisites
+        run: sudo apt-get update && sudo apt-get install -y build-essential cmake ninja-build pkg-config curl zip unzip tar autoconf automake libtool
+
+      - name: Install dependencies
+        run: yarn --frozen-lockfile
+
+      - name: Save vcpkg binary packages
+        if: steps.vcpkg-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0
+        with:
+          path: ${{ env.VCPKG_DEFAULT_BINARY_CACHE }}
+          key: ${{ steps.vcpkg-cache.outputs.cache-primary-key }}
+
+      - name: Build Linux (debug flavor)
+        run: yarn build:linux:debug
+        env:
+          MAIN_VITE_DEBUG_BUILD: "1"
+          MAIN_VITE_API_URL: ${{ vars.MAIN_VITE_API_URL }}
+          MAIN_VITE_AUTH_URL: ${{ vars.MAIN_VITE_AUTH_URL }}
+          MAIN_VITE_UPDATE_OWNER: ${{ vars.MAIN_VITE_UPDATE_OWNER }}
+          MAIN_VITE_UPDATE_REPO: ${{ vars.MAIN_VITE_UPDATE_REPO }}
+          MAIN_VITE_GOOGLE_CLIENT_ID: ${{ secrets.MAIN_VITE_GOOGLE_CLIENT_ID }}
+          MAIN_VITE_GOOGLE_CLIENT_SECRET: ${{ secrets.MAIN_VITE_GOOGLE_CLIENT_SECRET }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Smoke test build
+        run: node scripts/smoke-launch.cjs
+
+      - name: Create artifact
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        with:
+          name: hydra-plus-debug-${{ runner.os }}
+          retention-days: 14
+          compression-level: 0
+          path: |
+            dist/*.AppImage
+            dist/*.yml
+
+  publish-debug:
+    needs: build-debug
+    runs-on: ubuntu-latest
+
+    timeout-minutes: 15
+
+    permissions:
+      contents: write
+
+    steps:
+      - name: Download build artifacts
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
+        with:
+          pattern: hydra-plus-debug-*
+          merge-multiple: true
+          path: release-dist
+
+      - name: Create draft debug pre-release
+        uses: softprops/action-gh-release@efb35369e0ad2afab669f228072c1b0d510eae64 # v3.0.3
+        with:
+          draft: true
+          prerelease: true
+          files: release-dist/**
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

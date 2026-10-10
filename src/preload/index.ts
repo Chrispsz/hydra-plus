@@ -1309,3 +1309,24 @@ if (globalThis.window !== undefined) {
     reportNetworkStatus(navigator.onLine, true)
   );
 }
+
+const debugConsoleApi = {
+  getBuffer: () => ipcRenderer.invoke("debug-console:buffer"),
+  clear: () => ipcRenderer.invoke("debug-console:clear"),
+  exportLog: () => ipcRenderer.invoke("debug-console:export"),
+  envDump: () => ipcRenderer.invoke("debug-console:env-dump"),
+  close: () => ipcRenderer.invoke("debug-console:close"),
+  open: () => ipcRenderer.invoke("debug-console:open"),
+  onNewLog: (callback: (entry: unknown) => void) => {
+    const listener = (
+      _event: Electron.IpcRendererEvent,
+      entry: unknown
+    ): void => callback(entry);
+    ipcRenderer.on("debug-console:new-log", listener);
+    return () => {
+      ipcRenderer.removeListener("debug-console:new-log", listener);
+    };
+  },
+};
+
+contextBridge.exposeInMainWorld("debugConsole", debugConsoleApi);

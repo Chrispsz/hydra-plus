@@ -4,6 +4,7 @@ import { AppUpdaterEvent, UserPreferences } from "@types";
 import { app } from "electron";
 import { publishNotificationUpdateReadyToInstall } from "@main/services/notifications";
 import { db, levelKeys } from "@main/level";
+import { IS_DEBUG_BUILD } from "@main/constants";
 
 const { autoUpdater } = updater;
 const sendEventsForDebug = false;
@@ -42,6 +43,11 @@ export class UpdateManager {
   }
 
   public static async checkForUpdates() {
+    if (IS_DEBUG_BUILD) {
+      logger.info("Debug build: skipping update check");
+      return false;
+    }
+
     autoUpdater
       .removeAllListeners()
       .on("update-available", (info: UpdateInfo) => {

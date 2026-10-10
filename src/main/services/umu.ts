@@ -11,6 +11,8 @@ import { resolveLaunchCommand } from "@main/helpers/resolve-launch-command";
 import { evaluateUmuPrefixPreparation } from "./umu-prefix-preparation";
 import { Wine } from "./wine";
 import { getSteamLibraryFolders } from "./steam";
+import { DebugConsole } from "./debug-console";
+import { IS_DEBUG_BUILD } from "@main/constants";
 
 const isValidProtonDirectory = (directoryPath: string) => {
   const protonFilePath = path.join(directoryPath, "proton");
@@ -96,6 +98,39 @@ const ensureExecutablePermission = (binaryPath: string) => {
       error,
     });
   }
+};
+
+interface UmuSpawnDebugOptions {
+  shouldPipeToTerminal: boolean;
+  logFileDescriptor: number | null;
+}
+
+/**
+ * In debug builds, tee umu/Proton stdout+stderr into the debug console while
+ * still writing everything to umu.log. The stable build keeps the exact
+ * previous behavior (file descriptor only).
+ */
+const attachUmuDebugCapture = (
+  child: import("node:child_process").ChildProcess,
+  options: UmuSpawnDebugOptions,
+  label: string
+) => {
+  if (!IS_DEBUG_BUILD || options.shouldPipeToTerminal) return;
+
+  const writeChunk = (chunk: Buffer | string) => {
+    const text = typeof chunk === "string" ? chunk : chunk.toString("utf8");
+    if (options.logFileDescriptor !== null) {
+      try {
+        fs.writeSync(options.logFileDescriptor, text);
+      } catch {
+        // File may already be closed; console still gets the output.
+      }
+    }
+    DebugConsole.record("debug", `umu:${label}`, text.replace(/\s+$/, ""));
+  };
+
+  child.stdout?.on("data", writeChunk);
+  child.stderr?.on("data", writeChunk);
 };
 
 const STEAM_ROOT_SEGMENTS = [
@@ -241,12 +276,14 @@ export class Umu {
 
     await new Promise<void>((resolve, reject) => {
       const shouldPipeToTerminal = is.dev;
+      const useDebugCapture = IS_DEBUG_BUILD && !shouldPipeToTerminal;
       const logFileDescriptor = shouldPipeToTerminal
         ? null
         : fs.openSync(umuLogPath, "a");
       let settled = false;
 
       const closeLogFileDescriptor = () => {
+        if (useDebugCapture) return; // Closed when the child stdio ends.
         if (!settled && logFileDescriptor !== null) {
           fs.closeSync(logFileDescriptor);
         }
@@ -261,7 +298,9 @@ export class Umu {
         detached: false,
         stdio: shouldPipeToTerminal
           ? "inherit"
-          : ["ignore", logFileDescriptor, logFileDescriptor],
+          : useDebugCapture
+            ? (["ignore", "pipe", "pipe"] as const)
+            : ["ignore", logFileDescriptor, logFileDescriptor],
         shell: false,
         cwd: SystemPath.getPath("home"),
         env: {
@@ -269,6 +308,23 @@ export class Umu {
           ...launchEnv,
         },
       });
+
+      attachUmuDebugCapture(
+        child,
+        { shouldPipeToTerminal, logFileDescriptor },
+        "createprefix"
+      );
+
+      if (useDebugCapture && logFileDescriptor !== null) {
+        const fileDescriptor = logFileDescriptor;
+        child.once("close", () => {
+          try {
+            fs.closeSync(fileDescriptor);
+          } catch {
+            // Already closed.
+          }
+        });
+      }
 
       child.once("error", (error) => {
         finish(() => {
@@ -393,6 +449,7 @@ export class Umu {
 
     await new Promise<void>((resolve, reject) => {
       const shouldPipeToTerminal = is.dev;
+      const useDebugCapture = IS_DEBUG_BUILD && !shouldPipeToTerminal;
       const logFileDescriptor = shouldPipeToTerminal
         ? null
         : fs.openSync(umuLogPath, "a");
@@ -400,6 +457,7 @@ export class Umu {
       let settled = false;
 
       const closeLogFileDescriptor = () => {
+        if (useDebugCapture) return; // Closed when the child stdio ends.
         if (logFileDescriptor !== null) {
           fs.closeSync(logFileDescriptor);
         }
@@ -418,7 +476,9 @@ export class Umu {
           detached: true,
           stdio: shouldPipeToTerminal
             ? "inherit"
-            : ["ignore", logFileDescriptor, logFileDescriptor],
+            : useDebugCapture
+              ? (["ignore", "pipe", "pipe"] as const)
+              : ["ignore", logFileDescriptor, logFileDescriptor],
           shell: false,
           cwd: workingDirectory,
           env: {
@@ -427,6 +487,25 @@ export class Umu {
           },
         }
       );
+
+      attachUmuDebugCapture(
+        child,
+        { shouldPipeToTerminal, logFileDescriptor },
+        "launch"
+      );
+
+      if (useDebugCapture && logFileDescriptor !== null) {
+        // The game keeps running detached after the promise resolves; keep
+        // the log file writable until the process stdio actually ends.
+        const fileDescriptor = logFileDescriptor;
+        child.once("close", () => {
+          try {
+            fs.closeSync(fileDescriptor);
+          } catch {
+            // Already closed.
+          }
+        });
+      }
 
       let quickExitTimer: NodeJS.Timeout | null = null;
 

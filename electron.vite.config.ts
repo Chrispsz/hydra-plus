@@ -32,6 +32,12 @@ export default defineConfig(({ mode }) => {
     renderer: {
       build: {
         sourcemap: true,
+        rollupOptions: {
+          input: {
+            index: resolve("src/renderer/index.html"),
+            debug: resolve("src/renderer/debug/index.html"),
+          },
+        },
       },
       esbuild: {
         keepNames: true,
