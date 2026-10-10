@@ -18,6 +18,7 @@ export function HydraCloudV2SettingsSection({
     isGameRunning,
     hasError,
     errorMessageKey,
+    reconnectDrive,
     progress,
     hasExecutablePath,
     openFileBrowser,
@@ -49,6 +50,7 @@ export function HydraCloudV2SettingsSection({
         onSelectExecutable={onSelectExecutable}
         onAutomaticSyncChange={setAutomaticSyncEnabled}
         onResolveConflict={requestConflictResolution}
+        onReconnectDrive={() => void reconnectDrive()}
       />
     </div>
   );

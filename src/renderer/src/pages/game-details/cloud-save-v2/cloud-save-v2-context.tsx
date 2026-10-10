@@ -47,8 +47,10 @@ interface CloudSaveV2ContextValue {
   hasError: boolean;
   errorMessageKey:
     | "cloud_save_v2_load_error"
+    | "cloud_save_v2_reauth_error"
     | "cloud_save_v2_sync_error"
     | null;
+  reconnectDrive: () => Promise<void>;
   progress: CloudSaveSyncProgressPayload | null;
   hasExecutablePath: boolean;
   canUseCloudSaves: boolean;
@@ -180,6 +182,7 @@ export function CloudSaveV2Provider({
     isAutomaticSyncEnabled,
     isRefreshing,
     hasRefreshError,
+    refreshErrorKind,
     refresh,
   } = useCloudSaveOverview({
     objectId,
@@ -920,8 +923,15 @@ export function CloudSaveV2Provider({
   if (hasSyncError) {
     errorMessageKey = "cloud_save_v2_sync_error";
   } else if (hasRefreshError) {
-    errorMessageKey = "cloud_save_v2_load_error";
+    errorMessageKey =
+      refreshErrorKind === "google-drive-reauth"
+        ? "cloud_save_v2_reauth_error"
+        : "cloud_save_v2_load_error";
   }
+  const reconnectDrive = useCallback(async () => {
+    await connect();
+    await refresh();
+  }, [connect, refresh]);
   const openFileBrowser = useCallback(() => {
     if (cloudSaveAccessAction === "open") {
       setIsFileBrowserVisible(true);
@@ -942,6 +952,7 @@ export function CloudSaveV2Provider({
       isGameRunning,
       hasError,
       errorMessageKey,
+      reconnectDrive,
       progress,
       hasExecutablePath,
       canUseCloudSaves,
@@ -964,6 +975,7 @@ export function CloudSaveV2Provider({
       openFileBrowser,
       overview,
       progress,
+      reconnectDrive,
       runCloudSaveOperation,
       setAutomaticSyncEnabled,
     ]
@@ -1000,6 +1012,7 @@ export function CloudSaveV2Provider({
         isAutomaticSyncEnabled={isAutomaticSyncEnabled}
         hasError={hasError}
         errorMessageKey={errorMessageKey}
+        onReconnectDrive={() => void reconnectDrive()}
         progress={progress}
         onSync={() => void runCloudSaveOperation()}
         onOpenFileBrowser={() => setIsFileBrowserVisible(true)}

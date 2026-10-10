@@ -87,6 +87,25 @@ const getErrorMessage = (error: unknown) => {
   return "";
 };
 
+export type CloudSaveRefreshErrorKind = "google-drive-reauth" | "generic";
+
+/**
+ * Classifies a failed `getCloudSaveOverview` call.
+ *
+ * Electron wraps IPC rejections, so error kinds are matched with
+ * `includes` (same strategy as `getCloudSaveSyncErrorKind`).
+ * `google_drive_reauth_required` means the Drive refresh token is dead —
+ * retrying can never fix it, the user must reconnect their account.
+ */
+export const getCloudSaveRefreshErrorKind = (
+  error: unknown
+): CloudSaveRefreshErrorKind => {
+  if (getErrorMessage(error).includes("google_drive_reauth_required")) {
+    return "google-drive-reauth";
+  }
+  return "generic";
+};
+
 export const getCloudSaveUploadLimitError = (
   error: unknown
 ): CloudSaveUploadLimitError | null => {

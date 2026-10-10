@@ -1013,7 +1013,9 @@
     "google_drive_connect_required": "Link your Google Drive to sync this game's saves with your own Drive — free, and the files stay in your account.",
     "google_drive_connect_required_title": "Link your Google Drive",
     "google_drive_connect_required_description": "Pick a Google account to sync saves with your own Drive, in the “Hydra Plus Saves” folder. Free — no subscription, and only this app can see those files (drive.file scope).",
-    "google_drive_linked_toast": "Google Drive linked"
+    "google_drive_linked_toast": "Google Drive linked",
+    "cloud_save_v2_reauth_error": "The Google Drive connection expired. Reconnect your account to sync your saves.",
+    "cloud_save_v2_reconnect_drive": "Reconnect Google Drive"
   },
   "activation": {
     "title": "Activate Hydra",

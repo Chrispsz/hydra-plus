@@ -2,6 +2,11 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 import type { CloudSaveOverview, GameShop } from "@types";
 
+import {
+  getCloudSaveRefreshErrorKind,
+  type CloudSaveRefreshErrorKind,
+} from "./cloud-save-presentation";
+
 interface UseCloudSaveOverviewOptions {
   objectId: string;
   shop: GameShop;
@@ -19,6 +24,8 @@ export const useCloudSaveOverview = ({
   >(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [hasRefreshError, setHasRefreshError] = useState(false);
+  const [refreshErrorKind, setRefreshErrorKind] =
+    useState<CloudSaveRefreshErrorKind>("generic");
   const gameKey = `${shop}:${objectId}`;
   const activeGameKey = useRef("");
   const activeRequest = useRef<Promise<void> | null>(null);
@@ -52,9 +59,10 @@ export const useCloudSaveOverview = ({
             setOverview(result);
             setIsAutomaticSyncEnabled(result.isAutomaticSyncEnabled);
           }
-        } catch {
+        } catch (error) {
           if (activeGameKey.current === requestedGameKey) {
             setHasRefreshError(true);
+            setRefreshErrorKind(getCloudSaveRefreshErrorKind(error));
           }
         }
       } while (
@@ -90,6 +98,7 @@ export const useCloudSaveOverview = ({
     setOverview(null);
     setIsAutomaticSyncEnabled(null);
     setHasRefreshError(false);
+    setRefreshErrorKind("generic");
     setIsRefreshing(false);
 
     if (enabled) void refresh();
@@ -140,6 +149,7 @@ export const useCloudSaveOverview = ({
     isAutomaticSyncEnabled,
     isRefreshing,
     hasRefreshError,
+    refreshErrorKind,
     refresh,
   };
 };

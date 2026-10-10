@@ -42,6 +42,7 @@ export interface CloudSavePanelProps {
   hasError: boolean;
   errorMessageKey:
     | "cloud_save_v2_load_error"
+    | "cloud_save_v2_reauth_error"
     | "cloud_save_v2_sync_error"
     | null;
   progress: CloudSaveSyncProgressPayload | null;
@@ -50,6 +51,7 @@ export interface CloudSavePanelProps {
   onSelectExecutable: () => void;
   onAutomaticSyncChange: (enabled: boolean) => Promise<void>;
   onResolveConflict: (resolution: CloudSaveConflictResolution) => void;
+  onReconnectDrive?: () => void;
 }
 
 interface CloudSaveModalProps extends Omit<CloudSavePanelProps, "active"> {
@@ -218,6 +220,7 @@ export function CloudSavePanel({
   onSelectExecutable,
   onAutomaticSyncChange,
   onResolveConflict,
+  onReconnectDrive,
 }: Readonly<CloudSavePanelProps>) {
   const { t } = useTranslation("game_details");
   const { formatDateTime } = useDate();
@@ -470,6 +473,17 @@ export function CloudSavePanel({
 
       {errorMessageKey && (
         <p className="cloud-save-v2__error">{t(errorMessageKey)}</p>
+      )}
+
+      {errorMessageKey === "cloud_save_v2_reauth_error" && onReconnectDrive && (
+        <Button
+          className="cloud-save-v2__sync-button"
+          onClick={onReconnectDrive}
+          disabled={isLoading || isSyncing}
+        >
+          <CloudArrowUpIcon size={20} />
+          <span>{t("cloud_save_v2_reconnect_drive")}</span>
+        </Button>
       )}
 
       {panelMode === "content" && hasUnconfiguredCustomPaths && !hasError && (

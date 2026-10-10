@@ -1,5 +1,5 @@
 import { safeStorage } from "electron";
-import axios from "axios";
+import axios, { isAxiosError } from "axios";
 import { db, levelKeys } from "@main/level";
 import { logger } from "@main/services/logger";
 
@@ -106,25 +106,66 @@ export const clearGoogleDriveTokens = async (): Promise<void> => {
 
 let refreshInFlight: Promise<string> | null = null;
 
+/**
+ * Maps a failed refresh-token exchange to a user-actionable error kind.
+ *
+ * Google answers 400 with `invalid_grant` when the refresh token was
+ * revoked or expired (OAuth consent screens in "Testing" mode expire
+ * refresh tokens after 7 days). Without this mapping every Drive call
+ * surfaced as a generic failure and the only hint was "try again" —
+ * which could never fix a dead refresh token.
+ */
+const toTokenRefreshError = (error: unknown): Error => {
+  if (isAxiosError(error) && error.response) {
+    const { status, data } = error.response;
+    const googleError =
+      (data as { error?: string } | undefined)?.error ?? undefined;
+
+    if (
+      status === 400 ||
+      status === 401 ||
+      googleError === "invalid_grant" ||
+      googleError === "unauthorized_client"
+    ) {
+      return new Error("google_drive_reauth_required");
+    }
+  }
+
+  return error instanceof Error ? error : new Error("google_drive_error");
+};
+
 const requestFreshAccessToken = async (): Promise<string> => {
   const tokens = await readTokens();
   const refreshToken = await getGoogleDriveRefreshToken();
 
-  if (!tokens?.encryptedRefreshToken || !refreshToken) {
+  if (!tokens?.encryptedRefreshToken) {
     throw new Error("google_drive_not_linked");
   }
 
-  const { data } = await axios.post<{
-    access_token: string;
-    expires_in: number;
-  }>(
-    TOKEN_ENDPOINT,
-    new URLSearchParams({
-      client_id: await resolveGoogleClientId(),
-      refresh_token: refreshToken,
-      grant_type: "refresh_token",
-    })
-  );
+  if (!refreshToken) {
+    // The record exists but the refresh token could not be recovered
+    // (e.g. safeStorage cannot decrypt it in this session). The user
+    // still thinks the account is linked, so ask for a reconnect.
+    throw new Error("google_drive_reauth_required");
+  }
+
+  let data: { access_token: string; expires_in: number };
+  try {
+    ({ data } = await axios.post<{
+      access_token: string;
+      expires_in: number;
+    }>(
+      TOKEN_ENDPOINT,
+      new URLSearchParams({
+        client_id: await resolveGoogleClientId(),
+        refresh_token: refreshToken,
+        grant_type: "refresh_token",
+      })
+    ));
+  } catch (error) {
+    logger.error("Google Drive token refresh failed", error);
+    throw toTokenRefreshError(error);
+  }
 
   await db.put<string, GoogleDriveTokensRecord>(
     levelKeys.googleDriveOAuth,

@@ -990,7 +990,9 @@
     "download_error_torbox_torrent_not_ready": "TorBox todavía está preparando este torrent. Esperá un momento e intentá de nuevo.",
     "download_error_torbox_link_unavailable": "TorBox no pudo crear un enlace de descarga para este torrent. Intentá de nuevo más tarde.",
     "download_error_network_unreachable": "No se pudo conectar con el servidor de descarga. Revisá tu conexión a internet e intentá de nuevo.",
-    "download_error_network_certificate_rejected": "No se pudo verificar la conexión con el servidor de descarga. Puede que un antivirus o proxy esté inspeccionando el tráfico HTTPS."
+    "download_error_network_certificate_rejected": "No se pudo verificar la conexión con el servidor de descarga. Puede que un antivirus o proxy esté inspeccionando el tráfico HTTPS.",
+    "cloud_save_v2_reauth_error": "La conexión con Google Drive ha expirado. Vuelve a conectar tu cuenta para sincronizar tus partidas guardadas.",
+    "cloud_save_v2_reconnect_drive": "Reconectar Google Drive"
   },
   "activation": {
     "title": "Activar Hydra",

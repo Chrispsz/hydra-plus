@@ -992,7 +992,9 @@
     "download_error_torbox_torrent_not_ready": "TorBox ещё готовит этот торрент. Подождите немного и попробуйте снова.",
     "download_error_torbox_link_unavailable": "TorBox не смог создать ссылку для скачивания этого торрента. Попробуйте позже.",
     "download_error_network_unreachable": "Не удалось связаться с сервером загрузки. Проверьте подключение к интернету и попробуйте снова.",
-    "download_error_network_certificate_rejected": "Не удалось проверить соединение с сервером загрузки. Антивирус или прокси может перехватывать HTTPS-трафик."
+    "download_error_network_certificate_rejected": "Не удалось проверить соединение с сервером загрузки. Антивирус или прокси может перехватывать HTTPS-трафик.",
+    "cloud_save_v2_reauth_error": "Соединение с Google Drive истекло. Повторно подключите аккаунт, чтобы синхронизировать сохранения.",
+    "cloud_save_v2_reconnect_drive": "Переподключить Google Drive"
   },
   "activation": {
     "title": "Активировать Hydra",

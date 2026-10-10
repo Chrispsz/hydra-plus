@@ -1008,7 +1008,9 @@
     "pkg_unreadable_toast": "Impossible de lire ce PKG. Installez-le et lancez-le directement depuis RPCS3.",
     "reset_achievements_retroachievements_note": "Réinitialisez d'abord les succès sur RetroAchievements, sinon ils seront resynchronisés vers Hydra.",
     "reset_achievements_retroachievements_link": "Ouvrir le site RetroAchievements",
-    "reset_achievements_retroachievements_confirm": "J'ai déjà réinitialisé les succès de ce jeu sur RetroAchievements"
+    "reset_achievements_retroachievements_confirm": "J'ai déjà réinitialisé les succès de ce jeu sur RetroAchievements",
+    "cloud_save_v2_reauth_error": "La connexion à Google Drive a expiré. Reconnectez votre compte pour synchroniser vos sauvegardes.",
+    "cloud_save_v2_reconnect_drive": "Reconnecter Google Drive"
   },
   "activation": {
     "title": "Activer Hydra",

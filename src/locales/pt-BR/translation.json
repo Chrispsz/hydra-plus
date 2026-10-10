@@ -979,7 +979,9 @@
     "google_drive_connect_required": "Conecte o seu Google Drive para sincronizar os salvamentos deste jogo com o seu próprio Drive — grátis, e os arquivos ficam na sua conta.",
     "google_drive_connect_required_title": "Conecte o seu Google Drive",
     "google_drive_connect_required_description": "Escolha uma conta do Google para sincronizar os salvamentos com o seu Drive, na pasta “Hydra Plus Saves”. Grátis — sem assinatura, e só este app enxerga esses arquivos (permissão drive.file).",
-    "google_drive_linked_toast": "Google Drive conectado"
+    "google_drive_linked_toast": "Google Drive conectado",
+    "cloud_save_v2_reauth_error": "A conexão com o Google Drive expirou. Reconecte sua conta para sincronizar os saves.",
+    "cloud_save_v2_reconnect_drive": "Reconectar Google Drive"
   },
   "activation": {
     "title": "Ativação",
