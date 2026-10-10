@@ -19,9 +19,7 @@ import {
   PowerSaveBlockerManager,
   DownloadOrchestrator,
   SSEClient,
-  DebugConsole,
 } from "@main/services";
-import { IS_DEBUG_BUILD } from "@main/constants";
 import resources from "@locales";
 import { TorrentService } from "./services/torrent-service";
 import { db, gamesSublevel, levelKeys } from "./level";
@@ -44,19 +42,13 @@ crashReporter.start({
   uploadToServer: false,
 });
 
-DebugConsole.attach();
-
 const { autoUpdater } = updater;
 
-if (!IS_DEBUG_BUILD) {
-  autoUpdater.setFeedURL({
-    provider: "github",
-    owner: import.meta.env.MAIN_VITE_UPDATE_OWNER ?? "Chrispsz",
-    repo: import.meta.env.MAIN_VITE_UPDATE_REPO ?? "hydra-plus",
-  });
-} else {
-  logger.info("Debug build: auto-update feed disabled");
-}
+autoUpdater.setFeedURL({
+  provider: "github",
+  owner: import.meta.env.MAIN_VITE_UPDATE_OWNER ?? "Chrispsz",
+  repo: import.meta.env.MAIN_VITE_UPDATE_REPO ?? "hydra-plus",
+});
 
 autoUpdater.logger = logger;
 
@@ -94,11 +86,7 @@ protocol.registerSchemesAsPrivileged([
   },
 ]);
 
-if (IS_DEBUG_BUILD) {
-  // Debug builds must never steal the deep-link registration from the
-  // stable install on the same machine.
-  logger.info("Debug build: skipping protocol client registration");
-} else if (process.defaultApp) {
+if (process.defaultApp) {
   if (process.argv.length >= 2) {
     app.setAsDefaultProtocolClient(PROTOCOL, process.execPath, [
       path.resolve(process.argv[1]),
@@ -217,11 +205,6 @@ const initializeApp = async () => {
     WindowManager.createMainWindow();
   }
 
-  if (IS_DEBUG_BUILD) {
-    logger.info("Debug build: opening debug console window");
-    DebugConsole.openWindow();
-  }
-
   WindowManager.createSystemTray(language || "en");
 
   if (deepLinkArg) {
@@ -231,19 +214,6 @@ const initializeApp = async () => {
 
 app.on("browser-window-created", (_, window) => {
   optimizer.watchWindowShortcuts(window);
-
-  if (IS_DEBUG_BUILD) {
-    window.webContents.on("before-input-event", (_event, input) => {
-      if (
-        input.type === "keyDown" &&
-        input.control &&
-        input.shift &&
-        (input.key === "D" || input.key === "d")
-      ) {
-        DebugConsole.toggleWindow();
-      }
-    });
-  }
 });
 
 app.on("child-process-gone", (_event, details) => {

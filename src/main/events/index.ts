@@ -6,7 +6,6 @@ import "./autoupdater";
 import "./catalogue";
 import "./cloud-save";
 import "./connectivity";
-import "./debug-console";
 import "./download-sources";
 import "./hardware";
 import "./library";

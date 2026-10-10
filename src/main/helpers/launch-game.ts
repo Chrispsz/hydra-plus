@@ -25,7 +25,6 @@ import {
   Wine,
   NativeAddon,
   launchedGamePids,
-  DebugConsole,
 } from "@main/services";
 import { updateGameRecord } from "@main/services/game-record-updater";
 import { dispatchSteamProtocolLaunch } from "@main/services/steam-integration/steam-protocol-launch-dispatch";
@@ -406,17 +405,6 @@ const launchWindowsBinaryOnLinux = async (
       useMangohud,
     });
     PowerSaveBlockerManager.markCompatibilityLaunchStarted(gameKey);
-    DebugConsole.record(
-      "info",
-      "launch",
-      "umu-run spawn OK — processo do jogo ficou detached",
-      {
-        objectId,
-        parsedPath,
-        protonPath,
-        winePrefixPath,
-      }
-    );
     return true;
   } catch (error) {
     logger.error("Failed to launch game with umu-run, falling back", error);
@@ -432,29 +420,9 @@ const launchWindowsBinaryOnLinux = async (
 
   if (launchedWithWine) {
     PowerSaveBlockerManager.markCompatibilityLaunchStarted(gameKey);
-    DebugConsole.record(
-      "warn",
-      "launch",
-      "umu falhou, mas o fallback para o wine do sistema funcionou",
-      {
-        objectId,
-        winePrefixPath,
-      }
-    );
     return true;
   }
 
-  DebugConsole.record(
-    "error",
-    "launch",
-    "umu E wine falharam — jogo NÃO foi iniciado",
-    {
-      objectId,
-      parsedPath,
-      protonPath,
-      winePrefixPath,
-    }
-  );
   return false;
 };
 
@@ -594,12 +562,6 @@ const launchResolvedGame = async (
 
   if (isWindowsExecutable(parsedPath)) {
     if (!compatibilityContext) {
-      DebugConsole.record(
-        "error",
-        "launch",
-        ".exe no Linux sem contexto de compatibilidade — nada será lançado",
-        { objectId, parsedPath }
-      );
       clearCloudSaveLaunchGuard(objectId, shop);
       return null;
     }
@@ -616,13 +578,6 @@ const launchResolvedGame = async (
     if (launched) return null;
     clearCloudSaveLaunchGuard(objectId, shop);
   }
-
-  DebugConsole.record(
-    "warn",
-    "launch",
-    "Caindo para launch nativo (.exe direto sem Proton/wine)",
-    { objectId, parsedPath }
-  );
 
   const pid = launchNatively(
     parsedPath,
@@ -664,17 +619,6 @@ const launchGameWithCloudSaveChecks = async (
           return null;
         })
       : null;
-
-  DebugConsole.record(
-    "info",
-    "launch",
-    steamProtocolLaunch
-      ? "Jogo Steam → será lançado via protocolo steam:// (prefixo da Steam)"
-      : shop === "steam"
-        ? "Jogo Steam SEM protocolo disponível → caminho umu/wine"
-        : "Jogo não-Steam → caminho umu/wine",
-    { shop, objectId, executablePath: parsedPath }
-  );
 
   const userPreferences = await db
     .get<string, UserPreferences | null>(levelKeys.userPreferences, {
