@@ -102,9 +102,8 @@ const updateUserPreferences = async (
 
   Wine.syncUserPreferences(updatedPreferences);
 
-  // Hydra Plus: provider/OAuth-client changes must not reuse stale stores.
+  // Hydra Plus: OAuth-client changes must not reuse a stale store cache.
   if (
-    Object.hasOwn(preferences, "cloudProvider") ||
     Object.hasOwn(preferences, "googleDriveClientId") ||
     Object.hasOwn(preferences, "googleDriveClientSecret")
   ) {

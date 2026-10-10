@@ -130,15 +130,7 @@ export interface DownloadDirectoryPreference {
   source: "manual" | "auto";
 }
 
-export type CloudStorageProvider = "hydra" | "google-drive";
-
 export interface UserPreferences {
-  /**
-   * Remote backend for the cloud-save engine. "hydra" uses the official
-   * subscription cloud; "google-drive" stores snapshots in the user's own
-   * Google Drive (free). Default: "hydra".
-   */
-  cloudProvider?: CloudStorageProvider;
   /**
    * Self-serve Google OAuth "Desktop app" client used to link the user's
    * Drive when the build shipped without MAIN_VITE_GOOGLE_CLIENT_ID.

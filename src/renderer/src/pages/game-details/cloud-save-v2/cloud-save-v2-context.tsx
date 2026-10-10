@@ -19,7 +19,6 @@ import {
 import { ConfirmationModal } from "@renderer/components";
 import { gameDetailsContext } from "@renderer/context";
 import { useGoogleDriveCloud, useToast, useUserDetails } from "@renderer/hooks";
-import { useSubscription } from "@renderer/hooks/use-subscription";
 import type {
   CloudSaveConflictResolution,
   CloudSaveCustomPathApproval,
@@ -153,10 +152,8 @@ export function CloudSaveV2Provider({
 }: Readonly<CloudSaveV2ProviderProps>) {
   const { t } = useTranslation("game_details");
   const [searchParams, setSearchParams] = useSearchParams();
-  const { userDetails, hasActiveSubscription } = useUserDetails();
-  const { isDriveCloudActive, requiresClientSetup, connect } =
-    useGoogleDriveCloud();
-  const { showHydraCloudModal } = useSubscription();
+  const { userDetails } = useUserDetails();
+  const { isDriveCloudActive, connect } = useGoogleDriveCloud();
   const { showErrorToast, showSuccessToast, showWarningToast } = useToast();
   const {
     game,
@@ -166,9 +163,7 @@ export function CloudSaveV2Provider({
   } = useContext(gameDetailsContext);
   const cloudSaveAccessAction = getCloudSaveAccessAction(
     Boolean(userDetails),
-    hasActiveSubscription,
-    isDriveCloudActive,
-    !requiresClientSetup
+    isDriveCloudActive
   );
   const canUseCloudSaves = cloudSaveAccessAction === "open";
   const isV2Eligible = isCloudSaveV2Eligible(shop, game?.platform);
@@ -297,10 +292,6 @@ export function CloudSaveV2Provider({
       window.electron.openAuthWindow(AuthPage.SignIn);
       return;
     }
-    if (cloudSaveAccessAction === "paywall") {
-      showHydraCloudModal("backup");
-      return;
-    }
     if (cloudSaveAccessAction === "connect-drive") {
       void connect();
       return;
@@ -316,7 +307,6 @@ export function CloudSaveV2Provider({
     searchParams,
     setSearchParams,
     shop,
-    showHydraCloudModal,
   ]);
 
   useEffect(() => {
@@ -333,10 +323,6 @@ export function CloudSaveV2Provider({
       window.electron.openAuthWindow(AuthPage.SignIn);
       return;
     }
-    if (cloudSaveAccessAction === "paywall") {
-      showHydraCloudModal("backup");
-      return;
-    }
     if (cloudSaveAccessAction === "connect-drive") {
       void connect();
       return;
@@ -348,7 +334,6 @@ export function CloudSaveV2Provider({
     isV2Eligible,
     searchParams,
     setSearchParams,
-    showHydraCloudModal,
   ]);
 
   useEffect(() => {
@@ -513,17 +498,13 @@ export function CloudSaveV2Provider({
       window.electron.openAuthWindow(AuthPage.SignIn);
       return;
     }
-    if (cloudSaveAccessAction === "paywall") {
-      showHydraCloudModal("backup");
-      return;
-    }
     if (cloudSaveAccessAction === "connect-drive") {
       void connect();
       return;
     }
     setWasOpenedFromLaunchConflict(false);
     setIsModalVisible(true);
-  }, [cloudSaveAccessAction, connect, showHydraCloudModal]);
+  }, [cloudSaveAccessAction, connect]);
 
   const handleSelectExecutable = () => {
     setIsModalVisible(false);
@@ -665,8 +646,6 @@ export function CloudSaveV2Provider({
       if (cloudSaveAccessAction !== "open") {
         if (cloudSaveAccessAction === "sign-in") {
           window.electron.openAuthWindow(AuthPage.SignIn);
-        } else if (cloudSaveAccessAction === "paywall") {
-          showHydraCloudModal("backup");
         } else {
           void connect();
         }
@@ -687,16 +666,7 @@ export function CloudSaveV2Provider({
         throw error;
       }
     },
-    [
-      cloudSaveAccessAction,
-      connect,
-      objectId,
-      refresh,
-      shop,
-      showErrorToast,
-      showHydraCloudModal,
-      t,
-    ]
+    [cloudSaveAccessAction, connect, objectId, refresh, shop, showErrorToast, t]
   );
 
   const handleConfirmResolution = () => {
@@ -937,12 +907,10 @@ export function CloudSaveV2Provider({
       setIsFileBrowserVisible(true);
     } else if (cloudSaveAccessAction === "sign-in") {
       window.electron.openAuthWindow(AuthPage.SignIn);
-    } else if (cloudSaveAccessAction === "paywall") {
-      showHydraCloudModal("backup");
     } else {
       void connect();
     }
-  }, [cloudSaveAccessAction, connect, showHydraCloudModal]);
+  }, [cloudSaveAccessAction, connect]);
   const value = useMemo<CloudSaveV2ContextValue>(
     () => ({
       overview,

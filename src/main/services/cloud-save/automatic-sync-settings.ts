@@ -11,13 +11,12 @@ import type {
 } from "@types";
 
 import { WindowManager } from "../window-manager";
-import { assertCloudSaveSubscription } from "./cloud-save-access";
-import { assertLegacyCloudSaveWriteAllowed } from "./legacy-cloud-save-policy";
+import { assertCloudSaveDriveLinked } from "./cloud-save-access";
 import { assertCloudSaveV2Eligible } from "./assert-cloud-save-executable";
 import {
   getCloudSaveAutomaticSyncStateForMode,
   getNextCloudSaveAutomaticSyncMode,
-  resolveStoredCloudSaveAutomaticSyncModeForShop,
+  resolveStoredCloudSaveAutomaticSyncMode,
 } from "./automatic-sync-mode";
 
 const getAutomaticSyncKey = (shop: GameShop, objectId: string) =>
@@ -50,8 +49,7 @@ const readCloudSaveAutomaticSyncMode = async (
     gamesSublevel.get(key),
   ]);
   const legacyEnabled = game?.automaticCloudSync === true;
-  const mode = resolveStoredCloudSaveAutomaticSyncModeForShop(
-    shop,
+  const mode = resolveStoredCloudSaveAutomaticSyncMode(
     legacyEnabled,
     storedV2Enabled
   );
@@ -107,7 +105,7 @@ export const setCloudSaveAutomaticSyncEnabled = async (
 ) => {
   if (enabled) {
     await assertCloudSaveV2Eligible(objectId, shop);
-    await assertCloudSaveSubscription();
+    await assertCloudSaveDriveLinked();
   }
 
   const { mode: currentMode } = await readCloudSaveAutomaticSyncMode(
@@ -117,27 +115,6 @@ export const setCloudSaveAutomaticSyncEnabled = async (
   const nextMode = getNextCloudSaveAutomaticSyncMode(
     currentMode,
     "v2",
-    enabled
-  );
-
-  await persistCloudSaveAutomaticSyncMode(objectId, shop, nextMode);
-
-  return enabled;
-};
-
-export const setLegacyCloudSaveAutomaticSyncEnabled = async (
-  objectId: string,
-  shop: GameShop,
-  enabled: boolean
-) => {
-  const { game, mode: currentMode } = await readCloudSaveAutomaticSyncMode(
-    objectId,
-    shop
-  );
-  assertLegacyCloudSaveWriteAllowed(game);
-  const nextMode = getNextCloudSaveAutomaticSyncMode(
-    currentMode,
-    "legacy",
     enabled
   );
 

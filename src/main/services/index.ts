@@ -10,7 +10,6 @@ export * from "./launched-game-pids";
 export * from "./main-loop";
 export * from "./hydra-api";
 export * from "./ludusavi";
-export * from "./cloud-sync";
 export * from "./7zip";
 export * from "./game-files-manager";
 export * from "./game-executables";

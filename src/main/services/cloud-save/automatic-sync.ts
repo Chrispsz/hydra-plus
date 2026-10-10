@@ -8,12 +8,11 @@ import type {
 import { isCloudSaveV2Eligible } from "@shared";
 import { gamesSublevel, levelKeys } from "@main/level";
 
-import { HydraApi } from "../hydra-api";
 import { isGameRunning } from "../game-running-state";
 import { logger } from "../logger";
 import { WindowManager } from "../window-manager";
 import { getCloudSaveAutomaticSyncEnabled } from "./automatic-sync-settings";
-import { canAccessCloudSaves } from "./cloud-save-access";
+import { isGoogleDriveCloudLinked } from "./remote-store/provider-resolver";
 import { syncGameCloudSave } from "./sync-game-cloud-save";
 import { getCloudSaveGameContext } from "./cloud-save-game-context";
 import { getCloudSaveErrorDetails } from "./cloud-save-error-details";
@@ -61,10 +60,7 @@ export const canRunAutomaticCloudSaveSync = async (
   shop: GameShop
 ) => {
   if (
-    !canAccessCloudSaves(
-      HydraApi.isLoggedIn(),
-      HydraApi.hasActiveSubscription()
-    ) ||
+    !(await isGoogleDriveCloudLinked()) ||
     (await isPendingDeletionBlockingAutomaticSync(objectId, shop)) ||
     !(await getCloudSaveAutomaticSyncEnabled(objectId, shop))
   ) {
@@ -75,8 +71,7 @@ export const canRunAutomaticCloudSaveSync = async (
     .get(levelKeys.game(shop, objectId))
     .catch(() => null);
   if (!game || !isCloudSaveV2Eligible(shop, game.platform)) return false;
-  if (shop === "steam") return Boolean(game.executablePath);
-  return true;
+  return Boolean(game.executablePath);
 };
 
 const emitAutomaticSyncEvent = (event: CloudSaveAutomaticSyncEvent) => {
@@ -90,12 +85,7 @@ export const runAutomaticCloudSaveSyncDetailed = async (
   suppliedContext?: Awaited<ReturnType<typeof getCloudSaveGameContext>>,
   expectedRemoteHash?: string | null
 ): Promise<AutomaticCloudSaveSyncOutcome> => {
-  if (
-    !canAccessCloudSaves(
-      HydraApi.isLoggedIn(),
-      HydraApi.hasActiveSubscription()
-    )
-  ) {
+  if (!(await isGoogleDriveCloudLinked())) {
     return { status: "skipped", result: null };
   }
 
@@ -324,12 +314,7 @@ export const runAutomaticCloudSavePostExit = async (
   shop: GameShop
 ): Promise<SyncGameCloudSaveResult | null> => {
   const guard = consumeCloudSaveLaunchGuard(objectId, shop);
-  if (
-    !canAccessCloudSaves(
-      HydraApi.isLoggedIn(),
-      HydraApi.hasActiveSubscription()
-    )
-  ) {
+  if (!(await isGoogleDriveCloudLinked())) {
     return null;
   }
   if (!guard?.uploadAllowed) {

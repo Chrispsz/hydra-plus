@@ -1,6 +1,5 @@
 import type { CloudSaveCustomPathBindings, GameShop } from "@types";
 
-import { HydraApi } from "../hydra-api.js";
 import { assertCloudSaveV2Eligible } from "./assert-cloud-save-executable.js";
 import { buildCloudSaveAggregateHash } from "./snapshot-aggregate-hash.js";
 import { buildLocalGameSnapshotContext } from "./build-local-game-snapshot.js";
@@ -14,11 +13,7 @@ import { cloudSaveCustomPathContextFromPathContext } from "./custom-path.js";
 import { withCloudSaveCustomPathStoreMutation } from "./custom-path-store.js";
 import { executeCloudSaveCustomPathUntracking } from "./custom-path-untracking-policy.js";
 import { getCloudSaveGameContext } from "./cloud-save-game-context.js";
-import { buildDeleteGameCloudSaveSnapshotsUrl } from "./delete-game-cloud-save-data-policy.js";
-import {
-  getCloudSaveRemoteStore,
-  isGoogleDriveCloudActive,
-} from "./remote-store/index.js";
+import { getCloudSaveRemoteStore } from "./remote-store/index.js";
 import { listRemoteGameSnapshots } from "./list-remote-game-snapshots.js";
 import {
   cloudSaveOperationGate,
@@ -48,18 +43,8 @@ const publishCustomPathRemoval = async (
       proposal,
       deleteSnapshot: async () => {
         // Hydra Plus: same removal semantics as deleting all cloud data.
-        if (await isGoogleDriveCloudActive()) {
-          const store = await getCloudSaveRemoteStore();
-          await store.deleteGameCloudData({ objectId, shop });
-          return;
-        }
-        await HydraApi.delete<void>(
-          buildDeleteGameCloudSaveSnapshotsUrl(objectId, shop),
-          {
-            needsAuth: true,
-            needsSubscription: true,
-          }
-        );
+        const store = await getCloudSaveRemoteStore();
+        await store.deleteGameCloudData({ objectId, shop });
       },
       updateSnapshot: async () => {
         const aggregateHash = buildCloudSaveAggregateHash({

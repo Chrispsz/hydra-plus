@@ -17,8 +17,6 @@ import type {
   GameStats,
   UserDetails,
   NotificationSync,
-  GameArtifact,
-  LudusaviBackup,
   LibraryGame,
   GameRunning,
   TorBoxUser,
@@ -54,15 +52,12 @@ import type {
   SelectCloudSaveCustomPathApprovalResult,
   ConfirmCloudSaveCustomPathApprovalResult,
   ConfirmCloudSaveCustomPathRebindApprovalResult,
-  LegacySaveExportProgress,
-  LegacySaveExportResult,
   SteamSyncState,
   SteamSyncFinishedPayload,
   SteamSyncRunStatus,
   SteamConnectErrorCode,
   ExtractionFailure,
 } from "@types";
-import type { AxiosProgressEvent } from "axios";
 
 export interface DriveInfo {
   root: string;
@@ -556,51 +551,7 @@ declare global {
     checkFolderWritePermission: (path: string) => Promise<boolean>;
     getNetworkInterfaces: () => Promise<NetworkInterface[]>;
 
-    /* Cloud save */
-    uploadSaveGame: (
-      objectId: string,
-      shop: GameShop,
-      downloadOptionTitle: string | null
-    ) => Promise<void>;
-    downloadGameArtifact: (
-      objectId: string,
-      shop: GameShop,
-      gameArtifactId: string
-    ) => Promise<void>;
-    exportGameArtifact: (
-      gameArtifactId: string,
-      suggestedName: string,
-      onProgress?: (progress: LegacySaveExportProgress) => void
-    ) => Promise<LegacySaveExportResult>;
-    cancelGameArtifactExport: () => Promise<boolean>;
-    getGameArtifacts: (
-      objectId: string,
-      shop: GameShop
-    ) => Promise<GameArtifact[]>;
-    getGameBackupPreview: (
-      objectId: string,
-      shop: GameShop
-    ) => Promise<LudusaviBackup | null>;
-    selectGameBackupPath: (
-      shop: GameShop,
-      objectId: string,
-      backupPath: string | null
-    ) => Promise<void>;
-    onBackupDownloadComplete: (
-      objectId: string,
-      shop: GameShop,
-      cb: (success: boolean) => void
-    ) => () => Electron.IpcRenderer;
-    onUploadComplete: (
-      objectId: string,
-      shop: GameShop,
-      cb: () => void
-    ) => () => Electron.IpcRenderer;
-    onBackupDownloadProgress: (
-      objectId: string,
-      shop: GameShop,
-      cb: (progress: AxiosProgressEvent) => void
-    ) => () => Electron.IpcRenderer;
+    /* Cloud save (Hydra Plus: Google Drive only) */
 
     /* Clipboard */
     clipboard: {

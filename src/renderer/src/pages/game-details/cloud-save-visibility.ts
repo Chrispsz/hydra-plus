@@ -1,13 +1,10 @@
 import type { GameShop } from "@types";
 import { isCloudSaveV2Eligible } from "../../../../shared/cloud-save-v2-eligibility.js";
 
-export type CloudSaveUiMode = "legacy" | "v2";
-export type LegacyCloudSavePurpose = "active" | "archive";
+export type CloudSaveUiMode = "v2";
 
 export interface CloudSaveSettingsVisibility {
   showV2: boolean;
-  showLegacy: boolean;
-  legacyPurpose: LegacyCloudSavePurpose;
 }
 
 export interface CloudSaveVisibility {
@@ -15,15 +12,10 @@ export interface CloudSaveVisibility {
   settings: CloudSaveSettingsVisibility;
 }
 
-export const isLegacyCloudSaveSettingsAvailable = (
-  settings: CloudSaveSettingsVisibility,
-  hasActiveSubscription: boolean,
-  artifactCount: number
-): boolean =>
-  settings.showLegacy &&
-  (settings.legacyPurpose === "active" ||
-    (hasActiveSubscription && artifactCount > 0));
-
+/**
+ * Hydra Plus is Drive-only: the v2 engine is the only cloud save UI.
+ * Steam and custom (manually imported) games are both eligible.
+ */
 export const getCloudSaveVisibility = (
   shop: GameShop,
   platform?: string | null
@@ -33,8 +25,6 @@ export const getCloudSaveVisibility = (
       hero: "v2",
       settings: {
         showV2: true,
-        showLegacy: true,
-        legacyPurpose: "archive",
       },
     };
   }
@@ -43,8 +33,6 @@ export const getCloudSaveVisibility = (
     hero: null,
     settings: {
       showV2: false,
-      showLegacy: true,
-      legacyPurpose: "active",
     },
   };
 };

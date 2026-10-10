@@ -24,7 +24,7 @@ import { getCloudSaveVisibility } from "./cloud-save-visibility";
 import { SimilarGames } from "./similar-games/similar-games";
 
 import { getDisplayedPlayTimeInMilliseconds } from "@shared";
-import { cloudSyncContext, gameDetailsContext } from "@renderer/context";
+import { gameDetailsContext } from "@renderer/context";
 
 import { useUserDetails, useLibrary } from "@renderer/hooks";
 import "./game-details.scss";
@@ -82,7 +82,6 @@ export function GameDetailsContent() {
   const { userDetails } = useUserDetails();
   const { library } = useLibrary();
 
-  const { getGameArtifacts } = useContext(cloudSyncContext);
   const cloudSaveVisibility = game
     ? getCloudSaveVisibility(game.shop, game.platform)
     : null;
@@ -187,10 +186,6 @@ export function GameDetailsContent() {
     setGameOptionsInitialCategory("assets");
     setShowGameOptionsModal(true);
   };
-
-  useEffect(() => {
-    getGameArtifacts();
-  }, [getGameArtifacts]);
 
   // Scroll to reviews section if reviews=true in URL
   useEffect(() => {

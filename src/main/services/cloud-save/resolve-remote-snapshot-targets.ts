@@ -1,4 +1,3 @@
-import { HydraApi } from "@main/services/hydra-api";
 import { logger } from "@main/services/logger";
 import { SystemPath } from "@main/services/system-path";
 import { Wine } from "@main/services/wine";
@@ -12,10 +11,7 @@ import type {
   ResolveRestoreTargetsResult,
 } from "@types";
 
-import {
-  getCloudSaveRemoteStore,
-  isGoogleDriveCloudActive,
-} from "./remote-store";
+import { getCloudSaveRemoteStore } from "./remote-store";
 
 import { NativeAddon } from "../native-addon";
 import { validateRestoreManifest } from "./cloud-save-contract";
@@ -23,7 +19,6 @@ import { getCloudSaveGameContext } from "./cloud-save-game-context";
 import { cloudSaveCustomPathContextFromPathContext } from "./custom-path";
 import { customPathToCloudSaveRule } from "./custom-path-store";
 import { getUsableCloudSaveCustomPathBindings } from "./custom-path-overlap";
-import { buildCloudSaveAggregateHash } from "./snapshot-aggregate-hash";
 import { blockAmbiguousRestoreTargets } from "./restore-target-collision";
 
 const isWinePrefixValid = (winePrefixPath?: string) => {
@@ -41,43 +36,16 @@ export const getRemoteSnapshotRestoreManifest = async (
 ): Promise<RestoreManifestResponse> => {
   // Hydra Plus: Google Drive stores the manifest as a file inside the
   // user's Drive; the store reads it straight from there.
-  if (await isGoogleDriveCloudActive()) {
-    if (!gameId) {
-      throw new Error("cloud_save_game_id_required_for_restore");
-    }
-    const store = await getCloudSaveRemoteStore();
-    const manifest = validateRestoreManifest(
-      await store.getRestoreManifest(gameId)
-    );
-    if (
-      manifest.snapshot.id !== snapshot.id ||
-      manifest.snapshot.version !== snapshot.version
-    ) {
-      throw new Error("Restore manifest does not match its snapshot summary");
-    }
-    return manifest;
+  if (!gameId) {
+    throw new Error("cloud_save_game_id_required_for_restore");
   }
-
+  const store = await getCloudSaveRemoteStore();
   const manifest = validateRestoreManifest(
-    await HydraApi.get<unknown>(
-      "/profile/cloud-saves/snapshot-restore-manifest",
-      { snapshotId: snapshot.id },
-      { needsAuth: true, needsSubscription: true }
-    )
-  );
-  const totalSizeBytes = manifest.files.reduce(
-    (total, file) => total + file.sizeBytes,
-    0
+    await store.getRestoreManifest(gameId)
   );
   if (
     manifest.snapshot.id !== snapshot.id ||
-    manifest.snapshot.version !== snapshot.version ||
-    manifest.files.length !== snapshot.fileCount ||
-    totalSizeBytes !== snapshot.totalSizeBytes ||
-    buildCloudSaveAggregateHash({
-      variants: manifest.variants,
-      files: manifest.files,
-    }) !== snapshot.aggregateHash
+    manifest.snapshot.version !== snapshot.version
   ) {
     throw new Error("Restore manifest does not match its snapshot summary");
   }

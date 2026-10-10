@@ -1,5 +1,5 @@
 import {
-  assertCloudSaveSubscription,
+  assertCloudSaveDriveLinked,
   dismissPendingCloudSaveCustomPathApproval,
 } from "@main/services/cloud-save";
 
@@ -11,7 +11,7 @@ registerEvent(
     _event: Electron.IpcMainInvokeEvent,
     approvalId: string
   ): Promise<void> => {
-    await assertCloudSaveSubscription();
+    await assertCloudSaveDriveLinked();
     dismissPendingCloudSaveCustomPathApproval(approvalId);
   }
 );

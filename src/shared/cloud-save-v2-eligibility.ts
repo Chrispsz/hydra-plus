@@ -2,13 +2,16 @@ import type { GameShop } from "@types";
 
 /**
  * Cloud Save v2 (content-addressed snapshots, three-way merge) eligibility.
- * v2 covers Steam games; "custom" games keep using the legacy Hydra Cloud
- * artifact flow, and "launchbox" (retro emulation) was removed from the fork.
+ * Hydra Plus is Drive-only, so the Drive engine covers every shop: Steam
+ * games and "custom" manually imported games alike. "launchbox" (retro
+ * emulation) was removed from the fork.
  */
+const CLOUD_SAVE_V2_SHOPS: GameShop[] = ["steam", "custom"];
+
 export const isCloudSaveV2Eligible = (
   shop: GameShop,
   _platform?: string | null
-) => shop === "steam";
+) => CLOUD_SAVE_V2_SHOPS.includes(shop);
 
 export const hasCloudSaveExecutableSelection = (game: {
   shop: GameShop;

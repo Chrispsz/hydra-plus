@@ -1,5 +1,4 @@
 import type { GameShop } from "./game.types";
-import type { CloudStorageProvider } from "./level.types";
 
 export interface CloudSaveGameId {
   shop: GameShop;
@@ -356,7 +355,7 @@ export interface CloudSaveOverview extends CloudSaveStateResult {
   warnings: UserLocationCoverage[];
 }
 
-export type CloudSaveAutomaticSyncMode = "disabled" | "legacy" | "v2";
+export type CloudSaveAutomaticSyncMode = "disabled" | "v2";
 
 export interface CloudSaveAutomaticSyncModeChangedEvent {
   gameId: CloudSaveGameId;
@@ -815,9 +814,9 @@ export interface CloudSaveMergeResult {
  * Hydra Plus: Google Drive cloud provider status for the UI.
  */
 export interface GoogleDriveCloudStatus {
-  /** Which remote backend the cloud-save engine will use right now. */
-  provider: CloudStorageProvider;
-  /** True when the user selected Google Drive in Settings → Cloud. */
+  /** Which remote backend the cloud-save engine will use (Drive only). */
+  provider: "google-drive";
+  /** True when a Drive account is linked (kept for UI compat). */
   providerSelected: boolean;
   /** True when a Drive account is linked (refresh token present). */
   linked: boolean;

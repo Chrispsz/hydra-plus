@@ -1,14 +1,11 @@
 import { useCallback, useEffect, useState } from "react";
 import type { GoogleDriveCloudStatus } from "@types";
-import { useAppSelector } from "./redux";
 
 export interface GoogleDriveCloud {
-  /** Global provider preference ("hydra" | "google-drive"). */
-  provider: "hydra" | "google-drive";
   status: GoogleDriveCloudStatus | null;
-  /** True when the user picked Google Drive AND the account is linked. */
+  /** True when the Drive account is linked (cloud saves usable). */
   isDriveCloudActive: boolean;
-  /** True when the user picked Google Drive but has not linked it yet. */
+  /** True when Drive is not linked yet. */
   isDrivePendingLink: boolean;
   /** True when no OAuth client id is configured (user setup required). */
   requiresClientSetup: boolean;
@@ -18,16 +15,11 @@ export interface GoogleDriveCloud {
 }
 
 /**
- * Tracks the Google Drive cloud provider state: the global preference
- * (Settings → Cloud), the link status (OAuth refresh token) and the
- * OAuth client configuration. Cloud Saves are free whenever
- * `isDriveCloudActive` is true — no Hydra Cloud subscription involved.
+ * Tracks the Google Drive state (OAuth link status + client configuration).
+ * Hydra Plus is Drive-only: cloud saves are usable whenever
+ * `isDriveCloudActive` is true — no provider choice, no subscription.
  */
 export function useGoogleDriveCloud(): GoogleDriveCloud {
-  const provider =
-    useAppSelector((state) => state.userPreferences.value?.cloudProvider) ??
-    "hydra";
-
   const [status, setStatus] = useState<GoogleDriveCloudStatus | null>(null);
 
   const refresh = useCallback(async () => {
@@ -46,7 +38,7 @@ export function useGoogleDriveCloud(): GoogleDriveCloud {
       void refresh();
     });
     return unsubscribe;
-  }, [refresh, provider]);
+  }, [refresh]);
 
   const connect = useCallback(async () => {
     await window.electron.startGoogleAuth();
@@ -58,11 +50,10 @@ export function useGoogleDriveCloud(): GoogleDriveCloud {
     await refresh();
   }, [refresh]);
 
-  const isDriveCloudActive = provider === "google-drive" && !!status?.linked;
-  const isDrivePendingLink = provider === "google-drive" && !status?.linked;
+  const isDriveCloudActive = !!status?.linked;
+  const isDrivePendingLink = !status?.linked;
 
   return {
-    provider,
     status,
     isDriveCloudActive,
     isDrivePendingLink,

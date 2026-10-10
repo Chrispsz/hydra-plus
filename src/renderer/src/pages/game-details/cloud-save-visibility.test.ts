@@ -4,32 +4,25 @@ import { describe, it } from "node:test";
 // @ts-ignore The Node ESM test runner requires the source extension.
 import * as visibilityModule from "./cloud-save-visibility.ts";
 
-const { getCloudSaveVisibility, isLegacyCloudSaveSettingsAvailable } =
-  visibilityModule;
+const { getCloudSaveVisibility } = visibilityModule;
 
 describe("cloud save visibility", () => {
-  it("uses V2 for Steam and keeps legacy saves as an archive", () => {
+  it("uses V2 for Steam games", () => {
     assert.deepEqual(getCloudSaveVisibility("steam"), {
       hero: "v2",
       settings: {
         showV2: true,
-        showLegacy: true,
-        legacyPurpose: "archive",
       },
     });
   });
 
-  it("keeps only legacy cloud saves for non-Steam games", () => {
-    for (const shop of ["custom"] as const) {
-      assert.deepEqual(getCloudSaveVisibility(shop), {
-        hero: null,
-        settings: {
-          showV2: false,
-          showLegacy: true,
-          legacyPurpose: "active",
-        },
-      });
-    }
+  it("uses V2 for custom (manually imported) games too", () => {
+    assert.deepEqual(getCloudSaveVisibility("custom"), {
+      hero: "v2",
+      settings: {
+        showV2: true,
+      },
+    });
   });
 
   it("ignores the platform when deciding visibility", () => {
@@ -38,29 +31,14 @@ describe("cloud save visibility", () => {
       "Nintendo Game Boy Advance",
       "Unknown Console",
     ]) {
-      assert.deepEqual(getCloudSaveVisibility("steam", platform), {
-        hero: "v2",
-        settings: {
-          showV2: true,
-          showLegacy: true,
-          legacyPurpose: "archive",
-        },
-      });
-      assert.deepEqual(getCloudSaveVisibility("custom", platform).hero, null);
+      assert.equal(getCloudSaveVisibility("steam", platform).hero, "v2");
+      assert.equal(getCloudSaveVisibility("custom", platform).hero, "v2");
     }
   });
 
-  it("shows active legacy settings without requiring existing artifacts", () => {
-    const settings = getCloudSaveVisibility("custom").settings;
-
-    assert.equal(isLegacyCloudSaveSettingsAvailable(settings, false, 0), true);
-  });
-
-  it("shows archived legacy saves only to subscribers with artifacts", () => {
-    const settings = getCloudSaveVisibility("steam").settings;
-
-    assert.equal(isLegacyCloudSaveSettingsAvailable(settings, false, 1), false);
-    assert.equal(isLegacyCloudSaveSettingsAvailable(settings, true, 0), false);
-    assert.equal(isLegacyCloudSaveSettingsAvailable(settings, true, 2), true);
+  it("hides cloud save for launchbox games", () => {
+    const visibility = getCloudSaveVisibility("launchbox");
+    assert.equal(visibility.hero, null);
+    assert.equal(visibility.settings.showV2, false);
   });
 });

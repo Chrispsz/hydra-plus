@@ -10,20 +10,18 @@ import type {
   SnapshotFile,
   SnapshotVariant,
 } from "@types";
-import type { CloudStorageProvider } from "@types";
 
 /**
- * A remote storage provider for the cloud-save v2 engine.
+ * The remote storage backend for the cloud-save v2 engine.
  *
  * The whole sync engine (analysis, three-way merge, sync anchors, restore
  * planning, deletion state machine) operates purely on the manifest/hash
  * model and never talks to the network directly. Everything that touches a
- * remote backend goes through this interface, so the engine is indifferent
- * to whether snapshots live on the Hydra API (subscription) or on the
- * user's own Google Drive (personal, free).
+ * remote backend goes through this interface. Hydra Plus is Drive-only:
+ * the only implementation stores snapshots in the user's own Google Drive.
  */
 export interface CloudSaveRemoteStore {
-  readonly provider: CloudStorageProvider;
+  readonly provider: "google-drive";
 
   /** Returns the single active snapshot for a game, or null. */
   listSnapshot(gameId: CloudSaveGameId): Promise<RemoteSnapshotSummary | null>;

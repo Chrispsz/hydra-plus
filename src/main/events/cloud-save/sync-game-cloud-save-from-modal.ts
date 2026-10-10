@@ -1,6 +1,6 @@
 import { assertCloudSaveRuntimeAvailable } from "@main/services/cloud-save/assert-cloud-save-executable";
 import {
-  assertCloudSaveSubscription,
+  assertCloudSaveDriveLinked,
   confirmPendingManualCloudSaveCustomPathApproval,
   createPendingManualCloudSaveCustomPathApproval,
   dismissPendingCloudSaveCustomPathApproval,
@@ -49,7 +49,7 @@ registerEvent(
     }
     if (approvalId) assertApprovalCanContinue();
 
-    await assertCloudSaveSubscription();
+    await assertCloudSaveDriveLinked();
     await assertCloudSaveRuntimeAvailable(objectId, shop);
 
     const onProgress = (progress: CloudSaveSyncProgressPayload) => {

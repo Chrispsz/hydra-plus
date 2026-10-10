@@ -4,7 +4,6 @@ import { createGame, trackGamePlaytime } from "./library-sync";
 import type { Game, UserPreferences } from "@types";
 import axios from "axios";
 import { db, gamesSublevel, levelKeys } from "@main/level";
-import { CloudSync } from "./cloud-sync";
 import { logger, networkLogger } from "./logger";
 import { PowerSaveBlockerManager } from "./power-save-blocker";
 import path from "node:path";
@@ -37,7 +36,6 @@ import {
 import {
   getCloudSaveAutomaticSyncMode,
   runAutomaticCloudSavePostExit,
-  shouldRunLegacyAutomaticCloudSave,
   shouldRunV2AutomaticCloudSave,
 } from "./cloud-save";
 import {
@@ -54,33 +52,8 @@ import { GameExecutables } from "./game-executables";
 export { gamesPlaytime };
 export { isGameRunning } from "./game-running-state";
 
-const runAutomaticCloudSaveOnOpen = async (game: Game) => {
-  const mode = await getCloudSaveAutomaticSyncMode(game.objectId, game.shop);
-
-  if (shouldRunLegacyAutomaticCloudSave(mode)) {
-    await CloudSync.uploadSaveGame(
-      game.objectId,
-      game.shop,
-      null,
-      CloudSync.getBackupLabel(true)
-    );
-  }
-};
-
 const runAutomaticCloudSaveOnClose = async (game: Game) => {
   const mode = await getCloudSaveAutomaticSyncMode(game.objectId, game.shop);
-
-  if (shouldRunLegacyAutomaticCloudSave(mode)) {
-    if (game.remoteId) {
-      await CloudSync.uploadSaveGame(
-        game.objectId,
-        game.shop,
-        null,
-        CloudSync.getBackupLabel(true)
-      );
-    }
-    return;
-  }
 
   if (shouldRunV2AutomaticCloudSave(mode)) {
     await runAutomaticCloudSavePostExit(game.objectId, game.shop);
@@ -445,10 +418,6 @@ async function onOpenGame(game: Game, matchedPath: string) {
           error: error instanceof Error ? error.message : String(error),
         });
       });
-
-    void runAutomaticCloudSaveOnOpen(game).catch((error: unknown) => {
-      handleAutomaticCloudSaveLifecycleError("open", game, error);
-    });
   } else {
     const payload = { ...game, lastTimePlayed: new Date() };
 

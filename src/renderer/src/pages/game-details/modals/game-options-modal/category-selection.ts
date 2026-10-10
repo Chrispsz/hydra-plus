@@ -5,7 +5,6 @@ import type { GameSettingsCategoryId } from "./types";
 export interface GameSettingsCategoryAvailability {
   cloudSaveAccessAction: CloudSaveAccessAction;
   showCloudSaveV2Settings: boolean;
-  showLegacyCloudSaveSettings: boolean;
   showDownloadSettings: boolean;
 }
 
@@ -29,15 +28,7 @@ export const getAvailableGameSettingsCategory = (
   if (
     category === "hydra_cloud" &&
     (!availability.showCloudSaveV2Settings ||
-      availability.cloudSaveAccessAction !== "open")
-  ) {
-    return "general";
-  }
-
-  if (
-    category === "hydra_cloud_legacy" &&
-    (!availability.showLegacyCloudSaveSettings ||
-      availability.cloudSaveAccessAction !== "open")
+      availability.cloudSaveAccessAction === "sign-in")
   ) {
     return "general";
   }

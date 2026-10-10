@@ -1,7 +1,7 @@
 import { BrowserWindow, dialog } from "electron";
 
 import {
-  assertCloudSaveSubscription,
+  assertCloudSaveDriveLinked,
   getPendingCloudSaveCustomPathApprovalById,
   selectPendingCloudSaveCustomPathApproval,
 } from "@main/services/cloud-save";
@@ -18,7 +18,7 @@ registerEvent(
     selectedPath?: string,
     selectionMode: "file" | "dir" = "dir"
   ): Promise<SelectCloudSaveCustomPathApprovalResult> => {
-    await assertCloudSaveSubscription();
+    await assertCloudSaveDriveLinked();
     const approval = getPendingCloudSaveCustomPathApprovalById(approvalId);
     if (
       !["file", "dir"].includes(selectionMode) ||

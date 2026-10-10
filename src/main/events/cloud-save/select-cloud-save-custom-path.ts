@@ -1,7 +1,7 @@
 import { BrowserWindow, dialog } from "electron";
 
 import {
-  assertCloudSaveSubscription,
+  assertCloudSaveDriveLinked,
   assertCloudSaveCustomPathDoesNotOverlap,
   assertCloudSaveCustomPathHasEligibleFiles,
   assertCloudSaveDeletionInactive,
@@ -26,7 +26,7 @@ registerEvent(
     shop: GameShop,
     kind: "file" | "dir" = "dir"
   ): Promise<SelectCloudSaveCustomPathResult> => {
-    await assertCloudSaveSubscription();
+    await assertCloudSaveDriveLinked();
     if (kind !== "file" && kind !== "dir") {
       throw new Error("cloud_save_custom_path_invalid_kind");
     }

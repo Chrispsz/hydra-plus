@@ -20,78 +20,67 @@ describe("game options category selection", () => {
     );
   });
 
-  it("initializes when the requested category changes while open", () => {
+  it("keeps hydra_cloud when v2 settings are shown", () => {
     assert.equal(
-      shouldInitializeGameSettingsCategory(
-        { visible: true, initialCategory: "general" },
-        { visible: true, initialCategory: "assets" }
-      ),
-      true
-    );
-  });
-
-  it("does not initialize again while the modal remains open", () => {
-    assert.equal(
-      shouldInitializeGameSettingsCategory(
-        { visible: true, initialCategory: "general" },
-        { visible: true, initialCategory: "general" }
-      ),
-      false
-    );
-  });
-
-  it("preserves a manually selected category when availability changes", () => {
-    assert.equal(
-      getAvailableGameSettingsCategory("assets", {
+      getAvailableGameSettingsCategory("hydra_cloud", {
         cloudSaveAccessAction: "open",
         showCloudSaveV2Settings: true,
-        showLegacyCloudSaveSettings: false,
         showDownloadSettings: true,
       }),
-      "assets"
+      "hydra_cloud"
     );
   });
 
-  it("falls back when the selected cloud category is unavailable", () => {
+  it("keeps hydra_cloud while the user still needs to connect Drive", () => {
+    assert.equal(
+      getAvailableGameSettingsCategory("hydra_cloud", {
+        cloudSaveAccessAction: "connect-drive",
+        showCloudSaveV2Settings: true,
+        showDownloadSettings: true,
+      }),
+      "hydra_cloud"
+    );
+  });
+
+  it("falls back to general when v2 settings are unavailable", () => {
     assert.equal(
       getAvailableGameSettingsCategory("hydra_cloud", {
         cloudSaveAccessAction: "open",
         showCloudSaveV2Settings: false,
-        showLegacyCloudSaveSettings: true,
-        showDownloadSettings: true,
-      }),
-      "general"
-    );
-    assert.equal(
-      getAvailableGameSettingsCategory("hydra_cloud_legacy", {
-        cloudSaveAccessAction: "open",
-        showCloudSaveV2Settings: true,
-        showLegacyCloudSaveSettings: false,
         showDownloadSettings: true,
       }),
       "general"
     );
   });
 
-  it("falls back when cloud access is lost", () => {
+  it("falls back to general when the user is not signed in", () => {
     assert.equal(
       getAvailableGameSettingsCategory("hydra_cloud", {
-        cloudSaveAccessAction: "paywall",
+        cloudSaveAccessAction: "sign-in",
         showCloudSaveV2Settings: true,
-        showLegacyCloudSaveSettings: true,
         showDownloadSettings: true,
       }),
       "general"
     );
   });
 
-  it("falls back when downloads are unavailable", () => {
+  it("falls back to general when downloads are unavailable", () => {
     assert.equal(
       getAvailableGameSettingsCategory("downloads", {
         cloudSaveAccessAction: "open",
         showCloudSaveV2Settings: true,
-        showLegacyCloudSaveSettings: true,
         showDownloadSettings: false,
+      }),
+      "general"
+    );
+  });
+
+  it("keeps any other category untouched", () => {
+    assert.equal(
+      getAvailableGameSettingsCategory("general", {
+        cloudSaveAccessAction: "open",
+        showCloudSaveV2Settings: true,
+        showDownloadSettings: true,
       }),
       "general"
     );

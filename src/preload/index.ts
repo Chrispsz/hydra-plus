@@ -38,9 +38,6 @@ import type {
   SelectCloudSaveCustomPathApprovalResult,
   ConfirmCloudSaveCustomPathApprovalResult,
   ConfirmCloudSaveCustomPathRebindApprovalResult,
-  LegacySaveExportIpcProgress,
-  LegacySaveExportProgress,
-  LegacySaveExportResult,
   OpenCheckoutOptions,
   SteamSyncState,
   SteamSyncFinishedPayload,
@@ -49,7 +46,6 @@ import type {
   ExtractionFailure,
 } from "@types";
 import type { AuthPage } from "@shared";
-import type { AxiosProgressEvent } from "axios";
 
 const fileExplorerApi = {
   readDirectory: (path: string) => ipcRenderer.invoke("readDirectory", path),
@@ -78,32 +74,6 @@ const invokeCloudSaveOperation = async <TResult = SyncGameCloudSaveResult>(
     return (await ipcRenderer.invoke(channel, operationId, ...args)) as TResult;
   } finally {
     ipcRenderer.removeListener("on-cloud-save-sync-progress", listener);
-  }
-};
-
-const invokeGameArtifactExport = async (
-  gameArtifactId: string,
-  suggestedName: string,
-  onProgress?: (progress: LegacySaveExportProgress) => void
-): Promise<LegacySaveExportResult> => {
-  const operationId = randomUUID();
-  const listener = (
-    _event: Electron.IpcRendererEvent,
-    progress: LegacySaveExportIpcProgress
-  ) => {
-    if (progress.operationId === operationId) onProgress?.(progress);
-  };
-
-  ipcRenderer.on("on-game-artifact-export-progress", listener);
-  try {
-    return await ipcRenderer.invoke(
-      "exportGameArtifact",
-      operationId,
-      gameArtifactId,
-      suggestedName
-    );
-  } finally {
-    ipcRenderer.removeListener("on-game-artifact-export-progress", listener);
   }
 };
 
@@ -801,75 +771,7 @@ contextBridge.exposeInMainWorld("electron", {
     ipcRenderer.invoke("checkFolderWritePermission", path),
   getNetworkInterfaces: () => ipcRenderer.invoke("getNetworkInterfaces"),
 
-  /* Cloud save */
-  uploadSaveGame: (
-    objectId: string,
-    shop: GameShop,
-    downloadOptionTitle: string | null
-  ) =>
-    ipcRenderer.invoke("uploadSaveGame", objectId, shop, downloadOptionTitle),
-  downloadGameArtifact: (
-    objectId: string,
-    shop: GameShop,
-    gameArtifactId: string
-  ) =>
-    ipcRenderer.invoke("downloadGameArtifact", objectId, shop, gameArtifactId),
-  exportGameArtifact: (
-    gameArtifactId: string,
-    suggestedName: string,
-    onProgress?: (progress: LegacySaveExportProgress) => void
-  ): Promise<LegacySaveExportResult> =>
-    invokeGameArtifactExport(gameArtifactId, suggestedName, onProgress),
-  cancelGameArtifactExport: (): Promise<boolean> =>
-    ipcRenderer.invoke("cancelGameArtifactExport"),
-  getGameArtifacts: (objectId: string, shop: GameShop) =>
-    ipcRenderer.invoke("getGameArtifacts", objectId, shop),
-  getGameBackupPreview: (objectId: string, shop: GameShop) =>
-    ipcRenderer.invoke("getGameBackupPreview", objectId, shop),
-  selectGameBackupPath: (
-    shop: GameShop,
-    objectId: string,
-    backupPath: string | null
-  ) => ipcRenderer.invoke("selectGameBackupPath", shop, objectId, backupPath),
-  onUploadComplete: (objectId: string, shop: GameShop, cb: () => void) => {
-    const listener = (_event: Electron.IpcRendererEvent) => cb();
-    ipcRenderer.on(`on-upload-complete-${objectId}-${shop}`, listener);
-    return () =>
-      ipcRenderer.removeListener(
-        `on-upload-complete-${objectId}-${shop}`,
-        listener
-      );
-  },
-  onBackupDownloadProgress: (
-    objectId: string,
-    shop: GameShop,
-    cb: (progress: AxiosProgressEvent) => void
-  ) => {
-    const listener = (
-      _event: Electron.IpcRendererEvent,
-      progress: AxiosProgressEvent
-    ) => cb(progress);
-    ipcRenderer.on(`on-backup-download-progress-${objectId}-${shop}`, listener);
-    return () =>
-      ipcRenderer.removeListener(
-        `on-backup-download-progress-${objectId}-${shop}`,
-        listener
-      );
-  },
-  onBackupDownloadComplete: (
-    objectId: string,
-    shop: GameShop,
-    cb: (success: boolean) => void
-  ) => {
-    const listener = (_event: Electron.IpcRendererEvent, success: boolean) =>
-      cb(success);
-    ipcRenderer.on(`on-backup-download-complete-${objectId}-${shop}`, listener);
-    return () =>
-      ipcRenderer.removeListener(
-        `on-backup-download-complete-${objectId}-${shop}`,
-        listener
-      );
-  },
+  /* Cloud save (Hydra Plus: Google Drive only) */
 
   /* Clipboard (renderer-side `navigator.clipboard.*` is deprecated in Electron 40+;
      direct `electron.clipboard` access from preload is also deprecated, so go through main via IPC) */

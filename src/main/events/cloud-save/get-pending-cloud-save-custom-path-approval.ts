@@ -1,5 +1,5 @@
 import {
-  assertCloudSaveSubscription,
+  assertCloudSaveDriveLinked,
   getPendingCloudSaveCustomPathApproval,
 } from "@main/services/cloud-save";
 import type { CloudSaveCustomPathApproval, GameShop } from "@types";
@@ -13,7 +13,7 @@ registerEvent(
     objectId: string,
     shop: GameShop
   ): Promise<CloudSaveCustomPathApproval | null> => {
-    await assertCloudSaveSubscription();
+    await assertCloudSaveDriveLinked();
     return getPendingCloudSaveCustomPathApproval(shop, objectId);
   }
 );

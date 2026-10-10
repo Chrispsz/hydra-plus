@@ -1,51 +1,26 @@
-import type { CloudSaveAutomaticSyncMode, GameShop } from "@types";
+import type { CloudSaveAutomaticSyncMode } from "@types";
 
 export type { CloudSaveAutomaticSyncMode } from "@types";
 
-export interface CloudSaveAutomaticSyncState {
-  legacyEnabled: boolean;
-  v2Enabled: boolean;
-}
-
-export const resolveCloudSaveAutomaticSyncMode = ({
-  legacyEnabled,
-  v2Enabled,
-}: CloudSaveAutomaticSyncState): CloudSaveAutomaticSyncMode => {
-  if (v2Enabled) return "v2";
-  if (legacyEnabled) return "legacy";
-  return "disabled";
-};
+/**
+ * Hydra Plus is Drive-only: there is no "legacy" Hydra artifact sync
+ * anymore. The stored per-game flag `automaticCloudSync` (the old legacy
+ * opt-in) is migrated on read — a game that only had the legacy flag
+ * enabled becomes a v2 game, so nobody silently loses automatic sync.
+ */
+export const resolveCloudSaveAutomaticSyncMode = (
+  v2Enabled: boolean
+): CloudSaveAutomaticSyncMode => (v2Enabled ? "v2" : "disabled");
 
 export const resolveStoredCloudSaveAutomaticSyncMode = (
   legacyEnabled: boolean,
   storedV2Enabled: boolean | undefined
-) =>
-  resolveCloudSaveAutomaticSyncMode({
-    legacyEnabled,
-    v2Enabled: storedV2Enabled ?? true,
-  });
-
-export const resolveStoredCloudSaveAutomaticSyncModeForShop = (
-  shop: GameShop,
-  legacyEnabled: boolean,
-  storedV2Enabled: boolean | undefined
-) => {
-  if (shop === "steam") {
-    return resolveStoredCloudSaveAutomaticSyncMode(
-      legacyEnabled,
-      storedV2Enabled
-    );
-  }
-  return resolveCloudSaveAutomaticSyncMode({
-    legacyEnabled,
-    v2Enabled: false,
-  });
-};
+) => resolveCloudSaveAutomaticSyncMode(storedV2Enabled ?? legacyEnabled);
 
 export const getCloudSaveAutomaticSyncStateForMode = (
   mode: CloudSaveAutomaticSyncMode
-): CloudSaveAutomaticSyncState => ({
-  legacyEnabled: mode === "legacy",
+): { legacyEnabled: boolean; v2Enabled: boolean } => ({
+  legacyEnabled: false,
   v2Enabled: mode === "v2",
 });
 
@@ -57,10 +32,6 @@ export const getNextCloudSaveAutomaticSyncMode = (
   if (enabled) return targetMode;
   return currentMode === targetMode ? "disabled" : currentMode;
 };
-
-export const shouldRunLegacyAutomaticCloudSave = (
-  mode: CloudSaveAutomaticSyncMode
-) => mode === "legacy";
 
 export const shouldRunV2AutomaticCloudSave = (
   mode: CloudSaveAutomaticSyncMode

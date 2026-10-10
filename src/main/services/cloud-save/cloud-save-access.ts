@@ -1,42 +1,15 @@
-import {
-  getCloudSaveAccessAction,
-  SubscriptionRequiredError,
-  UserNotLoggedInError,
-} from "@shared";
-
-import { HydraApi } from "../hydra-api";
-import { isGoogleDriveCloudActive } from "./remote-store/provider-resolver";
-
-export const canAccessCloudSaves = (
-  isLoggedIn: boolean,
-  hasActiveSubscription: boolean
-) => getCloudSaveAccessAction(isLoggedIn, hasActiveSubscription) === "open";
+import { isGoogleDriveCloudLinked } from "./remote-store/provider-resolver";
 
 /**
  * Guards Cloud Save operations on the main process.
  *
- * Hydra Plus: when the user selected their own Google Drive as the cloud
- * provider (and it is linked), the Hydra Cloud subscription is not
- * required — the sync engine talks to the user's Drive, not to Hydra's
- * storage. A Hydra account is still required because it powers the
- * launcher itself (library, profile, downloads metadata).
- *
- * NOTE: async since the provider preference lives in LevelDB.
- * Always `await` this function.
+ * Hydra Plus is Drive-only: there is no Hydra Cloud subscription and no
+ * Hydra storage. A snapshot operation simply requires the user's Google
+ * Drive account to be linked — every failure surfaces as the actionable
+ * "google_drive_not_linked" error so the UI can offer reconnection.
  */
-export const assertCloudSaveSubscription = async (
-  isLoggedIn = HydraApi.isLoggedIn(),
-  hasActiveSubscription = HydraApi.hasActiveSubscription()
-) => {
-  if (!isLoggedIn) {
-    throw new UserNotLoggedInError();
-  }
-
-  if (await isGoogleDriveCloudActive()) {
-    return;
-  }
-
-  if (!hasActiveSubscription) {
-    throw new SubscriptionRequiredError();
+export const assertCloudSaveDriveLinked = async () => {
+  if (!(await isGoogleDriveCloudLinked())) {
+    throw new Error("google_drive_not_linked");
   }
 };

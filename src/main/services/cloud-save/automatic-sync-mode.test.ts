@@ -6,135 +6,65 @@ import {
   getNextCloudSaveAutomaticSyncMode,
   resolveCloudSaveAutomaticSyncMode,
   resolveStoredCloudSaveAutomaticSyncMode,
-  resolveStoredCloudSaveAutomaticSyncModeForShop,
-  shouldRunLegacyAutomaticCloudSave,
   shouldRunV2AutomaticCloudSave,
 } from "./automatic-sync-mode.js";
 
 describe("cloud save automatic sync mode", () => {
-  it("prefers V2 when both modes are enabled", () => {
-    assert.equal(
-      resolveCloudSaveAutomaticSyncMode({
-        legacyEnabled: true,
-        v2Enabled: true,
-      }),
-      "v2"
-    );
+  it("maps the stored v2 flag to the mode", () => {
+    assert.equal(resolveCloudSaveAutomaticSyncMode(true), "v2");
+    assert.equal(resolveCloudSaveAutomaticSyncMode(false), "disabled");
   });
 
-  it("selects the enabled implementation", () => {
-    assert.equal(
-      resolveCloudSaveAutomaticSyncMode({
-        legacyEnabled: true,
-        v2Enabled: false,
-      }),
-      "legacy"
-    );
-    assert.equal(
-      resolveCloudSaveAutomaticSyncMode({
-        legacyEnabled: false,
-        v2Enabled: true,
-      }),
-      "v2"
-    );
-  });
-
-  it("allows both implementations to be disabled", () => {
-    assert.equal(
-      resolveCloudSaveAutomaticSyncMode({
-        legacyEnabled: false,
-        v2Enabled: false,
-      }),
-      "disabled"
-    );
-  });
-
-  it("treats an absent V2 setting as the day-one V2 default", () => {
-    assert.equal(
-      resolveStoredCloudSaveAutomaticSyncMode(false, undefined),
-      "v2"
-    );
+  it("migrates legacy-enabled games to v2 when no v2 flag exists", () => {
     assert.equal(
       resolveStoredCloudSaveAutomaticSyncMode(true, undefined),
       "v2"
     );
-    assert.equal(resolveStoredCloudSaveAutomaticSyncMode(true, true), "v2");
   });
 
-  it("uses an explicit false setting to select legacy or disabled", () => {
+  it("prefers the stored v2 flag over the legacy flag", () => {
     assert.equal(
       resolveStoredCloudSaveAutomaticSyncMode(true, false),
-      "legacy"
+      "disabled"
     );
+    assert.equal(resolveStoredCloudSaveAutomaticSyncMode(false, true), "v2");
+  });
+
+  it("disables when neither flag exists", () => {
     assert.equal(
-      resolveStoredCloudSaveAutomaticSyncMode(false, false),
+      resolveStoredCloudSaveAutomaticSyncMode(false, undefined),
       "disabled"
     );
   });
 
-  it("keeps non-Steam games on legacy or disabled", () => {
-    assert.equal(
-      resolveStoredCloudSaveAutomaticSyncModeForShop("custom", true, undefined),
-      "legacy"
-    );
-    assert.equal(
-      resolveStoredCloudSaveAutomaticSyncModeForShop(
-        "custom",
-        false,
-        undefined
-      ),
-      "disabled"
-    );
-  });
-
-  it("enabling legacy disables V2", () => {
-    assert.equal(
-      getNextCloudSaveAutomaticSyncMode("v2", "legacy", true),
-      "legacy"
-    );
-    assert.deepEqual(getCloudSaveAutomaticSyncStateForMode("legacy"), {
-      legacyEnabled: true,
-      v2Enabled: false,
-    });
-  });
-
-  it("enabling V2 disables legacy", () => {
-    assert.equal(getNextCloudSaveAutomaticSyncMode("legacy", "v2", true), "v2");
+  it("exposes the persistence state for a mode", () => {
     assert.deepEqual(getCloudSaveAutomaticSyncStateForMode("v2"), {
       legacyEnabled: false,
       v2Enabled: true,
     });
+    assert.deepEqual(getCloudSaveAutomaticSyncStateForMode("disabled"), {
+      legacyEnabled: false,
+      v2Enabled: false,
+    });
   });
 
-  it("disabling one mode preserves the other mode", () => {
+  it("toggles the v2 target without touching other modes", () => {
     assert.equal(
-      getNextCloudSaveAutomaticSyncMode("v2", "legacy", false),
+      getNextCloudSaveAutomaticSyncMode("disabled", "v2", true),
       "v2"
-    );
-    assert.equal(
-      getNextCloudSaveAutomaticSyncMode("legacy", "v2", false),
-      "legacy"
-    );
-  });
-
-  it("disabling the selected mode leaves both disabled", () => {
-    assert.equal(
-      getNextCloudSaveAutomaticSyncMode("legacy", "legacy", false),
-      "disabled"
     );
     assert.equal(
       getNextCloudSaveAutomaticSyncMode("v2", "v2", false),
       "disabled"
     );
+    assert.equal(
+      getNextCloudSaveAutomaticSyncMode("disabled", "v2", false),
+      "disabled"
+    );
   });
 
-  it("routes lifecycle work to exactly one implementation", () => {
-    for (const mode of ["disabled", "legacy", "v2"] as const) {
-      const legacyRuns = shouldRunLegacyAutomaticCloudSave(mode);
-      const v2Runs = shouldRunV2AutomaticCloudSave(mode);
-
-      assert.notEqual(legacyRuns && v2Runs, true);
-      assert.equal(legacyRuns || v2Runs, mode !== "disabled");
-    }
+  it("runs only the v2 engine", () => {
+    assert.equal(shouldRunV2AutomaticCloudSave("v2"), true);
+    assert.equal(shouldRunV2AutomaticCloudSave("disabled"), false);
   });
 });
