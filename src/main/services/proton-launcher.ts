@@ -11,21 +11,21 @@ import { SystemPath } from "@main/services/system-path";
 import { resolveLaunchCommand } from "@main/helpers/resolve-launch-command";
 
 /**
- * Direct Proton runner.
+ * Direct Proton runner — EMERGENCY FALLBACK ONLY.
  *
- * umu-run is a convenience wrapper, but it drags a Python runtime, its own
- * runtime setup and its own prefix conventions into every launch — and it
- * cannot reach Proton features Steam itself uses. Running `<proton>/proton`
- * directly with the Steam compat environment is what Steam / Heroic / Lutris
- * effectively do under the hood, and it is the most faithful way to run a
- * game the way Steam would:
+ * Every Proton launch now goes through umu-run first (see launch-game.ts):
+ * Proton 8+/GE/CachyOS builds are compiled against the Steam Linux Runtime
+ * container, which umu provisions. Spawning `<proton>/proton` directly only
+ * works when the host's libraries happen to match that runtime — which is
+ * exactly why games failed to open when users picked GE-Proton or
+ * CachyOS-Proton. This runner remains so that hosts without a usable umu
+ * (no python3, runtime download impossible) still have a chance to launch,
+ * with the full Steam compat environment:
  *
  *   STEAM_COMPAT_CLIENT_INSTALL_PATH = Steam root (pressure-vessel host)
  *   STEAM_COMPAT_DATA_PATH           = prefix "compatdata" dir
  *   STEAM_COMPAT_PREFIX_PATH         = the actual wine prefix
  *   proton waitforexitandrun <exe> [args]
- *
- * umu stays available as an automatic fallback.
  */
 
 const QUICK_EXIT_THRESHOLD_MS = 3000;
@@ -97,7 +97,6 @@ const buildProtonEnv = async (options: {
   const compatDataPath = resolveCompatDataPath(options.winePrefixPath);
 
   return {
-    PROTON_LOG: "1",
     STEAM_COMPAT_CLIENT_INSTALL_PATH: steamRoot,
     STEAM_COMPAT_DATA_PATH: compatDataPath,
     STEAM_COMPAT_PREFIX_PATH: options.winePrefixPath,

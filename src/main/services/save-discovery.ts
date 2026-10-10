@@ -2,10 +2,6 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 
-import {
-  getSteamLibraryFolders,
-  getSteamShortcuts,
-} from "@main/services/steam";
 import type {
   DiscoveredSaveEnvironment,
   DiscoveredSaveLocation,
@@ -16,6 +12,10 @@ import { getCloudSaveGameContext } from "./cloud-save/cloud-save-game-context";
 import { getCloudSaveCustomPathBindings } from "./cloud-save/custom-path-store";
 import { cloudSaveCustomPathContextFromPathContext } from "./cloud-save/custom-path";
 import { findSteamCompatibilityPrefixForApp } from "./steam-integration/steam-compat-prefix";
+import {
+  discoverSystemWinePrefixes,
+  isPrefixCoveredByGame,
+} from "./wine-prefix-inventory";
 
 /**
  * System-wide save discovery.
@@ -315,6 +315,35 @@ const buildScanRoots = (options: {
   return roots;
 };
 
+/**
+ * Scan roots for every OTHER launcher prefix on the system (Steam
+ * compatdata across all libraries, Heroic, Lutris, Bottles, umu, ~/.wine).
+ * This is the "unified prefix" pass: a game installed under Heroic while
+ * Hydra plays it through umu still gets its saves found.
+ */
+const buildSystemPrefixRoots = async (
+  gamePrefixPaths: Array<string | null | undefined>
+): Promise<ScanRoot[]> => {
+  const roots: ScanRoot[] = [];
+  const systemPrefixes = await discoverSystemWinePrefixes().catch(() => []);
+
+  for (const prefix of systemPrefixes) {
+    if (isPrefixCoveredByGame(prefix.prefixPath, gamePrefixPaths)) continue;
+    for (const userDir of prefixUserDirectories(prefix.prefixPath)) {
+      roots.push({
+        base: userDir,
+        environment:
+          prefix.source === "steam-compatdata" ? "steam-proton" : "wine-prefix",
+        hint: prefix.label,
+        depth: 2,
+        confidence: "medium",
+      });
+    }
+  }
+
+  return roots;
+};
+
 /** Resolve every path a custom binding currently points to. */
 const resolveTrackedCustomPaths = async (
   objectId: string,
@@ -366,6 +395,15 @@ export const discoverGameSaveLocations = async (
     executablePath: pathContext.executablePath,
   });
 
+  // Every other prefix on the system (all Steam libraries, Heroic,
+  // Lutris, Bottles, umu, ~/.wine) joins the scan at medium confidence.
+  roots.push(
+    ...(await buildSystemPrefixRoots([
+      pathContext.winePrefixPath,
+      steamCompatPrefixPath,
+    ]))
+  );
+
   const trackedPaths = await resolveTrackedCustomPaths(objectId, shop);
   const seen = new Set<string>();
   const locations: DiscoveredSaveLocation[] = [];
@@ -397,7 +435,8 @@ export const discoverGameSaveLocations = async (
 
   // Steam Cloud userdata folders do not carry the game name — they are
   // keyed by app id. Check them explicitly for Steam games.
-  const steamLocation = pathContext.steamPath;
+  const steamLocation =
+    pathContext.steamPath ?? (await getSteamLocationFallback());
   if (steamLocation) {
     const userdataRoot = path.join(steamLocation, "userdata");
     const appIds = new Set<string>([objectId]);
@@ -456,7 +495,14 @@ export const discoverGameSaveLocations = async (
 /** Exposed for tests: the name matcher derivation. */
 export const buildSaveNameMatchers = buildNameMatchers;
 
-// Keep the steam library helper referenced for future root expansion
-// (per-library compatdata scanning) without triggering lint noise.
-void getSteamLibraryFolders;
-void getSteamShortcuts;
+const getSteamLocationFallback = async (): Promise<string | null> => {
+  const home = os.homedir();
+  const candidates = [
+    path.join(home, ".steam", "steam"),
+    path.join(home, ".local", "share", "Steam"),
+  ];
+  for (const candidate of candidates) {
+    if (fs.existsSync(candidate)) return candidate;
+  }
+  return null;
+};

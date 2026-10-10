@@ -106,7 +106,42 @@ const STEAM_ROOT_SEGMENTS = [
   ["snap", "steam", "common", ".local", "share", "Steam"],
 ];
 
+/** System-level compatibility tool directories (Arch/CachyOS/Debian packages). */
+const SYSTEM_COMPATIBILITY_TOOL_PATHS = [
+  path.join("/usr", "lib", "steam", "compatibilitytools.d"),
+  path.join("/usr", "share", "steam", "compatibilitytools.d"),
+  path.join("/usr", "local", "share", "steam", "compatibilitytools.d"),
+];
+
+/** Where Heroic installs user-provided Proton builds (native + Flatpak). */
+const HEROIC_PROTON_TOOL_PATHS = (homePath: string) => [
+  path.join(homePath, ".config", "heroic", "tools", "proton"),
+  path.join(
+    homePath,
+    ".var",
+    "app",
+    "com.heroicgameslauncher.hgl",
+    "config",
+    "heroic",
+    "tools",
+    "proton"
+  ),
+];
+
 const shellQuote = (value: string) => `'${value.replaceAll("'", "'\\''")}'`;
+
+/**
+ * Steam's official mechanism for extra compatibility tool locations
+ * (colon-separated; used by NixOS and custom distro packaging).
+ */
+const readExtraCompatToolPaths = (): string[] => {
+  const raw = process.env.STEAM_EXTRA_COMPAT_TOOLS_PATHS;
+  if (!raw) return [];
+  return raw
+    .split(path.delimiter)
+    .map((entry) => entry.trim())
+    .filter((entry) => entry.length > 0);
+};
 
 export class Umu {
   public static isValidProtonPath(protonPath: string) {
@@ -127,9 +162,18 @@ export class Umu {
         )
       ),
     ];
+    // compatibilitytools.d candidates: per-user Steam roots, every Steam
+    // library (some distros symlink the tools dir per library), system
+    // package paths (proton-cachyos etc.) and Heroic's tool directory.
     const compatibilityToolPaths = [
       ...steamRoots.map((root) => path.join(root, "compatibilitytools.d")),
-      path.join("/usr", "share", "steam", "compatibilitytools.d"),
+      ...libraryFolders.flatMap((library) => [
+        path.join(library, "compatibilitytools.d"),
+        path.join(library, "root", "compatibilitytools.d"),
+      ]),
+      ...SYSTEM_COMPATIBILITY_TOOL_PATHS,
+      ...HEROIC_PROTON_TOOL_PATHS(homePath),
+      ...readExtraCompatToolPaths(),
     ];
 
     const versions: ProtonVersion[] = [];
@@ -218,7 +262,6 @@ export class Umu {
       ? [umuBinaryPath, "createprefix"]
       : ["createprefix"];
     const launchEnv = {
-      PROTON_LOG: "1",
       WINEPREFIX: options.winePrefixPath,
       ...(options.gameId ? { GAMEID: `umu-${options.gameId}` } : {}),
       ...(options.protonPath ? { PROTONPATH: options.protonPath } : {}),
@@ -356,7 +399,6 @@ export class Umu {
     ensureExecutablePermission(umuBinaryPath);
 
     const launchEnv = {
-      PROTON_LOG: "1",
       ...(options?.gameId ? { GAMEID: `umu-${options.gameId}` } : {}),
       ...(options?.winePrefixPath
         ? { WINEPREFIX: options.winePrefixPath }

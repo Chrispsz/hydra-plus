@@ -250,8 +250,24 @@ const prepareWinePrefixIfNeeded = async (
 ) => {
   if (prefixWasReadyForRestore) return false;
 
-  // Direct Proton is the preferred bootstrap: it is exactly what Steam
-  // itself runs, without umu's Python runtime in the middle.
+  // umu-run is the primary bootstrap for EVERY Proton: it runs the selected
+  // tool inside the Steam Linux Runtime container (pressure-vessel), which
+  // Proton 8+/GE/CachyOS builds are compiled against. Direct Proton stays
+  // as an emergency fallback for hosts without a usable umu runtime.
+  try {
+    await Umu.preparePrefix({
+      winePrefixPath: context.winePrefixPath!,
+      protonPath: context.protonPath,
+      gameId: objectId,
+    });
+    return false;
+  } catch (error) {
+    logger.warn("umu prefix preparation failed, trying direct Proton", {
+      errorName: error instanceof Error ? error.name : "UnknownError",
+      errorMessage: error instanceof Error ? error.message : "Unknown error",
+    });
+  }
+
   if (isValidProtonForDirectLaunch(context.protonPath)) {
     try {
       await ProtonRunner.preparePrefix({
@@ -266,7 +282,7 @@ const prepareWinePrefixIfNeeded = async (
       return false;
     } catch (error) {
       logger.warn(
-        "Direct Proton prefix preparation failed, falling back to umu",
+        "Direct Proton prefix preparation failed, giving up on bootstrap",
         {
           errorName: error instanceof Error ? error.name : "UnknownError",
           errorMessage:
@@ -276,20 +292,7 @@ const prepareWinePrefixIfNeeded = async (
     }
   }
 
-  try {
-    await Umu.preparePrefix({
-      winePrefixPath: context.winePrefixPath!,
-      protonPath: context.protonPath,
-      gameId: objectId,
-    });
-    return false;
-  } catch (error) {
-    logger.error("Failed to prepare Wine prefix before cloud save restore", {
-      errorName: error instanceof Error ? error.name : "UnknownError",
-      errorMessage: error instanceof Error ? error.message : "Unknown error",
-    });
-    return true;
-  }
+  return true;
 };
 
 const prepareCompatibilityPrefixForCloudSave = async (
@@ -423,30 +426,13 @@ const launchWindowsBinaryOnLinux = async (
 ): Promise<boolean> => {
   const { protonPath, winePrefixPath } = compatibilityContext;
 
-  if (isValidProtonForDirectLaunch(protonPath)) {
-    try {
-      await ProtonRunner.launchExecutable(parsedPath, [], {
-        winePrefixPath,
-        protonPath,
-        gameId: objectId,
-        launchOptions,
-        useGamemode,
-        useMangohud,
-      });
-      logger.info("Game launched with direct Proton", {
-        gameKey,
-        protonPath,
-      });
-      PowerSaveBlockerManager.markCompatibilityLaunchStarted(gameKey);
-      return true;
-    } catch (error) {
-      logger.error(
-        "Failed to launch game with direct Proton, falling back to umu",
-        error
-      );
-    }
-  }
-
+  // umu-run is the universal Proton runner: it provisions the Steam Linux
+  // Runtime container that every modern Proton (Valve, GE, CachyOS, UMU)
+  // requires, and honors PROTONPATH so ANY installed Proton build works.
+  // Direct <proton>/proton spawning only works when the host libraries
+  // happen to match the runtime Proton was built for — the reason games
+  // silently failed with GE-Proton/CachyOS before. It remains the last
+  // resort before plain Wine in case umu cannot start at all.
   try {
     await Umu.launchExecutable(parsedPath, [], {
       winePrefixPath,
@@ -459,7 +445,34 @@ const launchWindowsBinaryOnLinux = async (
     PowerSaveBlockerManager.markCompatibilityLaunchStarted(gameKey);
     return true;
   } catch (error) {
-    logger.error("Failed to launch game with umu-run, falling back", error);
+    logger.error(
+      "Failed to launch game with umu-run, falling back to direct Proton",
+      error
+    );
+  }
+
+  if (isValidProtonForDirectLaunch(protonPath)) {
+    try {
+      await ProtonRunner.launchExecutable(parsedPath, [], {
+        winePrefixPath,
+        protonPath,
+        gameId: objectId,
+        launchOptions,
+        useGamemode,
+        useMangohud,
+      });
+      logger.info("Game launched with direct Proton (umu unavailable)", {
+        gameKey,
+        protonPath,
+      });
+      PowerSaveBlockerManager.markCompatibilityLaunchStarted(gameKey);
+      return true;
+    } catch (error) {
+      logger.error(
+        "Failed to launch game with direct Proton, falling back to Wine",
+        error
+      );
+    }
   }
 
   const launchedWithWine = await launchWithWine(
