@@ -29,5 +29,6 @@ export * from "./sync-game-cloud-save";
 export * from "./untrack-cloud-save-custom-path";
 export * from "./snapshot-version-manager";
 export * from "./drive-hygiene";
+export * from "./periodic-sync";
 export * from "./sync-anchor";
 export * from "./verify-downloaded-restore-file";

@@ -19,6 +19,7 @@ import {
   PowerSaveBlockerManager,
   DownloadOrchestrator,
   SSEClient,
+  cleanupPortableUpdateCache,
 } from "@main/services";
 import resources from "@locales";
 import { TorrentService } from "./services/torrent-service";
@@ -99,6 +100,9 @@ if (process.defaultApp) {
 const initializeApp = async () => {
   refreshPortableShortcutLauncher();
   electronApp.setAppUserModelId("gg.hydraplus.launcher");
+
+  // Smart OTA: remove staged update leftovers from previous sessions.
+  void cleanupPortableUpdateCache();
 
   logger.info("Crash dumps directory", app.getPath("crashDumps"));
 

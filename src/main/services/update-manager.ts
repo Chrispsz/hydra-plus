@@ -35,7 +35,9 @@ export class UpdateManager {
         }
       );
 
-      return userPreferences?.enableAutoInstall === true;
+      // AppImage updates replace the file in place, keeping settings and
+      // logins — enabled by default so updates are one click.
+      return userPreferences?.enableAutoInstall !== false;
     }
 
     return false;

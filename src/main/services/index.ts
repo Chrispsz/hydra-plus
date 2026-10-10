@@ -20,6 +20,8 @@ export * from "./disk-usage";
 export * from "./library-sync";
 export * from "./wine";
 export * from "./umu";
+export * from "./proton-launcher";
+export * from "./portable-updater";
 export * from "./lock";
 export * from "./decky-plugin";
 export * from "./user";

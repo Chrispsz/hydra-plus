@@ -1,29 +1,119 @@
-import { useState } from "react";
+import { useCallback, useContext, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   CheckCircleFillIcon,
   PersonIcon,
+  TrashIcon,
   XCircleFillIcon,
 } from "@primer/octicons-react";
-import { Button } from "@renderer/components";
+import { Button, ConfirmationModal } from "@renderer/components";
 import { useGoogleDriveCloud, useToast } from "@renderer/hooks";
+import { useAppSelector } from "@renderer/hooks";
 import { reportGoogleDriveConnectError } from "@renderer/helpers/google-drive-connect";
+import { settingsContext } from "@renderer/context";
+import { formatBytes } from "@shared";
+import type { DriveHygieneOverview } from "@types";
 import "./settings-context-cloud.scss";
+
+const DEFAULT_SNAPSHOT_RETENTION = 20;
+const DEFAULT_PERIODIC_SYNC_MINUTES = 30;
+const MIN_SNAPSHOT_RETENTION = 3;
+const MAX_SNAPSHOT_RETENTION = 200;
 
 /**
  * Hydra Plus is Drive-only: snapshots live in the user's own Google Drive.
- * There is no provider choice anymore — this panel just manages the Drive
- * account link.
+ * There is no provider choice anymore — this panel manages the Drive
+ * account link, snapshot retention and storage hygiene (trash + orphan
+ * blob cleanup).
  */
 export function SettingsContextCloud() {
   const { t } = useTranslation("settings");
   const { status, connect, disconnect } = useGoogleDriveCloud();
   const { showSuccessToast, showErrorToast } = useToast();
+  const { updateUserPreferences } = useContext(settingsContext);
+  const userPreferences = useAppSelector(
+    (state) => state.userPreferences.value
+  );
 
   const [isConnecting, setIsConnecting] = useState(false);
 
   const isDriveLinked = Boolean(status?.linked);
   const isDriveAvailable = !status?.requiresClientSetup;
+  const retention =
+    userPreferences?.cloudSaveSnapshotRetention ?? DEFAULT_SNAPSHOT_RETENTION;
+  const periodicSyncMinutes =
+    userPreferences?.cloudSavePeriodicSyncMinutes ??
+    DEFAULT_PERIODIC_SYNC_MINUTES;
+
+  const [hygiene, setHygiene] = useState<DriveHygieneOverview | null>(null);
+  const [isHygieneLoading, setIsHygieneLoading] = useState(false);
+  const [isCleaningTrash, setIsCleaningTrash] = useState(false);
+  const [isGcRunning, setIsGcRunning] = useState(false);
+  const [pendingCleanup, setPendingCleanup] = useState<
+    "trash" | "orphans" | null
+  >(null);
+
+  const refreshHygiene = useCallback(async () => {
+    if (!isDriveLinked) return;
+    setIsHygieneLoading(true);
+    try {
+      setHygiene(await window.electron.getGoogleDriveHygieneOverview());
+    } catch {
+      setHygiene(null);
+    } finally {
+      setIsHygieneLoading(false);
+    }
+  }, [isDriveLinked]);
+
+  useEffect(() => {
+    void refreshHygiene();
+  }, [refreshHygiene]);
+
+  const handlePeriodicSyncChange = (value: number) => {
+    const next = Math.min(
+      360,
+      Math.max(
+        0,
+        Number.isFinite(value) ? value : DEFAULT_PERIODIC_SYNC_MINUTES
+      )
+    );
+    void updateUserPreferences({ cloudSavePeriodicSyncMinutes: next });
+  };
+
+  const handleRetentionChange = (value: number) => {
+    const next = Math.min(
+      MAX_SNAPSHOT_RETENTION,
+      Math.max(
+        MIN_SNAPSHOT_RETENTION,
+        Number.isFinite(value) ? value : DEFAULT_SNAPSHOT_RETENTION
+      )
+    );
+    void updateUserPreferences({ cloudSaveSnapshotRetention: next });
+  };
+
+  const runCleanup = async (kind: "trash" | "orphans") => {
+    setPendingCleanup(null);
+    if (kind === "trash") setIsCleaningTrash(true);
+    else setIsGcRunning(true);
+    try {
+      const result =
+        kind === "trash"
+          ? await window.electron.cleanupGoogleDriveTrash()
+          : await window.electron.deleteGoogleDriveOrphanBlobs();
+      showSuccessToast(
+        t("google_drive_cleanup_done", {
+          files: result.deletedFiles,
+          size: formatBytes(result.freedBytes),
+        })
+      );
+      await refreshHygiene();
+    } catch {
+      showErrorToast(t("google_drive_cleanup_error"));
+    } finally {
+      setIsCleaningTrash(false);
+      setIsGcRunning(false);
+    }
+  };
 
   const handleConnect = async () => {
     setIsConnecting(true);
@@ -98,12 +188,118 @@ export function SettingsContextCloud() {
         ) : null}
       </div>
 
+      {isDriveLinked ? (
+        <div className="settings-context-panel__group">
+          <h3>{t("google_drive_hygiene_title")}</h3>
+
+          <div className="settings-context-cloud__hygiene-row">
+            <label htmlFor="snapshot-retention">
+              {t("google_drive_retention_label")}
+            </label>
+            <input
+              id="snapshot-retention"
+              type="number"
+              min={MIN_SNAPSHOT_RETENTION}
+              max={MAX_SNAPSHOT_RETENTION}
+              value={retention}
+              onChange={(event) =>
+                handleRetentionChange(Number(event.target.value))
+              }
+            />
+          </div>
+          <p className="settings-context-cloud__hint">
+            {t("google_drive_retention_hint")}
+          </p>
+
+          <div className="settings-context-cloud__hygiene-row">
+            <label htmlFor="periodic-sync">
+              {t("google_drive_periodic_sync_label")}
+            </label>
+            <input
+              id="periodic-sync"
+              type="number"
+              min={0}
+              max={360}
+              value={periodicSyncMinutes}
+              onChange={(event) =>
+                handlePeriodicSyncChange(Number(event.target.value))
+              }
+            />
+          </div>
+          <p className="settings-context-cloud__hint">
+            {t("google_drive_periodic_sync_hint")}
+          </p>
+
+          {isHygieneLoading ? (
+            <p className="settings-context-cloud__hint">
+              {t("google_drive_hygiene_loading")}
+            </p>
+          ) : hygiene ? (
+            <p className="settings-context-cloud__hint">
+              {t("google_drive_hygiene_usage", {
+                games: hygiene.gameCount,
+                versions: hygiene.versionCount,
+                blobs: hygiene.blobCount,
+                size: formatBytes(hygiene.blobBytes),
+                orphans: hygiene.orphanBlobCount,
+                trash: hygiene.trashedFileCount,
+              })}
+            </p>
+          ) : null}
+
+          <div className="settings-context-cloud__hygiene-actions">
+            <Button
+              type="button"
+              theme="outline"
+              disabled={
+                !hygiene || hygiene.trashedFileCount === 0 || isCleaningTrash
+              }
+              onClick={() => setPendingCleanup("trash")}
+            >
+              <TrashIcon />
+              {t("google_drive_cleanup_trash", {
+                count: hygiene?.trashedFileCount ?? 0,
+              })}
+            </Button>
+            <Button
+              type="button"
+              theme="outline"
+              disabled={
+                !hygiene || hygiene.orphanBlobCount === 0 || isGcRunning
+              }
+              onClick={() => setPendingCleanup("orphans")}
+            >
+              <TrashIcon />
+              {t("google_drive_cleanup_orphans", {
+                count: hygiene?.orphanBlobCount ?? 0,
+              })}
+            </Button>
+          </div>
+        </div>
+      ) : null}
+
       <div className="settings-context-panel__group">
         <p className="settings-context-cloud__hint">
           <PersonIcon className="settings-context-cloud__hint-icon" />{" "}
           {t("cloud_privacy_note")}
         </p>
       </div>
+
+      <ConfirmationModal
+        visible={pendingCleanup !== null}
+        title={t("google_drive_cleanup_confirm_title")}
+        descriptionText={
+          pendingCleanup === "trash"
+            ? t("google_drive_cleanup_confirm_trash")
+            : t("google_drive_cleanup_confirm_orphans")
+        }
+        confirmButtonLabel={t("google_drive_cleanup_confirm_button")}
+        cancelButtonLabel={t("cancel")}
+        onConfirm={() => {
+          if (pendingCleanup) void runCleanup(pendingCleanup);
+        }}
+        onClose={() => setPendingCleanup(null)}
+      />
     </div>
   );
 }

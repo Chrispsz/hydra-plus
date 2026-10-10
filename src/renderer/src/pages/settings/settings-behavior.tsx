@@ -26,7 +26,7 @@ export function SettingsBehavior() {
     startMinimized: false,
     launchToLibraryPage: false,
     disableNsfwAlert: false,
-    enableAutoInstall: false,
+    enableAutoInstall: true,
     seedAfterDownloadComplete: false,
     showDownloadSpeedInMegabytes: false,
     extractFilesByDefault: true,
@@ -66,7 +66,7 @@ export function SettingsBehavior() {
         startMinimized: userPreferences.startMinimized ?? false,
         launchToLibraryPage: userPreferences.launchToLibraryPage ?? false,
         disableNsfwAlert: userPreferences.disableNsfwAlert ?? false,
-        enableAutoInstall: userPreferences.enableAutoInstall ?? false,
+        enableAutoInstall: userPreferences.enableAutoInstall ?? true,
         seedAfterDownloadComplete:
           userPreferences.seedAfterDownloadComplete ?? false,
         showDownloadSpeedInMegabytes:

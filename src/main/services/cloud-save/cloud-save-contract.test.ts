@@ -60,7 +60,7 @@ describe("Cloud Save launcher API contract", () => {
       snapshot: {
         id: "snapshot",
         version: 1,
-        shop: "launchbox",
+        shop: "steam",
         objectId: "game",
       },
       customPathRawPaths: [],

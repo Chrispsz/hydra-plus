@@ -50,6 +50,7 @@ import type {
   SnapshotVersionSummary,
   RestoreRemoteSnapshotResult,
   DiscoveredSaveLocation,
+  PortableReleaseInfo,
   DriveHygieneOverview,
   DriveCleanupResult,
   CloudSaveCustomPathApproval,
@@ -140,6 +141,17 @@ declare global {
       shop: GameShop,
       locationPath: string
     ) => Promise<SelectCloudSaveCustomPathResult>;
+    fetchLatestPortableRelease: () => Promise<PortableReleaseInfo | null>;
+    getPortableUpdateState: () => Promise<{
+      release: PortableReleaseInfo | null;
+      downloaded: boolean;
+      downloadedVersion: string | null;
+    }>;
+    downloadPortableUpdate: () => Promise<string>;
+    applyPortableUpdate: () => Promise<void>;
+    onPortableUpdateProgress: (
+      listener: (percent: number) => void
+    ) => () => void;
     getGoogleDriveHygieneOverview: () => Promise<DriveHygieneOverview>;
     cleanupGoogleDriveTrash: () => Promise<DriveCleanupResult>;
     deleteGoogleDriveOrphanBlobs: () => Promise<DriveCleanupResult>;

@@ -3,6 +3,7 @@ import {
   ArrowClockwiseIcon,
   CircleNotchIcon,
   CloudIcon,
+  MagnifyingGlassIcon,
   MonitorIcon,
   PlusIcon,
   WarningCircleIcon,
@@ -34,6 +35,8 @@ import {
 } from "./cloud-save-v2-file-tree";
 import { getCloudSaveFileBrowserOperationPolicy } from "./cloud-save-v2-file-browser-policy";
 import { CloudSaveV2FileTreeView } from "./cloud-save-v2-file-tree-view";
+import { CloudSaveSnapshotHistory } from "./cloud-save-snapshot-history";
+import { CloudSaveDiscoveryModal } from "./cloud-save-discovery-modal";
 import {
   getCloudSaveOperationPresentation,
   hasCloudSaveDataToDelete,
@@ -306,6 +309,7 @@ export function CloudSaveV2FileBrowserModal({
   const { showErrorToast, showSuccessToast } = useToast();
   const [showOnlyChanged, setShowOnlyChanged] = useState(true);
   const [isAddingCustomPath, setIsAddingCustomPath] = useState(false);
+  const [isDiscoveryVisible, setIsDiscoveryVisible] = useState(false);
   const [rebindingCustomPath, setRebindingCustomPath] = useState<string | null>(
     null
   );
@@ -530,6 +534,17 @@ export function CloudSaveV2FileBrowserModal({
       <span>{t("cloud_save_v2_add_custom_path")}</span>
     </Button>
   );
+  const discoveryButton = (
+    <Button
+      theme="outline"
+      className="cloud-save-v2__discovery-button"
+      disabled={actionsAreDisabled}
+      onClick={() => setIsDiscoveryVisible(true)}
+    >
+      <MagnifyingGlassIcon size={16} />
+      <span>{t("cloud_save_v2_discover_locations")}</span>
+    </Button>
+  );
   const deleteCloudSaveButton = hasSaveData ? (
     <Button
       theme="danger"
@@ -628,6 +643,7 @@ export function CloudSaveV2FileBrowserModal({
                     <div className="cloud-save-v2__browser-toolbar-actions">
                       {deleteCloudSaveButton}
                       {addCustomPathButton}
+                      {discoveryButton}
                     </div>
                   )}
 
@@ -702,8 +718,29 @@ export function CloudSaveV2FileBrowserModal({
               />
             </>
           )}
+
+          {!isConflict && (
+            <CloudSaveSnapshotHistory
+              visible={!isConflict}
+              objectId={objectId}
+              shop={shop}
+              onRestored={async () => {
+                await onRetry();
+              }}
+            />
+          )}
         </div>
       </Modal>
+
+      <CloudSaveDiscoveryModal
+        visible={isDiscoveryVisible}
+        objectId={objectId}
+        shop={shop}
+        onClose={() => setIsDiscoveryVisible(false)}
+        onLocationRegistered={async () => {
+          await onRetry();
+        }}
+      />
 
       <ConfirmationModal
         visible={pendingCustomPathRemoval !== null}

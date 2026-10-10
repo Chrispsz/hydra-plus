@@ -21,6 +21,8 @@ import {
   WindowManager,
   logger,
   Umu,
+  ProtonRunner,
+  isValidProtonForDirectLaunch,
   PowerSaveBlockerManager,
   Wine,
   NativeAddon,
@@ -248,6 +250,32 @@ const prepareWinePrefixIfNeeded = async (
 ) => {
   if (prefixWasReadyForRestore) return false;
 
+  // Direct Proton is the preferred bootstrap: it is exactly what Steam
+  // itself runs, without umu's Python runtime in the middle.
+  if (isValidProtonForDirectLaunch(context.protonPath)) {
+    try {
+      await ProtonRunner.preparePrefix({
+        winePrefixPath: context.winePrefixPath!,
+        protonPath: context.protonPath,
+        gameId: objectId,
+      });
+      logger.info("[Cloud Save] Prefix prepared with direct Proton", {
+        objectId,
+        protonPath: context.protonPath,
+      });
+      return false;
+    } catch (error) {
+      logger.warn(
+        "Direct Proton prefix preparation failed, falling back to umu",
+        {
+          errorName: error instanceof Error ? error.name : "UnknownError",
+          errorMessage:
+            error instanceof Error ? error.message : "Unknown error",
+        }
+      );
+    }
+  }
+
   try {
     await Umu.preparePrefix({
       winePrefixPath: context.winePrefixPath!,
@@ -394,6 +422,30 @@ const launchWindowsBinaryOnLinux = async (
   useGamemode: boolean
 ): Promise<boolean> => {
   const { protonPath, winePrefixPath } = compatibilityContext;
+
+  if (isValidProtonForDirectLaunch(protonPath)) {
+    try {
+      await ProtonRunner.launchExecutable(parsedPath, [], {
+        winePrefixPath,
+        protonPath,
+        gameId: objectId,
+        launchOptions,
+        useGamemode,
+        useMangohud,
+      });
+      logger.info("Game launched with direct Proton", {
+        gameKey,
+        protonPath,
+      });
+      PowerSaveBlockerManager.markCompatibilityLaunchStarted(gameKey);
+      return true;
+    } catch (error) {
+      logger.error(
+        "Failed to launch game with direct Proton, falling back to umu",
+        error
+      );
+    }
+  }
 
   try {
     await Umu.launchExecutable(parsedPath, [], {

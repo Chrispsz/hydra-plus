@@ -38,6 +38,7 @@ import type {
   SnapshotVersionSummary,
   RestoreRemoteSnapshotResult,
   DiscoveredSaveLocation,
+  PortableReleaseInfo,
   DriveHygieneOverview,
   DriveCleanupResult,
   SelectCloudSaveCustomPathApprovalResult,
@@ -180,6 +181,27 @@ contextBridge.exposeInMainWorld("electron", {
       shop,
       locationPath
     ) as Promise<SelectCloudSaveCustomPathResult>,
+  fetchLatestPortableRelease: () =>
+    ipcRenderer.invoke(
+      "fetchLatestPortableRelease"
+    ) as Promise<PortableReleaseInfo | null>,
+  getPortableUpdateState: () =>
+    ipcRenderer.invoke("getPortableUpdateState") as Promise<{
+      release: PortableReleaseInfo | null;
+      downloaded: boolean;
+      downloadedVersion: string | null;
+    }>,
+  downloadPortableUpdate: () =>
+    ipcRenderer.invoke("downloadPortableUpdate") as Promise<string>,
+  applyPortableUpdate: () =>
+    ipcRenderer.invoke("applyPortableUpdate") as Promise<void>,
+  onPortableUpdateProgress: (listener: (percent: number) => void) => {
+    const ipcListener = (_event: Electron.IpcRendererEvent, percent: number) =>
+      listener(percent);
+    ipcRenderer.on("on-portable-update-progress", ipcListener);
+    return () =>
+      ipcRenderer.removeListener("on-portable-update-progress", ipcListener);
+  },
   getGoogleDriveHygieneOverview: () =>
     ipcRenderer.invoke(
       "getGoogleDriveHygieneOverview"

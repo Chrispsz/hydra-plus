@@ -1,7 +1,7 @@
 {
   "name": "hydra-plus",
-  "version": "4.1.9",
-  "description": "Hydra Plus — minimalist Hydra fork with personal Google Drive cloud saves",
+  "version": "4.2.0",
+  "description": "Hydra Plus \u2014 minimalist Hydra fork with personal Google Drive cloud saves",
   "main": "./out/main/index.js",
   "author": "Hydra Plus contributors (fork of Hydra by Los Broxas)",
   "repository": {

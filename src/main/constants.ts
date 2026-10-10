@@ -58,6 +58,7 @@ export const INTERVALS = {
   seedStatusWatcher: 2_000,
   updateChecker: 60_000 * 50, // 50 minutes
   powerSaveBlockerSync: 20_000,
+  cloudSavePeriodicSync: 60_000, // tick every minute; honors the user's interval
 };
 
 export const DECKY_PLUGINS_LOCATION = path.join(

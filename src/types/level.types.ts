@@ -130,6 +130,12 @@ export interface DownloadDirectoryPreference {
   source: "manual" | "auto";
 }
 
+export interface PortableReleaseInfo {
+  version: string;
+  downloadUrl: string;
+  sizeBytes: number;
+}
+
 export interface UserPreferences {
   /**
    * Self-serve Google OAuth "Desktop app" client used to link the user's
@@ -143,6 +149,11 @@ export interface UserPreferences {
    * oldest ones are pruned. Default: 20.
    */
   cloudSaveSnapshotRetention?: number;
+  /**
+   * Interval (minutes) for the bidirectional background auto-sync of games
+   * that are not running. 0 disables it. Default: 30.
+   */
+  cloudSavePeriodicSyncMinutes?: number;
   downloadsPath?: string | null;
   defaultWinePrefixPath?: string | null;
   downloadDirectories?: DownloadDirectoryPreference[];

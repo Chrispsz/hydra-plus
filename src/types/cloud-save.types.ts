@@ -513,7 +513,8 @@ export type CloudSaveSyncTrigger =
   | "game-page-open"
   | "custom-path-rebind"
   | "pre-launch"
-  | "post-exit";
+  | "post-exit"
+  | "interval";
 
 export type CloudSaveSyncAction =
   | "none"
