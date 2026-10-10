@@ -35,6 +35,11 @@ import type {
   SelectCloudSaveCustomPathResult,
   CloudSaveCustomPathApproval,
   CloudSaveModalSyncResult,
+  SnapshotVersionSummary,
+  RestoreRemoteSnapshotResult,
+  DiscoveredSaveLocation,
+  DriveHygieneOverview,
+  DriveCleanupResult,
   SelectCloudSaveCustomPathApprovalResult,
   ConfirmCloudSaveCustomPathApprovalResult,
   ConfirmCloudSaveCustomPathRebindApprovalResult,
@@ -121,6 +126,98 @@ contextBridge.exposeInMainWorld("electron", {
       objectId,
       shop
     ) as Promise<void>,
+  getGameSnapshotVersions: (objectId: string, shop: GameShop) =>
+    ipcRenderer.invoke("getGameSnapshotVersions", objectId, shop) as Promise<
+      SnapshotVersionSummary[]
+    >,
+  restoreGameSnapshotVersion: (
+    operationId: string,
+    objectId: string,
+    shop: GameShop,
+    version: number
+  ) =>
+    ipcRenderer.invoke(
+      "restoreGameSnapshotVersion",
+      operationId,
+      objectId,
+      shop,
+      version
+    ) as Promise<RestoreRemoteSnapshotResult>,
+  deleteGameSnapshotVersion: (
+    objectId: string,
+    shop: GameShop,
+    version: number
+  ) =>
+    ipcRenderer.invoke(
+      "deleteGameSnapshotVersion",
+      objectId,
+      shop,
+      version
+    ) as Promise<void>,
+  downloadGameSnapshotVersion: (
+    objectId: string,
+    shop: GameShop,
+    version: number
+  ) =>
+    ipcRenderer.invoke(
+      "downloadGameSnapshotVersion",
+      objectId,
+      shop,
+      version
+    ) as Promise<{ fileCount: number; totalSizeBytes: number } | null>,
+  discoverGameSaveLocations: (objectId: string, shop: GameShop) =>
+    ipcRenderer.invoke("discoverGameSaveLocations", objectId, shop) as Promise<
+      DiscoveredSaveLocation[]
+    >,
+  registerDiscoveredSaveLocation: (
+    objectId: string,
+    shop: GameShop,
+    locationPath: string
+  ) =>
+    ipcRenderer.invoke(
+      "registerDiscoveredSaveLocation",
+      objectId,
+      shop,
+      locationPath
+    ) as Promise<SelectCloudSaveCustomPathResult>,
+  getGoogleDriveHygieneOverview: () =>
+    ipcRenderer.invoke(
+      "getGoogleDriveHygieneOverview"
+    ) as Promise<DriveHygieneOverview>,
+  cleanupGoogleDriveTrash: () =>
+    ipcRenderer.invoke(
+      "cleanupGoogleDriveTrash"
+    ) as Promise<DriveCleanupResult>,
+  deleteGoogleDriveOrphanBlobs: () =>
+    ipcRenderer.invoke(
+      "deleteGoogleDriveOrphanBlobs"
+    ) as Promise<DriveCleanupResult>,
+  onSnapshotVersionDownloadProgress: (
+    listener: (progress: {
+      objectId: string;
+      shop: GameShop;
+      version: number;
+      processedFiles: number;
+      totalFiles: number;
+    }) => void
+  ) => {
+    const ipcListener = (
+      _event: Electron.IpcRendererEvent,
+      progress: {
+        objectId: string;
+        shop: GameShop;
+        version: number;
+        processedFiles: number;
+        totalFiles: number;
+      }
+    ) => listener(progress);
+    ipcRenderer.on("on-snapshot-version-download-progress", ipcListener);
+    return () =>
+      ipcRenderer.removeListener(
+        "on-snapshot-version-download-progress",
+        ipcListener
+      );
+  },
   selectCloudSaveCustomPath: (
     objectId: string,
     shop: GameShop,

@@ -47,6 +47,11 @@ import type {
   SyncCloudSaveOnGamePageResult,
   SyncGameCloudSaveResult,
   SelectCloudSaveCustomPathResult,
+  SnapshotVersionSummary,
+  RestoreRemoteSnapshotResult,
+  DiscoveredSaveLocation,
+  DriveHygieneOverview,
+  DriveCleanupResult,
   CloudSaveCustomPathApproval,
   CloudSaveModalSyncResult,
   SelectCloudSaveCustomPathApprovalResult,
@@ -106,6 +111,47 @@ declare global {
       objectId: string,
       shop: GameShop
     ) => Promise<void>;
+    getGameSnapshotVersions: (
+      objectId: string,
+      shop: GameShop
+    ) => Promise<SnapshotVersionSummary[]>;
+    restoreGameSnapshotVersion: (
+      operationId: string,
+      objectId: string,
+      shop: GameShop,
+      version: number
+    ) => Promise<RestoreRemoteSnapshotResult>;
+    deleteGameSnapshotVersion: (
+      objectId: string,
+      shop: GameShop,
+      version: number
+    ) => Promise<void>;
+    downloadGameSnapshotVersion: (
+      objectId: string,
+      shop: GameShop,
+      version: number
+    ) => Promise<{ fileCount: number; totalSizeBytes: number } | null>;
+    discoverGameSaveLocations: (
+      objectId: string,
+      shop: GameShop
+    ) => Promise<DiscoveredSaveLocation[]>;
+    registerDiscoveredSaveLocation: (
+      objectId: string,
+      shop: GameShop,
+      locationPath: string
+    ) => Promise<SelectCloudSaveCustomPathResult>;
+    getGoogleDriveHygieneOverview: () => Promise<DriveHygieneOverview>;
+    cleanupGoogleDriveTrash: () => Promise<DriveCleanupResult>;
+    deleteGoogleDriveOrphanBlobs: () => Promise<DriveCleanupResult>;
+    onSnapshotVersionDownloadProgress: (
+      listener: (progress: {
+        objectId: string;
+        shop: GameShop;
+        version: number;
+        processedFiles: number;
+        totalFiles: number;
+      }) => void
+    ) => () => void;
     selectCloudSaveCustomPath: (
       objectId: string,
       shop: GameShop,

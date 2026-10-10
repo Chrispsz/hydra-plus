@@ -8,6 +8,7 @@ import type {
   RemoteGameSnapshot,
   RemoteSnapshotSummary,
   ReplaceRestoreTarget,
+  RestoreManifestResponse,
   RestoreProgressPayload,
   RestoreRemoteSnapshotResult,
 } from "@types";
@@ -173,6 +174,19 @@ const assertSnapshotStillCurrent = async (
   }
 };
 
+export interface RestoreRemoteSnapshotOptions {
+  /**
+   * Restore from this exact manifest instead of the remote head (used to
+   * restore one specific history version).
+   */
+  manifestOverride?: RestoreManifestResponse;
+  /**
+   * Skip the "snapshot still current" guard — intentional for historical
+   * version restores, where the head is expected to differ.
+   */
+  skipCurrentHeadCheck?: boolean;
+}
+
 export const restoreRemoteSnapshot = async (
   snapshotId: string,
   gameId: CloudSaveGameId,
@@ -183,7 +197,8 @@ export const restoreRemoteSnapshot = async (
   updateAnchor = true,
   carriedUnresolvedEntryIds: string[] = [],
   versionChangeAttempt = 0,
-  assertEnvironmentCurrent?: () => Promise<void>
+  assertEnvironmentCurrent?: () => Promise<void>,
+  options?: RestoreRemoteSnapshotOptions
 ): Promise<RestoreRemoteSnapshotResult> => {
   await assertCloudSaveDriveLinked();
 
@@ -202,10 +217,9 @@ export const restoreRemoteSnapshot = async (
   const tempSnapshotId = `${snapshot.id}-${snapshot.version}`;
 
   emitProgress("starting", 0, 0);
-  const originalManifest = await getRemoteSnapshotRestoreManifest(
-    snapshot,
-    gameId
-  );
+  const originalManifest =
+    options?.manifestOverride ??
+    (await getRemoteSnapshotRestoreManifest(snapshot, gameId));
   if (
     originalManifest.snapshot.shop !== gameId.shop ||
     originalManifest.snapshot.objectId !== gameId.objectId
@@ -250,37 +264,37 @@ export const restoreRemoteSnapshot = async (
   try {
     emitProgress("downloading", 0, restoreTargets.length);
     const downloadedFiles = await downloadRemoteSnapshotToTemp(
-      snapshot.id,
-      snapshot.version,
+      manifest,
       resolveRestoreDownloadSources(restoreTargets),
       (processedFiles, totalFiles) =>
-        emitProgress("downloading", processedFiles, totalFiles),
-      gameId
+        emitProgress("downloading", processedFiles, totalFiles)
     );
     await verifyDownloadedRestoreFiles(downloadedFiles, emitProgress);
 
-    const current = await assertSnapshotStillCurrent(gameId, snapshot);
-    const versionDecision = getRestoreVersionDecision(
-      snapshot,
-      current,
-      versionChangeAttempt
-    );
-    if (versionDecision !== "stable") {
-      if (versionDecision === "retry" && current) {
-        return restoreRemoteSnapshot(
-          current.id,
-          gameId,
-          onProgress,
-          current,
-          cloudSaveContext,
-          requestedEntryIds,
-          updateAnchor,
-          carriedUnresolvedEntryIds,
-          1,
-          assertEnvironmentCurrent
-        );
+    if (!options?.skipCurrentHeadCheck) {
+      const current = await assertSnapshotStillCurrent(gameId, snapshot);
+      const versionDecision = getRestoreVersionDecision(
+        snapshot,
+        current,
+        versionChangeAttempt
+      );
+      if (versionDecision !== "stable") {
+        if (versionDecision === "retry" && current) {
+          return restoreRemoteSnapshot(
+            current.id,
+            gameId,
+            onProgress,
+            current,
+            cloudSaveContext,
+            requestedEntryIds,
+            updateAnchor,
+            carriedUnresolvedEntryIds,
+            1,
+            assertEnvironmentCurrent
+          );
+        }
+        throw new Error("cloud_save_restore_snapshot_changed_twice");
       }
-      throw new Error("cloud_save_restore_snapshot_changed_twice");
     }
 
     await assertEnvironmentCurrent?.();

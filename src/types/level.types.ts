@@ -138,6 +138,11 @@ export interface UserPreferences {
    */
   googleDriveClientId?: string;
   googleDriveClientSecret?: string;
+  /**
+   * How many snapshot versions to keep per game on Google Drive before the
+   * oldest ones are pruned. Default: 20.
+   */
+  cloudSaveSnapshotRetention?: number;
   downloadsPath?: string | null;
   defaultWinePrefixPath?: string | null;
   downloadDirectories?: DownloadDirectoryPreference[];

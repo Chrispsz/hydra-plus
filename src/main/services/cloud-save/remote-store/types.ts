@@ -2,7 +2,10 @@ import type {
   CloudSaveGameId,
   CloudSaveUploadProgress,
   CommitSnapshotResponse,
+  DriveCleanupResult,
+  DriveHygieneOverview,
   DownloadedRestoreFile,
+  SnapshotVersionSummary,
   LocalGameSnapshotContext,
   RemoteSnapshotSummary,
   RestoreManifestFile,
@@ -46,6 +49,43 @@ export interface CloudSaveRemoteStore {
 
   /** Removes all remote cloud-save data of a game. Local cleanup is the caller's job. */
   deleteGameCloudData(gameId: CloudSaveGameId): Promise<void>;
+
+  /** Lists the game's snapshot history, oldest first, head last. */
+  listSnapshotVersions(
+    gameId: CloudSaveGameId
+  ): Promise<SnapshotVersionSummary[]>;
+
+  /** Reads the full restore manifest of one specific history version. */
+  getSnapshotVersionManifest(
+    gameId: CloudSaveGameId,
+    version: number
+  ): Promise<RestoreManifestResponse>;
+
+  /** Trashes one specific history version (current head is protected). */
+  deleteSnapshotVersion(
+    gameId: CloudSaveGameId,
+    version: number
+  ): Promise<void>;
+
+  /**
+   * Reconstructs one version's files into a local folder (manual
+   * "download this snapshot" — the inverse of the upload pipeline).
+   */
+  downloadSnapshotVersionToFolder(
+    gameId: CloudSaveGameId,
+    version: number,
+    destinationFolder: string,
+    onProgress?: (processedFiles: number, totalFiles: number) => void
+  ): Promise<{ fileCount: number; totalSizeBytes: number }>;
+
+  /** Reports storage usage + cleanup candidates for the Drive folder. */
+  getDriveHygieneOverview(): Promise<DriveHygieneOverview>;
+
+  /** Permanently deletes every app file sitting in the Drive trash. */
+  cleanupDriveTrash(): Promise<DriveCleanupResult>;
+
+  /** Permanently deletes blobs referenced by no version manifest. */
+  deleteOrphanBlobs(): Promise<DriveCleanupResult>;
 }
 
 export interface CreateSnapshotInput {

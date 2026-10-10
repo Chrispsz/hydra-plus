@@ -107,6 +107,88 @@ export const findChildByName = async (
   }
 };
 
+export interface DriveFileMetadata extends DriveFileEntry {
+  size?: string;
+  appProperties?: Record<string, string>;
+}
+
+/**
+ * Lists every direct child of a folder, following page tokens. Only the
+ * fields the hygiene/version tooling needs are requested.
+ */
+export const listAllChildren = async (
+  parentId: string
+): Promise<DriveFileMetadata[]> => {
+  const query = `'${escapeDriveQuery(parentId)}' in parents and trashed = false`;
+  const all: DriveFileMetadata[] = [];
+  let pageToken: string | undefined;
+
+  try {
+    do {
+      const { data } = await authedRequest({
+        url: `${DRIVE_API}/files`,
+        params: {
+          q: query,
+          spaces: "drive",
+          fields:
+            "nextPageToken, files(id,name,mimeType,modifiedTime,size,appProperties)",
+          pageSize: 200,
+          ...(pageToken ? { pageToken } : {}),
+        },
+      });
+      all.push(...((data.files as DriveFileMetadata[]) ?? []));
+      pageToken = data.nextPageToken as string | undefined;
+    } while (pageToken);
+  } catch (error) {
+    throw toDriveError(error);
+  }
+
+  return all;
+};
+
+/**
+ * Lists every app-visible file currently in the Drive trash (drive.file
+ * scope means only files this app created are visible, trashed or not).
+ */
+export const listAllTrashedFiles = async (): Promise<DriveFileMetadata[]> => {
+  const all: DriveFileMetadata[] = [];
+  let pageToken: string | undefined;
+
+  try {
+    do {
+      const { data } = await authedRequest({
+        url: `${DRIVE_API}/files`,
+        params: {
+          q: "trashed = true",
+          spaces: "drive",
+          fields: "nextPageToken, files(id,name,mimeType,modifiedTime,size)",
+          pageSize: 200,
+          ...(pageToken ? { pageToken } : {}),
+        },
+      });
+      all.push(...((data.files as DriveFileMetadata[]) ?? []));
+      pageToken = data.nextPageToken as string | undefined;
+    } while (pageToken);
+  } catch (error) {
+    throw toDriveError(error);
+  }
+
+  return all;
+};
+
+/** Permanently deletes a file (skips the trash). */
+export const deleteFileForever = async (fileId: string): Promise<void> => {
+  try {
+    await authedRequest({
+      url: `${DRIVE_API}/files/${fileId}`,
+      method: "DELETE",
+    });
+  } catch (error) {
+    if (isAxiosError(error) && error.response?.status === 404) return;
+    throw toDriveError(error);
+  }
+};
+
 const createFolder = async (
   name: string,
   parentId: string

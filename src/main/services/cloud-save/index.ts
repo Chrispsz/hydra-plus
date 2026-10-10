@@ -27,5 +27,7 @@ export * from "./restore-remote-snapshot";
 export * from "./should-skip-restore-file";
 export * from "./sync-game-cloud-save";
 export * from "./untrack-cloud-save-custom-path";
+export * from "./snapshot-version-manager";
+export * from "./drive-hygiene";
 export * from "./sync-anchor";
 export * from "./verify-downloaded-restore-file";

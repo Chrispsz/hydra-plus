@@ -291,6 +291,14 @@ export interface SnapshotFile extends CloudSaveFileIdentity {
   sizeBytes: number;
   lastModifiedAt: string;
   stateMetadata?: CloudSaveStateMetadata;
+  /**
+   * How the blob content is stored on Google Drive. "raw" (default when
+   * absent, for backwards compatibility) stores the file bytes as-is;
+   * "gzip" stores a gzip stream of the raw bytes under a ".blob.gz" name.
+   * The sha256 hash always refers to the RAW content, never the encoded
+   * blob, so integrity verification is encoding-agnostic.
+   */
+  blobEncoding?: "raw" | "gzip";
 }
 
 export interface CloudSaveStateMetadata {
@@ -316,6 +324,12 @@ export interface RestoreManifestResponse {
   customPathRawPaths: string[];
   variants: SnapshotVariant[];
   files: RestoreManifestFile[];
+  /**
+   * Hydra Plus: how each file's blob is encoded on Google Drive. Absent
+   * (legacy manifests) means every blob is stored raw. Only non-raw
+   * entries are recorded; the sha256 always refers to the raw content.
+   */
+  blobEncodings?: Record<string, "gzip">;
 }
 
 export interface RemoteSnapshotSummary {
@@ -326,6 +340,65 @@ export interface RemoteSnapshotSummary {
   fileCount: number;
   totalSizeBytes: number;
   aggregateHash: string;
+}
+
+/**
+ * One entry of a game's snapshot history on Google Drive. Old versions are
+ * kept as small per-version manifests that reference the shared blob pool,
+ * so history costs almost no quota.
+ */
+export interface SnapshotVersionSummary {
+  id: string;
+  version: number;
+  savedAt: string;
+  fileCount: number;
+  totalSizeBytes: number;
+  aggregateHash: string;
+  /** True when this version is the current remote head. */
+  current: boolean;
+}
+
+/** Sanity/cleanup report for the "Hydra Plus Saves" folder on Drive. */
+export interface DriveHygieneOverview {
+  versionCount: number;
+  gameCount: number;
+  blobCount: number;
+  blobBytes: number;
+  manifestBytes: number;
+  /** Blobs no longer referenced by any version manifest. */
+  orphanBlobCount: number;
+  orphanBlobBytes: number;
+  /** App files sitting in the Drive trash. */
+  trashedFileCount: number;
+  trashedFileBytes: number;
+}
+
+export interface DriveCleanupResult {
+  deletedFiles: number;
+  freedBytes: number;
+}
+
+export type DiscoveredSaveEnvironment =
+  | "wine-prefix"
+  | "steam-proton"
+  | "steam-cloud-userdata"
+  | "native"
+  | "documents"
+  | "home"
+  | "install-dir";
+
+/** One candidate save location found by the system-wide scanner. */
+export interface DiscoveredSaveLocation {
+  absolutePath: string;
+  environment: DiscoveredSaveEnvironment;
+  environmentHint: string;
+  matchReason: string;
+  fileCount: number;
+  totalSizeBytes: number;
+  lastModifiedAt: string | null;
+  confidence: "high" | "medium" | "low";
+  /** True when a custom path binding already points here. */
+  tracked: boolean;
 }
 
 export type CloudSaveState =

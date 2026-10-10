@@ -135,9 +135,13 @@ export const validateSnapshotFile = (value: unknown): SnapshotFile => {
       "sizeBytes",
       "lastModifiedAt",
       ...(file.stateMetadata === undefined ? [] : ["stateMetadata"]),
+      ...(file.blobEncoding === undefined ? [] : ["blobEncoding"]),
     ]) ||
     (file.stateMetadata !== undefined &&
       !isStateMetadata(file.stateMetadata)) ||
+    (file.blobEncoding !== undefined &&
+      file.blobEncoding !== "raw" &&
+      file.blobEncoding !== "gzip") ||
     !isNonEmptyString(file.variantId) ||
     !CLOUD_SAVE_HASH_PATTERN.test(file.variantId) ||
     !isNonEmptyString(file.rawPath) ||
@@ -280,6 +284,15 @@ export const validateRemoteSnapshotSummary = (
   return value as RemoteSnapshotSummary;
 };
 
+const isValidBlobEncodings = (value: unknown): boolean => {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return false;
+  }
+  return Object.values(value as Record<string, unknown>).every(
+    (encoding) => encoding === "gzip"
+  );
+};
+
 export const validateRestoreManifest = (
   value: unknown
 ): RestoreManifestResponse => {
@@ -287,12 +300,18 @@ export const validateRestoreManifest = (
     throw new Error("Invalid restore manifest response");
   }
   const response = value as Record<string, unknown>;
+  const allowedKeys = [
+    "snapshot",
+    "customPathRawPaths",
+    "variants",
+    "files",
+    ...(response.blobEncodings === undefined ? [] : ["blobEncodings"]),
+  ];
   if (
-    Object.keys(response).some(
-      (key) =>
-        !["snapshot", "customPathRawPaths", "variants", "files"].includes(key)
-    ) ||
-    !["snapshot", "variants", "files"].every((key) => key in response)
+    Object.keys(response).some((key) => !allowedKeys.includes(key)) ||
+    !["snapshot", "variants", "files"].every((key) => key in response) ||
+    (response.blobEncodings !== undefined &&
+      !isValidBlobEncodings(response.blobEncodings))
   ) {
     throw new Error("Invalid restore manifest response");
   }
@@ -304,7 +323,7 @@ export const validateRestoreManifest = (
     typeof snapshot.version !== "number" ||
     !Number.isSafeInteger(snapshot.version) ||
     snapshot.version < 1 ||
-    (snapshot.shop !== "steam" && snapshot.shop !== "launchbox") ||
+    (snapshot.shop !== "steam" && snapshot.shop !== "custom") ||
     !isNonEmptyString(snapshot.objectId)
   ) {
     throw new Error("Invalid restore manifest snapshot");
