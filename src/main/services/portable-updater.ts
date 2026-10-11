@@ -43,7 +43,9 @@ export interface PortableReleaseInfo {
 }
 
 interface ResolvedPortableRelease extends PortableReleaseInfo {
-  /** sha512 (base64) from latest.yml — undefined when unverifiable. */
+  /** sha256 hex digest from the GitHub release asset ("sha256:..."). */
+  sha256?: string;
+  /** sha512 (base64) from latest.yml — used when no digest is available. */
   sha512?: string;
 }
 
@@ -67,7 +69,6 @@ const fetchLatestYmlSha512 = async (
 ): Promise<string | undefined> => {
   const ymlAsset = assets.find((asset) => asset.name === "latest.yml");
   if (!ymlAsset?.browser_download_url) return undefined;
-
   try {
     const { data } = await axios.get<string>(ymlAsset.browser_download_url, {
       timeout: 15_000,
@@ -102,6 +103,7 @@ export const fetchLatestPortableRelease =
           name?: string;
           browser_download_url?: string;
           size?: number;
+          digest?: string;
         }>;
       }>(GITHUB_LATEST_RELEASE_URL, {
         timeout: 15_000,
@@ -119,12 +121,18 @@ export const fetchLatestPortableRelease =
       // Never offer the release the user is already running.
       if (!isNewerVersion(version, app.getVersion())) return null;
 
-      const sha512 = await fetchLatestYmlSha512(asset.name, data.assets ?? []);
+      const sha256 = asset.digest?.startsWith("sha256:")
+        ? asset.digest.slice("sha256:".length)
+        : undefined;
+      const sha512 = sha256
+        ? undefined
+        : await fetchLatestYmlSha512(asset.name, data.assets ?? []);
 
       cachedRelease = {
         version,
         downloadUrl: asset.browser_download_url,
         sizeBytes: asset.size ?? 0,
+        ...(sha256 ? { sha256 } : {}),
         ...(sha512 ? { sha512 } : {}),
       };
 
@@ -152,18 +160,19 @@ export const getPortableUpdateState = () => ({
   downloadedVersion,
 });
 
-/** Streams a file to disk while computing its sha512 (base64). */
-const downloadWithHash = async (
+/** Streams a file to disk while computing its sha256/sha512 checksums. */
+const downloadWithHashes = async (
   url: string,
   targetPath: string,
   onProgress?: (percent: number) => void
-): Promise<string> => {
+): Promise<{ sha256: string; sha512: string }> => {
   const { data } = await axios.get<NodeJS.ReadableStream>(url, {
     responseType: "stream",
     timeout: 0,
   });
 
-  const hash = crypto.createHash("sha512");
+  const hash256 = crypto.createHash("sha256");
+  const hash512 = crypto.createHash("sha512");
   let received = 0;
   const total = cachedRelease?.sizeBytes || 0;
 
@@ -171,7 +180,8 @@ const downloadWithHash = async (
     const writer = fs.createWriteStream(targetPath);
 
     data.on("data", (chunk: Buffer) => {
-      hash.update(chunk);
+      hash256.update(chunk);
+      hash512.update(chunk);
       received += chunk.length;
       if (total > 0) {
         onProgress?.(Math.min(100, Math.round((received / total) * 100)));
@@ -183,7 +193,7 @@ const downloadWithHash = async (
     data.pipe(writer);
   });
 
-  return hash.digest("base64");
+  return { sha256: hash256.digest("hex"), sha512: hash512.digest("base64") };
 };
 
 export const downloadPortableUpdate = async (
@@ -193,7 +203,7 @@ export const downloadPortableUpdate = async (
     throw new Error("portable_update_release_unresolved");
   }
 
-  const { sha512, sizeBytes, version, downloadUrl } = cachedRelease;
+  const { sha256, sha512, sizeBytes, version, downloadUrl } = cachedRelease;
 
   const targetPath = path.join(
     getUpdateTempRoot(),
@@ -201,17 +211,29 @@ export const downloadPortableUpdate = async (
   );
   await fs.promises.mkdir(path.dirname(targetPath), { recursive: true });
 
-  let actualSha512: string;
+  let actualHashes: { sha256: string; sha512: string };
   try {
-    actualSha512 = await downloadWithHash(downloadUrl, targetPath, onProgress);
+    actualHashes = await downloadWithHashes(
+      downloadUrl,
+      targetPath,
+      onProgress
+    );
   } catch (error) {
     await fs.promises.rm(targetPath, { force: true }).catch(() => undefined);
     throw error;
   }
 
-  if (sha512 && actualSha512 !== sha512) {
+  const expectedHash = sha256
+    ? ({ algo: "sha256", value: sha256 } as const)
+    : sha512
+      ? ({ algo: "sha512", value: sha512 } as const)
+      : null;
+
+  if (expectedHash && actualHashes[expectedHash.algo] !== expectedHash.value) {
     await fs.promises.rm(targetPath, { force: true }).catch(() => undefined);
-    logger.error("Portable update download failed the sha512 check");
+    logger.error(
+      `Portable update download failed the ${expectedHash.algo} check`
+    );
     throw new Error("portable_update_corrupted");
   }
 
