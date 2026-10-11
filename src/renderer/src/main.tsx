@@ -3,7 +3,6 @@ import ReactDOM from "react-dom/client";
 import i18n from "i18next";
 import { initReactI18next } from "react-i18next";
 import { Provider } from "react-redux";
-import LanguageDetector from "i18next-browser-languagedetector";
 import { HashRouter, Route, Routes } from "react-router-dom";
 
 import "@fontsource/noto-sans/400.css";
@@ -58,16 +57,17 @@ const syncDocumentLanguage = (language: string) => {
   document.documentElement.dir = i18n.dir(language);
 };
 
-await i18n
-  .use(LanguageDetector)
-  .use(initReactI18next)
-  .init({
-    resources,
-    fallbackLng: "en",
-    interpolation: {
-      escapeValue: false,
-    },
-  });
+// Hydra Plus ships only pt-BR and English; Portuguese is the default
+// language. A saved preference is honored only when it is one of the two
+// supported locales (older installs may carry a removed language).
+await i18n.use(initReactI18next).init({
+  resources,
+  lng: "pt-BR",
+  fallbackLng: "en",
+  interpolation: {
+    escapeValue: false,
+  },
+});
 
 const userPreferences = (await levelDBService.get(
   "userPreferences",
@@ -75,10 +75,13 @@ const userPreferences = (await levelDBService.get(
   "json"
 )) as { language?: string } | null;
 
-if (userPreferences?.language) {
-  await i18n.changeLanguage(userPreferences.language);
+const savedLanguage = userPreferences?.language;
+
+if (savedLanguage === "en" || savedLanguage === "pt-BR") {
+  await i18n.changeLanguage(savedLanguage);
 } else {
-  globalThis.electron.updateUserPreferences({ language: i18n.language });
+  await i18n.changeLanguage("pt-BR");
+  globalThis.electron.updateUserPreferences({ language: "pt-BR" });
 }
 
 syncDocumentLanguage(i18n.language);

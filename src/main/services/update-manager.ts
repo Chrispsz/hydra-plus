@@ -44,6 +44,17 @@ export class UpdateManager {
   }
 
   public static async checkForUpdates() {
+    // Windows portable: electron-updater cannot replace a portable exe (its
+    // quitAndInstall is a no-op there) — the built-in portable updater owns
+    // the whole flow. Skip electron-updater entirely to avoid duplicate
+    // checks and bogus install prompts.
+    if (
+      process.platform === "win32" &&
+      process.env.PORTABLE_EXECUTABLE_FILE != null
+    ) {
+      return false;
+    }
+
     autoUpdater
       .removeAllListeners()
       .on("update-available", (info: UpdateInfo) => {

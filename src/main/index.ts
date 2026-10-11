@@ -64,7 +64,7 @@ if (process.platform !== "linux") {
 
 i18n.init({
   resources,
-  lng: "en",
+  lng: "pt-BR",
   fallbackLng: "en",
   interpolation: {
     escapeValue: false,
@@ -191,11 +191,18 @@ const initializeApp = async () => {
     });
   });
 
-  const language = await db
+  // Only pt-BR and English ship with the app; anything else stored by an
+  // older version falls back to Portuguese (the default language).
+  const storedLanguage = await db
     .get<string, string>(levelKeys.language, {
       valueEncoding: "utf8",
     })
-    .catch(() => "en");
+    .catch(() => null);
+
+  const language =
+    storedLanguage === "en" || storedLanguage === "pt-BR"
+      ? storedLanguage
+      : "pt-BR";
 
   if (language) i18n.changeLanguage(language);
 
@@ -209,7 +216,7 @@ const initializeApp = async () => {
     WindowManager.createMainWindow();
   }
 
-  WindowManager.createSystemTray(language || "en");
+  WindowManager.createSystemTray(language);
 
   if (deepLinkArg) {
     handleDeepLinkPath(deepLinkArg);

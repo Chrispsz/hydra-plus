@@ -9,7 +9,12 @@ import { formatBytes } from "@shared";
 export const releasesPageUrl =
   "https://github.com/Chrispsz/hydra-plus/releases/latest";
 
-type PortableUpdatePhase = "idle" | "downloading" | "downloaded" | "installing";
+type PortableUpdatePhase =
+  | "idle"
+  | "downloading"
+  | "downloaded"
+  | "installing"
+  | "failed";
 
 /**
  * Update banner. Hydra Plus self-updates in place:
@@ -88,10 +93,11 @@ export function AutoUpdateSubHeader() {
 
     return (
       <header className="auto-update-sub-header">
-        {portablePhase === "downloaded" ? (
+        {portablePhase === "downloaded" || portablePhase === "installing" ? (
           <button
             type="button"
             className="auto-update-sub-header__new-version-button"
+            disabled={portablePhase === "installing"}
             onClick={async () => {
               setPortablePhase("installing");
               await window.electron.applyPortableUpdate();
@@ -101,19 +107,21 @@ export function AutoUpdateSubHeader() {
               className="auto-update-sub-header__new-version-icon"
               size={12}
             />
-            {t("version_available_install", { version })}
+            {portablePhase === "installing"
+              ? t("version_installing")
+              : t("version_available_install", { version })}
           </button>
         ) : (
           <button
             type="button"
             className="auto-update-sub-header__new-version-button"
-            disabled={portablePhase !== "idle"}
+            disabled={portablePhase === "downloading"}
             onClick={() => {
               setPortablePhase("downloading");
               window.electron
                 .downloadPortableUpdate()
                 .then(() => setPortablePhase("downloaded"))
-                .catch(() => setPortablePhase("idle"));
+                .catch(() => setPortablePhase("failed"));
             }}
           >
             <SyncIcon
@@ -125,8 +133,10 @@ export function AutoUpdateSubHeader() {
                   version,
                   progress: portableProgress,
                 })
-              : t("version_available_download", { version })}
-            {sizeLabel}
+              : portablePhase === "failed"
+                ? t("version_download_failed")
+                : t("version_available_download", { version })}
+            {portablePhase !== "failed" ? sizeLabel : ""}
           </button>
         )}
       </header>

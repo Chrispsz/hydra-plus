@@ -45,9 +45,10 @@ const resolveLanguage = (language: string | undefined) => {
   return (
     languageKeys.find((languageKey) => languageKey === language) ??
     languageKeys.find((languageKey) =>
-      languageKey.startsWith(language?.split("-")[0] ?? "en")
+      languageKey.startsWith(language?.split("-")[0] ?? "pt-BR")
     ) ??
-    "en"
+    // Portuguese is the default language of Hydra Plus.
+    "pt-BR"
   );
 };
 

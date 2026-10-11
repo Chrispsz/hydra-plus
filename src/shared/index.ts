@@ -1,21 +1,4 @@
-import {
-  ptBR,
-  enUS,
-  es,
-  fr,
-  pl,
-  hu,
-  tr,
-  ru,
-  it,
-  be,
-  zhCN,
-  da,
-  el,
-  vi,
-  ja,
-  sl,
-} from "date-fns/locale";
+import { enUS, ptBR } from "date-fns/locale";
 
 import { isArchiveOrgFileUri } from "./archive-org";
 import { charMap } from "./char-map";
@@ -42,7 +25,6 @@ export * from "./controller-support";
 export * from "./artwork-resolver";
 export * from "./download-directories";
 export * from "./html-sanitizer";
-export * from "./language-flags";
 export * from "./use-hls-video";
 export * from "./tracker-list";
 
@@ -295,20 +277,6 @@ export const applyHosterAvailability = <
 
 export const getDateLocale = (language: string) => {
   if (language.startsWith("pt")) return ptBR;
-  if (language.startsWith("es")) return es;
-  if (language.startsWith("fr")) return fr;
-  if (language.startsWith("hu")) return hu;
-  if (language.startsWith("pl")) return pl;
-  if (language.startsWith("tr")) return tr;
-  if (language.startsWith("ru")) return ru;
-  if (language.startsWith("it")) return it;
-  if (language.startsWith("be")) return be;
-  if (language.startsWith("zh")) return zhCN;
-  if (language.startsWith("da")) return da;
-  if (language.startsWith("el")) return el;
-  if (language.startsWith("vi")) return vi;
-  if (language.startsWith("ja")) return ja;
-  if (language.startsWith("sl")) return sl;
 
   return enUS;
 };
