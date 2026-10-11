@@ -53,6 +53,13 @@ export function SettingsContextCloud() {
     "trash" | "orphans" | null
   >(null);
 
+  // Local drafts so the number inputs don't clamp/persist on every keystroke
+  // (typing "15" used to flash the minimum value mid-typing).
+  const [retentionDraft, setRetentionDraft] = useState<string | null>(null);
+  const [periodicSyncDraft, setPeriodicSyncDraft] = useState<string | null>(
+    null
+  );
+
   const refreshHygiene = useCallback(async () => {
     if (!isDriveLinked) return;
     setIsHygieneLoading(true);
@@ -89,6 +96,22 @@ export function SettingsContextCloud() {
       )
     );
     void updateUserPreferences({ cloudSaveSnapshotRetention: next });
+  };
+
+  const commitRetentionDraft = () => {
+    if (retentionDraft === null) return;
+    setRetentionDraft(null);
+    const parsed = Number(retentionDraft);
+    if (retentionDraft.trim() === "" || !Number.isFinite(parsed)) return;
+    handleRetentionChange(parsed);
+  };
+
+  const commitPeriodicSyncDraft = () => {
+    if (periodicSyncDraft === null) return;
+    setPeriodicSyncDraft(null);
+    const parsed = Number(periodicSyncDraft);
+    if (periodicSyncDraft.trim() === "" || !Number.isFinite(parsed)) return;
+    handlePeriodicSyncChange(parsed);
   };
 
   const runCleanup = async (kind: "trash" | "orphans") => {
@@ -201,10 +224,14 @@ export function SettingsContextCloud() {
               type="number"
               min={MIN_SNAPSHOT_RETENTION}
               max={MAX_SNAPSHOT_RETENTION}
-              value={retention}
-              onChange={(event) =>
-                handleRetentionChange(Number(event.target.value))
-              }
+              value={retentionDraft ?? String(retention)}
+              onChange={(event) => setRetentionDraft(event.target.value)}
+              onBlur={commitRetentionDraft}
+              onKeyDown={(event) => {
+                if (event.key === "Enter") {
+                  event.currentTarget.blur();
+                }
+              }}
             />
           </div>
           <p className="settings-context-cloud__hint">
@@ -220,10 +247,14 @@ export function SettingsContextCloud() {
               type="number"
               min={0}
               max={360}
-              value={periodicSyncMinutes}
-              onChange={(event) =>
-                handlePeriodicSyncChange(Number(event.target.value))
-              }
+              value={periodicSyncDraft ?? String(periodicSyncMinutes)}
+              onChange={(event) => setPeriodicSyncDraft(event.target.value)}
+              onBlur={commitPeriodicSyncDraft}
+              onKeyDown={(event) => {
+                if (event.key === "Enter") {
+                  event.currentTarget.blur();
+                }
+              }}
             />
           </div>
           <p className="settings-context-cloud__hint">

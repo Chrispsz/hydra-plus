@@ -15,7 +15,7 @@ interface FormValues {
 export function SettingsAccount() {
   const { t } = useTranslation("settings");
 
-  const { showSuccessToast } = useToast();
+  const { showSuccessToast, showErrorToast } = useToast();
   const {
     control,
     formState: { isSubmitting },
@@ -60,8 +60,12 @@ export function SettingsAccount() {
   ];
 
   const onSubmit = async (values: FormValues) => {
-    await patchUser(values);
-    showSuccessToast(t("changes_saved"));
+    try {
+      await patchUser(values);
+      showSuccessToast(t("changes_saved"));
+    } catch {
+      showErrorToast(t("changes_not_saved"));
+    }
   };
 
   if (!userDetails) return null;
@@ -76,13 +80,15 @@ export function SettingsAccount() {
             event: React.ChangeEvent<HTMLSelectElement>
           ) => {
             field.onChange(event);
-            handleSubmit(onSubmit)();
+            if (!isSubmitting) {
+              handleSubmit(onSubmit)();
+            }
           };
 
           return (
             <section className="settings-account__section">
+              <h3>{t("profile_visibility")}</h3>
               <SelectField
-                label={t("profile_visibility")}
                 value={field.value}
                 onChange={handleChange}
                 options={profileVisibilityOptions.map((visiblity) => ({
@@ -98,6 +104,7 @@ export function SettingsAccount() {
       />
 
       <section className="settings-account__section">
+        <h3>{t("account_details")}</h3>
         <h4>{t("current_username")}</h4>
         <p>{userDetails?.username}</p>
 

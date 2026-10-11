@@ -45,10 +45,28 @@
   }
 
   &__item-header {
-    margin-bottom: globals.$spacing-unit;
     display: flex;
     flex-direction: column;
     gap: globals.$spacing-unit;
+  }
+
+  &__item-name {
+    margin: 0;
+    font-size: globals.$body-font-size;
+    font-weight: 600;
+    color: globals.$muted-color;
+  }
+
+  &__item-badge {
+    display: flex;
+    align-items: center;
+  }
+
+  &__description {
+    margin: 0;
+    font-size: globals.$small-font-size;
+    color: globals.$body-color;
+    line-height: 1.5;
   }
 
   &__header {

@@ -45,7 +45,7 @@ export function SettingsDownloadSources() {
   const { sourceUrl, clearSourceUrl } = useContext(settingsContext);
 
   const { t } = useTranslation("settings");
-  const { showSuccessToast } = useToast();
+  const { showSuccessToast, showErrorToast } = useToast();
   const { numberFormatter } = useFormat();
 
   const dispatch = useAppDispatch();
@@ -109,6 +109,7 @@ export function SettingsDownloadSources() {
       showSuccessToast(t("removed_download_source"));
     } catch (error) {
       logger.error("Failed to remove download source:", error);
+      showErrorToast(t("download_source_remove_error"));
     } finally {
       setIsRemovingDownloadSource(false);
     }
@@ -127,6 +128,7 @@ export function SettingsDownloadSources() {
       showSuccessToast(t("removed_all_download_sources"));
     } catch (error) {
       logger.error("Failed to remove all download sources:", error);
+      showErrorToast(t("download_source_remove_error"));
     } finally {
       setIsRemovingDownloadSource(false);
       setShowConfirmationDeleteAllSourcesModal(false);
@@ -156,6 +158,9 @@ export function SettingsDownloadSources() {
       setDownloadSources(sorted);
 
       showSuccessToast(t("download_sources_synced_successfully"));
+    } catch (error) {
+      logger.error("Failed to sync download sources:", error);
+      showErrorToast(t("download_sources_sync_error"));
     } finally {
       setIsSyncingDownloadSources(false);
     }
@@ -206,7 +211,9 @@ export function SettingsDownloadSources() {
         buttonsIsDisabled={isRemovingDownloadSource}
       />
 
-      <p>{t("download_sources_description")}</p>
+      <p className="settings-download-sources__description">
+        {t("download_sources_description")}
+      </p>
 
       <div className="settings-download-sources__header">
         <Button
@@ -262,9 +269,11 @@ export function SettingsDownloadSources() {
               className={`settings-download-sources__item ${isSyncingDownloadSources ? "settings-download-sources__item--syncing" : ""} ${isPendingOrMatching ? "settings-download-sources__item--pending" : ""}`}
             >
               <div className="settings-download-sources__item-header">
-                <h2>{downloadSource.name}</h2>
+                <h3 className="settings-download-sources__item-name">
+                  {downloadSource.name}
+                </h3>
 
-                <div style={{ display: "flex" }}>
+                <div className="settings-download-sources__item-badge">
                   <Badge>
                     {isPendingOrMatching && (
                       <SyncIcon className="settings-download-sources__spinner" />

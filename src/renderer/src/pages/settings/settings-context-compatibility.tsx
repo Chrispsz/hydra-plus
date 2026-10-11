@@ -152,14 +152,24 @@ export function SettingsContextCompatibility() {
   useEffect(() => {
     if (!protonVersionsLoaded || !selectedDefaultProtonPath) return;
 
+    // Only reconcile when the list actually loaded; an empty list (failed
+    // scan) must never wipe the stored preference.
+    if (protonVersions.length === 0) return;
+
     const hasSelectedVersion = protonVersions.some(
       (version) => version.path === selectedDefaultProtonPath
     );
 
     if (!hasSelectedVersion) {
       setSelectedDefaultProtonPath("");
+      updateUserPreferences({ defaultProtonPath: null });
     }
-  }, [protonVersions, protonVersionsLoaded, selectedDefaultProtonPath]);
+  }, [
+    protonVersions,
+    protonVersionsLoaded,
+    selectedDefaultProtonPath,
+    updateUserPreferences,
+  ]);
 
   const protonVersionAutoLabel = t("proton_version_auto", {
     ns: ["settings", "game_details"],

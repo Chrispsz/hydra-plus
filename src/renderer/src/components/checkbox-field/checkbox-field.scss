@@ -41,7 +41,7 @@
     }
 
     &:has(.checkbox-field__input:focus-visible) {
-      outline: 2px solid var(--color-primary);
+      outline: 2px solid globals.$brand-teal;
       outline-offset: 1px;
     }
   }
@@ -82,9 +82,5 @@
     min-width: 0;
     line-height: 20px;
     overflow-wrap: anywhere;
-
-    &:has(+ input:disabled) {
-      cursor: not-allowed;
-    }
   }
 }

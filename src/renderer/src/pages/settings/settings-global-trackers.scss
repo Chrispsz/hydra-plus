@@ -7,7 +7,7 @@
 
   &__description {
     font-size: 12px;
-    color: var(--text-muted);
+    color: globals.$body-color;
     margin: 0;
     line-height: 1.5;
   }
@@ -42,7 +42,7 @@
     border: 1px solid globals.$border-color;
     border-radius: 8px;
     background: globals.$dark-background-color;
-    color: #dadbe1;
+    color: globals.$body-color;
     font-family: "SF Mono", "Fira Code", "Cascadia Code", monospace;
     font-size: 12px;
     line-height: 1.5;
@@ -50,7 +50,7 @@
 
     &:focus {
       outline: none;
-      border-color: #dadbe1;
+      border-color: globals.$muted-color;
     }
 
     &::placeholder {
@@ -64,13 +64,13 @@
     border: 1px solid globals.$border-color;
     border-radius: 8px;
     background: globals.$dark-background-color;
-    color: #dadbe1;
+    color: globals.$body-color;
     font-family: "SF Mono", "Fira Code", "Cascadia Code", monospace;
     font-size: 12px;
 
     &:focus {
       outline: none;
-      border-color: #dadbe1;
+      border-color: globals.$muted-color;
     }
 
     &::placeholder {

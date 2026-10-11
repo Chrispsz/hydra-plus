@@ -7,56 +7,6 @@
   line-height: 1.6;
 }
 
-.settings-context-cloud__providers {
-  display: flex;
-  flex-direction: column;
-  gap: calc(globals.$spacing-unit * 1.5);
-}
-
-.settings-context-cloud__provider {
-  display: flex;
-  flex-direction: column;
-  gap: calc(globals.$spacing-unit / 2);
-  padding: calc(globals.$spacing-unit * 1.5);
-  text-align: left;
-  border: 1px solid transparent;
-  border-radius: 8px;
-  background: none;
-  color: inherit;
-  cursor: pointer;
-  transition:
-    background 0.15s ease,
-    border-color 0.15s ease;
-
-  &:hover {
-    background: rgba(255, 255, 255, 0.03);
-  }
-
-  &--selected {
-    border-color: globals.$border-color;
-    background: rgba(255, 255, 255, 0.03);
-
-    &:hover {
-      background: rgba(255, 255, 255, 0.05);
-    }
-  }
-}
-
-.settings-context-cloud__provider-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: globals.$spacing-unit;
-}
-
-.settings-context-cloud__provider-description {
-  margin: 0;
-  padding-left: calc(globals.$spacing-unit * 3);
-  font-size: 12px;
-  color: globals.$body-color;
-  line-height: 1.5;
-}
-
 .settings-context-cloud__account {
   display: flex;
   align-items: center;
@@ -109,9 +59,14 @@
     width: 90px;
     padding: 6px 10px;
     border-radius: 6px;
-    border: 1px solid rgb(255 255 255 / 15%);
-    background: rgb(255 255 255 / 5%);
-    color: inherit;
+    border: 1px solid globals.$border-color;
+    background: globals.$dark-background-color;
+    color: globals.$body-color;
+
+    &:focus {
+      outline: none;
+      border-color: globals.$muted-color;
+    }
   }
 }
 

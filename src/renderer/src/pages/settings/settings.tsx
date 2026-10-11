@@ -14,6 +14,7 @@ import {
   GearIcon,
   LinkIcon,
   PlayIcon,
+  PlugIcon,
   ShieldCheckIcon,
 } from "@primer/octicons-react";
 import { Wrench } from "lucide-react";
@@ -66,7 +67,7 @@ export default function Settings() {
       {
         id: "integrations" as const,
         label: t("integrations"),
-        icon: <CloudIcon size={16} />,
+        icon: <PlugIcon size={16} />,
       },
       {
         id: "compatibility" as const,
@@ -77,7 +78,7 @@ export default function Settings() {
         ? [
             {
               id: "account_privacy" as const,
-              label: `${t("account")} & ${t("privacy")}`,
+              label: t("account_and_privacy"),
               icon: <ShieldCheckIcon size={16} />,
             },
           ]
@@ -135,29 +136,34 @@ export default function Settings() {
             <section className="settings__container">
               <div className="settings__content">
                 <aside className="settings__sidebar">
-                  {categories.map((category) => (
-                    <button
-                      key={category.id}
-                      type="button"
-                      className={`settings__sidebar-button ${
-                        currentCategory.id === category.id
-                          ? "settings__sidebar-button--active"
-                          : ""
-                      }`}
-                      onClick={() => setCurrentCategoryId(category.id)}
-                    >
-                      <span className="settings__sidebar-button-icon">
-                        {category.icon}
-                      </span>
-                      <span className="settings__sidebar-button-label">
-                        {category.label}
-                      </span>
-                    </button>
-                  ))}
+                  {categories.map((category) => {
+                    const isActive = currentCategory.id === category.id;
+
+                    return (
+                      <button
+                        key={category.id}
+                        type="button"
+                        className={`settings__sidebar-button ${
+                          isActive ? "settings__sidebar-button--active" : ""
+                        }`}
+                        aria-current={isActive ? "page" : undefined}
+                        onClick={() => setCurrentCategoryId(category.id)}
+                      >
+                        <span className="settings__sidebar-button-icon">
+                          {category.icon}
+                        </span>
+                        <span className="settings__sidebar-button-label">
+                          {category.label}
+                        </span>
+                      </button>
+                    );
+                  })}
                 </aside>
 
                 <div className="settings__panel">
-                  <h2>{currentCategory.label}</h2>
+                  <h2 className="settings__panel-title">
+                    {currentCategory.label}
+                  </h2>
                   {renderCategory()}
                 </div>
               </div>

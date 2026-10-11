@@ -1,5 +1,4 @@
 export type CollapsibleSettingsSection =
-  | "steam"
   | "realDebrid"
   | "premiumize"
   | "allDebrid"

@@ -5,20 +5,8 @@
   flex-direction: column;
   gap: globals.$spacing-unit * 2;
 
-  &__section-title {
-    margin-top: calc(globals.$spacing-unit * 2);
-    margin-bottom: globals.$spacing-unit;
-  }
-
   &__common-redist-button {
     align-self: flex-start;
-  }
-
-  &__disabled-hint {
-    font-size: globals.$hint-font-size;
-    color: globals.$muted-color;
-    margin-top: calc(globals.$spacing-unit * -1);
-    font-style: italic;
   }
 
   &__network-interface {

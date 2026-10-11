@@ -55,11 +55,12 @@
       background-color 0.1s ease;
 
     &:hover {
-      background: rgba(255, 255, 255, 0.15);
+      background: rgba(255, 255, 255, 0.06);
+      color: globals.$body-color;
     }
 
     &--active {
-      background: rgba(255, 255, 255, 0.1);
+      background: rgba(255, 255, 255, 0.12);
       color: globals.$muted-color;
     }
 
@@ -75,27 +76,6 @@
     }
   }
 
-  &__sidebar-group {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-    padding-top: 8px;
-  }
-
-  &__sidebar-divider {
-    height: 1px;
-    background: rgba(255, 255, 255, 0.06);
-    margin-bottom: 4px;
-  }
-
-  &__sidebar-group-label {
-    font-size: 10px;
-    font-weight: 600;
-    color: #71717a;
-    letter-spacing: 0.8px;
-    padding: 0 calc(globals.$spacing-unit * 1.5);
-  }
-
   &__panel {
     display: flex;
     flex: 1;
@@ -104,6 +84,13 @@
     min-width: 0;
     padding: calc(globals.$spacing-unit * 2.5);
     overflow: auto;
+  }
+
+  &__panel-title {
+    margin: 0;
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: globals.$muted-color;
   }
 
   @media (max-width: 860px) {
