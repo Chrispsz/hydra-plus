@@ -140,8 +140,6 @@
     "steamgriddb_stale_cache": "Показаны кэшированные обложки. Новые могут появиться чуть позже.",
     "steamgriddb_artwork_updated": "Оформление обновлено",
     "steamgriddb_artwork_reset": "Оформление сброшено по умолчанию",
-    "classics_hero_layout_warning": "Чтобы показать логотип и hero, включите макет «логотип + hero» на странице классической игры.",
-    "classics_hero_layout_open_settings": "Открыть настройки",
     "custom_assets_not_sync": "Ваши пользовательские изображения не будут синхронизированы с вашей учётной записью."
   },
   "header": {
@@ -244,7 +242,6 @@
     "active_filters": "Активные фильтры",
     "no_genres": "Без категорий",
     "mode_modern_games": "Современные игры",
-    "mode_classics": "Классика",
     "platforms": "Платформы"
   },
   "game_details": {
@@ -1327,7 +1324,6 @@
     "hide_library_steam_badges": "Скрыть значки подключения к библиотеке Steam",
     "hide_library_achievement_progress": "Скрывать полосу прогресса достижений на карточках библиотеки",
     "autoplay_animated_artwork": "Всегда воспроизводить анимированные изображения (Может влиять на производительность)",
-    "classics_group": "Классика",
     "ready_to_play": "Готово к игре",
     "setup_needed": "Требуется настройка",
     "setup_required": "Требуется настройка",
@@ -1944,8 +1940,6 @@
     "empty_favorites_description": "Добавляйте игры в избранное, чтобы они всегда были под рукой.",
     "empty_collection_title": "Коллекция пуста",
     "empty_collection_description": "Кликните правой кнопкой мыши на любую игру, откройте «Коллекция» и добавьте её сюда.",
-    "importing_classics_title": "Импорт вашей классики",
-    "importing_classics_description": "Мы сканируем ваши папки ROM, чтобы вернуть вашу классику. Это может занять некоторое время.",
     "disk_usage": "Использование диска",
     "disk_usage_tooltip": "Установленный размер на диске",
     "installer_size_tooltip": "Размер установщика",

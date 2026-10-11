@@ -134,8 +134,6 @@
     "steamgriddb_stale_cache": "Showing cached artwork. The latest may take a moment to appear.",
     "steamgriddb_artwork_updated": "Artwork updated",
     "steamgriddb_artwork_reset": "Artwork reset to default",
-    "classics_hero_layout_warning": "To display the logo and hero, enable the logo + hero layout on the classic game page.",
-    "classics_hero_layout_open_settings": "Open settings",
     "custom_assets_not_sync": "Your custom artwork will not be synced with your account."
   },
   "header": {
@@ -239,7 +237,6 @@
     "active_filters": "Active filters",
     "no_genres": "No categories",
     "mode_modern_games": "Modern Games",
-    "mode_classics": "Classics",
     "platforms": "Platforms"
   },
   "game_details": {
@@ -1344,7 +1341,6 @@
     "hide_library_ready_size_badges": "Hide the Ready and size badges on library cards",
     "hide_library_steam_badges": "Hide Steam Library connection badges",
     "autoplay_animated_artwork": "Always play animated artwork (May affect performance)",
-    "classics_group": "Classics",
     "ready_to_play": "Ready to play",
     "setup_needed": "Setup needed",
     "setup_required": "Setup required",
@@ -1826,8 +1822,6 @@
     "empty_favorites_description": "Mark games as favorites to keep them handy here.",
     "empty_collection_title": "This collection is empty",
     "empty_collection_description": "Right-click any game, open Collection, and add it here.",
-    "importing_classics_title": "Importing your classics",
-    "importing_classics_description": "We're scanning your ROM folders to bring your classics back. This can take a moment.",
     "disk_usage": "Disk usage",
     "disk_usage_tooltip": "Installed size on disk",
     "installer_size_tooltip": "Installer size",

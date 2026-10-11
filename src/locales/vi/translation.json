@@ -134,8 +134,6 @@
     "steamgriddb_stale_cache": "Đang hiển thị hình ảnh đã lưu trong bộ nhớ đệm. Hình ảnh mới nhất có thể mất một chút thời gian để xuất hiện.",
     "steamgriddb_artwork_updated": "Đã cập nhật hình ảnh",
     "steamgriddb_artwork_reset": "Đã đặt lại hình ảnh về mặc định",
-    "classics_hero_layout_warning": "Để hiển thị logo và ảnh bìa, hãy bật bố cục logo + ảnh bìa ở trang game cổ điển.",
-    "classics_hero_layout_open_settings": "Mở cài đặt",
     "custom_assets_not_sync": "Hình ảnh tùy chỉnh của bạn sẽ không được đồng bộ với tài khoản."
   },
   "header": {
@@ -238,7 +236,6 @@
     "active_filters": "Bộ lọc đang áp dụng",
     "no_genres": "Không có danh mục",
     "mode_modern_games": "Game hiện đại",
-    "mode_classics": "Game cổ điển",
     "platforms": "Nền tảng"
   },
   "game_details": {
@@ -1084,7 +1081,6 @@
     "default_proton_version_description": "Chọn phiên bản Proton được dùng ở chế độ Tự động khi game không có thiết lập riêng",
     "console_cores": "Lõi máy chơi game",
     "console_cores_description": "Chọn một máy chơi game để thiết lập giả lập, thư mục ROM và xem lại thư viện của bạn.",
-    "classics_group": "Game cổ điển",
     "ready_to_play": "Sẵn sàng chơi",
     "setup_needed": "Cần thiết lập",
     "setup_required": "Bắt buộc thiết lập",
@@ -1532,8 +1528,6 @@
     "empty_favorites_description": "Đánh dấu game là yêu thích để luôn có sẵn ở đây.",
     "empty_collection_title": "Bộ sưu tập này đang trống",
     "empty_collection_description": "Nhấn chuột phải vào game bất kỳ, mở Bộ sưu tập và thêm vào đây.",
-    "importing_classics_title": "Đang nhập các game cổ điển của bạn",
-    "importing_classics_description": "Chúng tôi đang quét các thư mục ROM để đưa game cổ điển của bạn trở lại. Việc này có thể mất một lát.",
     "disk_usage": "Dung lượng ổ đĩa",
     "disk_usage_tooltip": "Dung lượng đã cài trên ổ đĩa",
     "installer_size_tooltip": "Dung lượng bộ cài",

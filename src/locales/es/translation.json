@@ -140,8 +140,6 @@
     "steamgriddb_stale_cache": "Mostrando ilustraciones en caché. Las más recientes pueden tardar un momento en aparecer.",
     "steamgriddb_artwork_updated": "Arte actualizado",
     "steamgriddb_artwork_reset": "Arte restablecido al valor predeterminado",
-    "classics_hero_layout_warning": "Para mostrar el logo y el hero, activa el diseño de logo + hero en la página de juegos clásicos.",
-    "classics_hero_layout_open_settings": "Abrir ajustes",
     "custom_assets_not_sync": "Tus ilustraciones personalizadas no se sincronizarán con tu cuenta."
   },
   "header": {
@@ -243,7 +241,6 @@
     "filters_sidebar_hint": "Usa la barra lateral para refinar tu búsqueda",
     "active_filters": "Filtros activos",
     "no_genres": "Sin categorías",
-    "mode_classics": "Clásicos",
     "mode_modern_games": "Juegos modernos",
     "platforms": "Plataformas"
   },
@@ -1325,7 +1322,6 @@
     "hide_library_steam_badges": "Ocultar las insignias de conexión con la biblioteca de Steam",
     "hide_library_achievement_progress": "Ocultar la barra de progreso de logros en las tarjetas de la librería",
     "autoplay_animated_artwork": "Reproducir siempre las ilustraciones animadas (Puede afectar el rendimiento)",
-    "classics_group": "Clásicos",
     "ready_to_play": "Listo para jugar",
     "setup_needed": "Configuración necesaria",
     "setup_required": "Configuración requerida",
@@ -1961,8 +1957,6 @@
     "category_classics": "Clásicos",
     "installed": "Listo",
     "installed_tooltip": "Ejecutable configurado, listo para jugar",
-    "importing_classics_title": "Importando tus clásicos",
-    "importing_classics_description": "Estamos escaneando tus carpetas de ROMs para traer de vuelta tus clásicos. Esto puede tardar un momento.",
     "all_consoles": "Todas las consolas",
     "show_installed_only": "Mostrar solo instalados",
     "selected_consoles_one": "{{count}} consola seleccionada",

@@ -141,8 +141,6 @@
     "edit_game_modal_drop_grid_image_here": "Déposez l'image de la jaquette ici",
     "steamgriddb_artwork_updated": "Illustration mise à jour",
     "steamgriddb_artwork_reset": "Illustration réinitialisée par défaut",
-    "classics_hero_layout_warning": "Pour afficher le logo et le hero, activez la disposition logo + hero sur la page des jeux classiques.",
-    "classics_hero_layout_open_settings": "Ouvrir les réglages",
     "custom_assets_not_sync": "Vos illustrations personnalisées ne seront pas synchronisées avec votre compte."
   },
   "header": {
@@ -254,7 +252,6 @@
     "active_filters": "Filtres actifs",
     "no_genres": "Aucune catégorie",
     "mode_modern_games": "Jeux modernes",
-    "mode_classics": "Classiques",
     "platforms": "Plateformes"
   },
   "game_details": {
@@ -1265,7 +1262,6 @@
     "hide_library_steam_badges": "Masquer les badges de connexion à la bibliothèque Steam",
     "hide_library_achievement_progress": "Masquer la barre de progression des succès sur les cartes de la bibliothèque",
     "autoplay_animated_artwork": "Toujours lire les illustrations animées (peut affecter les performances)",
-    "classics_group": "Classiques",
     "ready_to_play": "Prêt à jouer",
     "setup_needed": "Configuration nécessaire",
     "setup_required": "Configuration requise",
@@ -1978,8 +1974,6 @@
     "imported_from_steam": "Importé depuis la bibliothèque Steam liée à ce profil.",
     "category_classics": "Classiques",
     "all_consoles": "Toutes les consoles",
-    "importing_classics_title": "Importation de vos classiques",
-    "importing_classics_description": "Nous analysons vos dossiers ROM pour ramener vos classiques. Cela peut prendre un moment.",
     "context_menu_accessible_label": "Menu contextuel du jeu",
     "context_menu_launch_game": "Lancer le jeu",
     "context_menu_download_game": "Télécharger le jeu",

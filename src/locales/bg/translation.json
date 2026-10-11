@@ -200,7 +200,6 @@
     "active_filters": "Активни филтри",
     "no_genres": "Няма категории",
     "mode_modern_games": "Съвременни игри",
-    "mode_classics": "Класика",
     "platforms": "Платформи"
   },
   "game_details": {
@@ -979,7 +978,6 @@
     "default_proton_version_description": "Избери Proton версията, която се използва в режим Auto, когато играта няма персонализирана настройка",
     "console_cores": "Ядра на конзола",
     "console_cores_description": "Избери конзола за конфигуриране на емулация, папки на ROM и преглед на твоята библиотека.",
-    "classics_group": "Класика",
     "new_badge": "НОВО",
     "ready_to_play": "Готово за игра",
     "setup_needed": "Необходимо е конфигуриране",
@@ -1418,8 +1416,6 @@
     "empty_favorites_description": "Маркирай игри като любими, за да ги виждаш тук.",
     "empty_collection_title": "Тази колекция е празна",
     "empty_collection_description": "Кликни с десен бутон на игра, отвори Колекция и я добави тук.",
-    "importing_classics_title": "Импортиране на класиките ти",
-    "importing_classics_description": "Сканираме ROM папките ти, за да върнем класиките. Може да отнеме малко време.",
     "disk_usage": "Използвано място на диска",
     "disk_usage_tooltip": "Инсталиран размер на диска",
     "installer_size_tooltip": "Размер на инсталатора",

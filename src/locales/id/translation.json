@@ -212,7 +212,6 @@
     "active_filters": "Filter aktif",
     "no_genres": "Tidak ada kategori",
     "mode_modern_games": "Game Modern",
-    "mode_classics": "Klasik",
     "platforms": "Platform"
   },
   "game_details": {
@@ -1037,7 +1036,6 @@
     "default_proton_version_description": "Pilih versi Proton yang digunakan mode Auto saat game tidak memiliki konfigurasi kustom",
     "console_cores": "Core Konsol",
     "console_cores_description": "Pilih konsol untuk mengatur emulasi, folder ROM, dan tinjau pustaka kamu.",
-    "classics_group": "Klasik",
     "ready_to_play": "Siap dimainkan",
     "setup_needed": "Perlu dikonfigurasi",
     "setup_required": "Konfigurasi diperlukan",
@@ -1477,8 +1475,6 @@
     "empty_favorites_description": "Tandai game sebagai favorit agar dapat dengan mudah diakses di sini.",
     "empty_collection_title": "Koleksi ini kosong",
     "empty_collection_description": "Klik kanan game apa saja, buka Koleksi, dan tambahkan di sini.",
-    "importing_classics_title": "Mengimpor klasik kamu",
-    "importing_classics_description": "Kami sedang memindai folder ROM kamu untuk mengembalikan koleksi klasik kamu. Ini mungkin memerlukan beberapa waktu.",
     "disk_usage": "Penggunaan disk",
     "disk_usage_tooltip": "Ukuran yang terinstal di disk",
     "installer_size_tooltip": "Ukuran installer",

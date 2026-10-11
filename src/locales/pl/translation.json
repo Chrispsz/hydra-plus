@@ -134,8 +134,6 @@
     "steamgriddb_stale_cache": "Wyświetlane są grafiki z pamięci podręcznej. Najnowsze mogą pojawić się za chwilę.",
     "steamgriddb_artwork_updated": "Grafiki zaktualizowano",
     "steamgriddb_artwork_reset": "Przywrócono domyślne grafiki",
-    "classics_hero_layout_warning": "Aby wyświetlać logo i grafikę tła, włącz układ Logo + Hero na klasycznej stronie gry.",
-    "classics_hero_layout_open_settings": "Otwórz ustawienia",
     "custom_assets_not_sync": "Twoje niestandardowe grafiki nie zostaną zsynchronizowane z kontem."
   },
   "header": {
@@ -229,7 +227,6 @@
     "active_filters": "Aktywne filtry",
     "no_genres": "Brak kategorii",
     "mode_modern_games": "Współczesne gry",
-    "mode_classics": "Klasyki",
     "platforms": "Platformy"
   },
   "game_details": {
@@ -1084,7 +1081,6 @@
     "default_proton_version_description": "Wybierz wersję Proton używaną w trybie Auto, gdy gra nie ma własnego ustawienia",
     "console_cores": "Rdzenie konsol",
     "console_cores_description": "Wybierz konsolę, aby skonfigurować emulację i foldery ROM-ów oraz przejrzeć bibliotekę.",
-    "classics_group": "Klasyki",
     "ready_to_play": "Gotowe do gry",
     "setup_needed": "Wymaga konfiguracji",
     "setup_required": "Konfiguracja wymagana",
@@ -1540,8 +1536,6 @@
     "empty_favorites_description": "Oznacz gry jako ulubione, aby mieć je zawsze pod ręką.",
     "empty_collection_title": "Ta kolekcja jest pusta",
     "empty_collection_description": "Kliknij prawym przyciskiem dowolną grę, otwórz opcję Kolekcja i dodaj ją tutaj.",
-    "importing_classics_title": "Importowanie klasyków",
-    "importing_classics_description": "Skanujemy foldery ROM-ów, aby przywrócić Twoje klasyki. Może to chwilę potrwać.",
     "disk_usage": "Użycie dysku",
     "disk_usage_tooltip": "Rozmiar zainstalowanych plików na dysku",
     "installer_size_tooltip": "Rozmiar instalatora",
