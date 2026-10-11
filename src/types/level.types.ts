@@ -58,6 +58,13 @@ export interface Game {
   steamPlayTimeInMilliseconds?: number;
   hasActiveSteamImport?: boolean;
   enableHydraPlaytimeTracking?: boolean;
+  /**
+   * Online (Online-Fix) mode: launches the game with the Steam client
+   * guaranteed to be running and Wine DLL overrides that keep the Steam
+   * networking/overlay path native (Spacewar relay), following the same
+   * approach as dedicated online-fix launchers on Linux.
+   */
+  onlineFixEnabled?: boolean;
   unsyncedDeltaPlayTimeInMilliseconds?: number;
   lastTimePlayed: Date | null;
   addedToLibraryAt?: Date | null;

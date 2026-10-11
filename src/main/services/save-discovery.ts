@@ -12,6 +12,8 @@ import { getCloudSaveGameContext } from "./cloud-save/cloud-save-game-context";
 import { getCloudSaveCustomPathBindings } from "./cloud-save/custom-path-store";
 import { cloudSaveCustomPathContextFromPathContext } from "./cloud-save/custom-path";
 import { findSteamCompatibilityPrefixForApp } from "./steam-integration/steam-compat-prefix";
+import { findInstalledSteamApp } from "./steam-integration/steam-installation-core";
+import { getSteamLibraryFolders } from "./steam";
 import {
   discoverSystemWinePrefixes,
   isPrefixCoveredByGame,
@@ -137,6 +139,14 @@ const findMatchingDirectories = async (
   const matches: string[] = [];
   let visited = 0;
 
+  // Directory names are often decorated with editions/platforms
+  // ("Blasphemous Deluxe", "Game GOG"). Exact match wins; when no exact
+  // match exists a substring hit on a reasonably long name is accepted —
+  // the user still confirms every candidate before it is tracked.
+  const substringMatchers = [...matchers].filter(
+    (matcher) => matcher.length >= 6
+  );
+
   const walk = async (dir: string, depth: number): Promise<void> => {
     if (depth > root.depth || visited >= MAX_DIRS_PER_ROOT) return;
     let dirents: fs.Dirent[];
@@ -153,7 +163,17 @@ const findMatchingDirectories = async (
       if (NOISE_DIR_NAMES.has(name.toLowerCase())) continue;
       const entryPath = path.join(dir, name);
       visited += 1;
-      if (matchers.has(normalizeName(name))) {
+      const normalized = normalizeName(name);
+      const isMatch =
+        matchers.has(normalized) ||
+        substringMatchers.some(
+          (matcher) =>
+            (normalized.length >= 6 && normalized.includes(matcher)) ||
+            (matcher.length >= 6 &&
+              matcher.includes(normalized) &&
+              normalized.length >= 6)
+        );
+      if (isMatch) {
         matches.push(entryPath);
         // Still descend: nested matches (e.g. a versioned profile folder)
         // are rare, but the root itself already matched — stop descending
@@ -171,7 +191,8 @@ const findMatchingDirectories = async (
 const buildNameMatchers = (
   gameTitle?: string,
   executablePath?: string,
-  objectId?: string
+  objectId?: string,
+  additionalTitles: Array<string | null | undefined> = []
 ): Set<string> => {
   const matchers = new Set<string>();
   const add = (value?: string | null) => {
@@ -180,6 +201,7 @@ const buildNameMatchers = (
   };
 
   add(gameTitle);
+  for (const title of additionalTitles) add(title);
 
   if (executablePath) {
     const basename = path.basename(executablePath);
@@ -197,7 +219,12 @@ const buildNameMatchers = (
   return matchers;
 };
 
-const prefixUserDirectories = (prefixPath: string): string[] => {
+interface PrefixUserDirectory {
+  base: string;
+  depth: number;
+}
+
+const prefixUserDirectories = (prefixPath: string): PrefixUserDirectory[] => {
   const usersRoot = path.join(prefixPath, "drive_c", "users");
   let users: string[] = [];
   try {
@@ -215,26 +242,40 @@ const prefixUserDirectories = (prefixPath: string): string[] => {
     return [];
   }
 
-  const candidates: string[] = [];
+  const candidates: PrefixUserDirectory[] = [];
   for (const user of users) {
     const userProfile = path.join(usersRoot, user);
-    for (const relative of [
-      "Documents",
-      "My Documents",
-      "Saved Games",
-      path.join("AppData", "Roaming"),
-      path.join("AppData", "Local"),
-      path.join("AppData", "LocalLow"),
-      "Documents/My Games",
-    ]) {
+    for (const [relative, depth] of [
+      ["Documents", 2],
+      ["My Documents", 2],
+      ["Saved Games", 2],
+      // AppData trees nest one level deeper in practice
+      // (e.g. Roaming/<company>/<launcher>/<game>/saves).
+      [path.join("AppData", "Roaming"), 3],
+      [path.join("AppData", "Local"), 3],
+      [path.join("AppData", "LocalLow"), 3],
+      ["Documents/My Games", 2],
+    ] as Array<[string, number]>) {
       const dir = path.join(userProfile, ...relative.split("/"));
       try {
-        if (fs.statSync(dir).isDirectory()) candidates.push(dir);
+        if (fs.statSync(dir).isDirectory())
+          candidates.push({ base: dir, depth });
       } catch {
         // missing — fine
       }
     }
   }
+
+  // Some installers write shared saves under ProgramData.
+  const programData = path.join(prefixPath, "drive_c", "ProgramData");
+  try {
+    if (fs.statSync(programData).isDirectory()) {
+      candidates.push({ base: programData, depth: 2 });
+    }
+  } catch {
+    // missing — fine
+  }
+
   return candidates;
 };
 
@@ -258,11 +299,11 @@ const buildScanRoots = (options: {
     if (!prefix) continue;
     for (const userDir of prefixUserDirectories(prefix)) {
       roots.push({
-        base: userDir,
+        base: userDir.base,
         environment:
           prefix === steamCompatPrefixPath ? "steam-proton" : "wine-prefix",
         hint: prefix,
-        depth: 2,
+        depth: userDir.depth,
         confidence: "high",
       });
     }
@@ -293,6 +334,31 @@ const buildScanRoots = (options: {
     depth: 2,
     confidence: "high",
   });
+
+  // Engine-specific roots: the generic XDG roots above cannot reach
+  // <engine>/<company>/<game> at depth 2, so native engine saves
+  // (Unity, Godot, Ren'Py) get their own shallow roots.
+  for (const [engineBase, hint] of [
+    [path.join(home, ".config", "unity3d"), "~/.config/unity3d (Unity)"],
+    [
+      path.join(home, ".local", "share", "unity3d"),
+      "~/.local/share/unity3d (Unity)",
+    ],
+    [
+      path.join(home, ".local", "share", "godot", "app_userdata"),
+      "Godot app_userdata",
+    ],
+    [path.join(home, ".renpy"), "Ren'Py saves"],
+  ]) {
+    roots.push({
+      base: engineBase,
+      environment: "native",
+      hint,
+      depth: 1,
+      confidence: "high",
+    });
+  }
+
   roots.push({
     base: path.join(home, ".steam", "steam", "userdata"),
     environment: "steam-cloud-userdata",
@@ -331,11 +397,11 @@ const buildSystemPrefixRoots = async (
     if (isPrefixCoveredByGame(prefix.prefixPath, gamePrefixPaths)) continue;
     for (const userDir of prefixUserDirectories(prefix.prefixPath)) {
       roots.push({
-        base: userDir,
+        base: userDir.base,
         environment:
           prefix.source === "steam-compatdata" ? "steam-proton" : "wine-prefix",
         hint: prefix.label,
-        depth: 2,
+        depth: userDir.depth,
         confidence: "medium",
       });
     }
@@ -372,10 +438,27 @@ export const discoverGameSaveLocations = async (
   const context = await getCloudSaveGameContext(objectId, shop);
   const { pathContext, game } = context;
 
+  // The Steam manifest title is the strongest matcher for Steam games:
+  // the Hydra title may differ (localized names, editions, shortcuts).
+  const additionalTitles: Array<string | null | undefined> = [];
+  if (/^\d+$/.test(objectId)) {
+    try {
+      const libraryFolders = await getSteamLibraryFolders();
+      const installedApp = await findInstalledSteamApp(
+        objectId,
+        libraryFolders
+      );
+      if (installedApp?.name) additionalTitles.push(installedApp.name);
+    } catch {
+      // Steam not installed / manifest missing — fine.
+    }
+  }
+
   const matchers = buildNameMatchers(
     game?.title,
     pathContext.executablePath,
-    objectId
+    objectId,
+    additionalTitles
   );
   if (matchers.size === 0) return [];
 

@@ -981,7 +981,9 @@
     "cloud_save_v2_login_card_description": "Conecte seu Google Drive para sincronizar, restaurar e proteger os saves deste jogo.",
     "cloud_save_v2_login_sign_in": "Entrar na conta",
     "cloud_save_v2_login_connect_drive": "Conectar Google Drive",
-    "cloud_save_v2_conflict_hint": "Os saves locais e a nuvem estão diferentes (arquivos foram apagados ou alterados de um lado). \"Usar saves da nuvem\" restaura a versão da nuvem no seu PC; \"Manter saves locais\" aplica o estado local e apaga da nuvem os arquivos conflitantes. Nada é perdido até você escolher."
+    "cloud_save_v2_conflict_hint": "Os saves locais e a nuvem estão diferentes (arquivos foram apagados ou alterados de um lado). \"Usar saves da nuvem\" restaura a versão da nuvem no seu PC; \"Manter saves locais\" aplica o estado local e apaga da nuvem os arquivos conflitantes. Nada é perdido até você escolher.",
+    "online_fix_mode_title": "Modo online (Online-Fix)",
+    "online_fix_mode_description": "Inicia o jogo com o cliente Steam aberto e Direct3D nativo, para o multiplayer Online-Fix (lobbies Spacewar, convites) funcionar como no Windows. Todos precisam jogar a mesma versão do patch com a Steam conectada."
   },
   "activation": {
     "title": "Ativação",

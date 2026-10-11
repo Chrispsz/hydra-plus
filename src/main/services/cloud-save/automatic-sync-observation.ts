@@ -147,3 +147,25 @@ export const clearAutomaticSyncObservationState = () => {
   latestObservations.clear();
   attempts.clear();
 };
+
+/**
+ * Drops bookkeeping for games that no longer exist so the module-level
+ * maps cannot grow without bound across library churn.
+ */
+export const pruneAutomaticSyncObservations = (aliveObjectIds: Set<string>) => {
+  const isAlive = (key: string) => {
+    try {
+      const [, objectId] = JSON.parse(key) as [string, string];
+      return aliveObjectIds.has(objectId);
+    } catch {
+      return false;
+    }
+  };
+
+  for (const key of [...latestObservations.keys()]) {
+    if (!isAlive(key)) latestObservations.delete(key);
+  }
+  for (const key of [...attempts.keys()]) {
+    if (!isAlive(key)) attempts.delete(key);
+  }
+};

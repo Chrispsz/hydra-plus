@@ -30,6 +30,10 @@ import {
 } from "@main/services";
 import { updateGameRecord } from "@main/services/game-record-updater";
 import { dispatchSteamProtocolLaunch } from "@main/services/steam-integration/steam-protocol-launch-dispatch";
+import {
+  ensureSteamClientRunning,
+  getOnlineFixLaunchEnv,
+} from "@main/services/online-fix";
 import { resolveSteamProtocolLaunch } from "@main/services/steam-integration/steam-protocol-launch";
 import { CommonRedistManager } from "@main/services/common-redist-manager";
 import { parseExecutablePath } from "../events/helpers/parse-executable-path";
@@ -422,7 +426,8 @@ const launchWindowsBinaryOnLinux = async (
   compatibilityContext: LinuxCompatibilityLaunchContext,
   launchOptions: string | null | undefined,
   useMangohud: boolean,
-  useGamemode: boolean
+  useGamemode: boolean,
+  onlineFixEnabled: boolean
 ): Promise<boolean> => {
   const { protonPath, winePrefixPath } = compatibilityContext;
 
@@ -441,6 +446,7 @@ const launchWindowsBinaryOnLinux = async (
       launchOptions,
       useGamemode,
       useMangohud,
+      extraEnv: onlineFixEnabled ? getOnlineFixLaunchEnv() : undefined,
     });
     PowerSaveBlockerManager.markCompatibilityLaunchStarted(gameKey);
     return true;
@@ -619,7 +625,8 @@ const launchResolvedGame = async (
   compatibilityContext: LinuxCompatibilityLaunchContext | null,
   launchOptions: string | null | undefined,
   useMangohud: boolean,
-  useGamemode: boolean
+  useGamemode: boolean,
+  onlineFixEnabled: boolean
 ) => {
   if (process.platform !== "linux") {
     return launchNatively(parsedPath, launchOptions, useMangohud, useGamemode);
@@ -638,7 +645,8 @@ const launchResolvedGame = async (
       compatibilityContext,
       launchOptions,
       useMangohud,
-      useGamemode
+      useGamemode,
+      onlineFixEnabled
     );
     if (launched) return null;
     clearCloudSaveLaunchGuard(objectId, shop);
@@ -700,6 +708,14 @@ const launchGameWithCloudSaveChecks = async (
     (userPreferences?.autoRunGamemode === true ||
       game?.autoRunGamemode === true) &&
     isGamemodeAvailable();
+
+  // Online (Online-Fix) sessions need the real Steam client running and
+  // signed in before the game starts (lobby/relay via Spacewar).
+  const onlineFixEnabled =
+    process.platform === "linux" && game?.onlineFixEnabled === true;
+  if (onlineFixEnabled) {
+    await ensureSteamClientRunning();
+  }
 
   const steamCompatibilityPrefixPath =
     process.platform === "linux" &&
@@ -879,7 +895,8 @@ const launchGameWithCloudSaveChecks = async (
           compatibilityContext,
           launchOptions,
           useMangohud,
-          useGamemode
+          useGamemode,
+          onlineFixEnabled
         );
       }
     );
@@ -911,7 +928,8 @@ const launchGameWithCloudSaveChecks = async (
     compatibilityContext,
     launchOptions,
     useMangohud,
-    useGamemode
+    useGamemode,
+    onlineFixEnabled
   );
 };
 

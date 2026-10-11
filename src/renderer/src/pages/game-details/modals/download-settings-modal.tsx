@@ -260,7 +260,7 @@ export function DownloadSettingsModal({
     deleteArchiveFilesAfterExtraction,
     setDeleteArchiveFilesAfterExtraction,
   ] = useState(
-    userPreferences?.deleteArchiveFilesAfterExtractionByDefault ?? false
+    userPreferences?.deleteArchiveFilesAfterExtractionByDefault ?? true
   );
   const [selectedDownloader, setSelectedDownloader] =
     useState<Downloader | null>(null);
@@ -494,7 +494,7 @@ export function DownloadSettingsModal({
   useEffect(() => {
     if (visible) {
       setDeleteArchiveFilesAfterExtraction(
-        userPreferences?.deleteArchiveFilesAfterExtractionByDefault ?? false
+        userPreferences?.deleteArchiveFilesAfterExtractionByDefault ?? true
       );
       setAutomaticExtractionEnabled(
         userPreferences?.extractFilesByDefault ?? true

@@ -293,6 +293,11 @@ declare global {
       objectId: string,
       enabled: boolean
     ) => Promise<void>;
+    setGameOnlineFixMode: (
+      shop: GameShop,
+      objectId: string,
+      enabled: boolean
+    ) => Promise<void>;
     toggleGameMangohud: (
       shop: GameShop,
       objectId: string,

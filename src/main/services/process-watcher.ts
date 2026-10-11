@@ -232,15 +232,32 @@ const hasLinuxCompatibilityProcessMatch = (
   });
 };
 
+/**
+ * The watcher ticks every 2 seconds and only needs the library for
+ * name matching. A 10-second TTL cache turns 30 full LevelDB sublevel
+ * scans per minute into 6, without any visible staleness for the user.
+ */
+const WATCHED_GAMES_CACHE_TTL_MS = 10_000;
+let watchedGamesCache: { at: number; games: Game[] } | null = null;
+
+const getWatchedGamesCached = async (): Promise<Game[]> => {
+  if (
+    watchedGamesCache &&
+    Date.now() - watchedGamesCache.at < WATCHED_GAMES_CACHE_TTL_MS
+  ) {
+    return watchedGamesCache.games;
+  }
+  const games = ((await gamesSublevel.values().all()) as Game[]).filter(
+    (game) => game.isDeleted === false
+  );
+  watchedGamesCache = { at: Date.now(), games };
+  return games;
+};
+
 export const watchProcesses = async () => {
   startOptionalExecutableCatalogueLoad(() => GameExecutables.ensureLoaded());
 
-  const games = await gamesSublevel
-    .values()
-    .all()
-    .then((results) => {
-      return results.filter((game) => game.isDeleted === false);
-    });
+  const games = await getWatchedGamesCached();
 
   if (!games.length) return;
 

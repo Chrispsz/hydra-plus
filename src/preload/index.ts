@@ -507,6 +507,9 @@ contextBridge.exposeInMainWorld("electron", {
     enabled: boolean
   ) =>
     ipcRenderer.invoke("setGameHydraPlaytimeEnabled", shop, objectId, enabled),
+
+  setGameOnlineFixMode: (shop: GameShop, objectId: string, enabled: boolean) =>
+    ipcRenderer.invoke("setGameOnlineFixMode", shop, objectId, enabled),
   toggleGameMangohud: (
     shop: GameShop,
     objectId: string,

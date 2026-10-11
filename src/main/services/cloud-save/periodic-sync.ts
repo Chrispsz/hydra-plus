@@ -8,6 +8,11 @@ import {
   runAutomaticCloudSaveSyncDetailed,
 } from "./automatic-sync";
 import { isCloudSaveDeletionPending } from "./pending-deletion";
+import {
+  consumeReauthLogState,
+  isDriveReauthRequired,
+} from "./drive-reauth-state";
+import { pruneAutomaticSyncObservations } from "./automatic-sync-observation";
 
 /**
  * Bidirectional background sync.
@@ -48,11 +53,37 @@ export const runPeriodicCloudSaveSync = async (): Promise<void> => {
   const intervalMinutes = await resolveIntervalMinutes();
   if (intervalMinutes === 0) return;
 
+  // Circuit breaker: when the Drive refresh token is dead (invalid_grant),
+  // stop retrying in the background until the user reconnects. The UI
+  // shows the actionable reconnect button; the breaker resets itself as
+  // soon as a token refresh succeeds.
+  if (isDriveReauthRequired()) {
+    if (consumeReauthLogState()) {
+      logger.warn(
+        "[Cloud Save] Google Drive reauth required — periodic sync paused until reconnect"
+      );
+    }
+    return;
+  }
+
   const now = Date.now();
 
   try {
-    const allGames = await gamesSublevel.values().all();
-    for (const game of allGames as Game[]) {
+    const allGames = (await gamesSublevel.values().all()) as Game[];
+    const aliveGameIds = new Set(allGames.map((game) => game.objectId));
+
+    // Evict bookkeeping for games that no longer exist.
+    for (const key of [...lastRunAtByGame.keys()]) {
+      try {
+        const [, objectId] = JSON.parse(key) as [string, string];
+        if (!aliveGameIds.has(objectId)) lastRunAtByGame.delete(key);
+      } catch {
+        lastRunAtByGame.delete(key);
+      }
+    }
+    pruneAutomaticSyncObservations(aliveGameIds);
+
+    for (const game of allGames) {
       const key = gameKey(game.objectId, game.shop);
       const lastRunAt = lastRunAtByGame.get(key) ?? 0;
       if (now - lastRunAt < intervalMinutes * 60_000) continue;

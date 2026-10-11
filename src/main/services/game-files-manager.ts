@@ -243,7 +243,7 @@ export class GameFilesManager {
       const shouldDelete =
         download?.automaticallyDeleteArchiveFiles ??
         userPreferences?.deleteArchiveFilesAfterExtractionByDefault ??
-        false;
+        true;
 
       if (shouldDelete) {
         for (const archivePath of archivePaths) {
@@ -703,7 +703,7 @@ export class GameFilesManager {
           const shouldDelete =
             download.automaticallyDeleteArchiveFiles ??
             userPreferences?.deleteArchiveFilesAfterExtractionByDefault ??
-            false;
+            true;
 
           if (shouldDelete) {
             await deleteArchiveFile(filePath);

@@ -1015,7 +1015,9 @@
     "cloud_save_v2_login_card_description": "Connect your Google Drive to sync, restore and back up this game's saves.",
     "cloud_save_v2_login_sign_in": "Sign in",
     "cloud_save_v2_login_connect_drive": "Connect Google Drive",
-    "cloud_save_v2_conflict_hint": "Your local saves and the cloud differ (files were deleted or changed on one side). \"Use cloud saves\" restores the cloud version to your PC; \"Keep local saves\" applies the local state and deletes the conflicting files from the cloud. Nothing is lost until you choose."
+    "cloud_save_v2_conflict_hint": "Your local saves and the cloud differ (files were deleted or changed on one side). \"Use cloud saves\" restores the cloud version to your PC; \"Keep local saves\" applies the local state and deletes the conflicting files from the cloud. Nothing is lost until you choose.",
+    "online_fix_mode_title": "Online mode (Online-Fix)",
+    "online_fix_mode_description": "Launches the game with the Steam client running and a native Direct3D path, so Online-Fix multiplayer (Spacewar lobbies, invites) works like on Windows. Everyone must play the same patched version with Steam signed in."
   },
   "activation": {
     "title": "Activate Hydra",

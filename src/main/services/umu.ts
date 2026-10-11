@@ -377,6 +377,8 @@ export class Umu {
       launchOptions?: string | null;
       useMangohud?: boolean;
       useGamemode?: boolean;
+      /** Extra environment variables appended last (e.g. Online-Fix mode). */
+      extraEnv?: Record<string, string>;
     }
   ): Promise<void> {
     const QUICK_EXIT_THRESHOLD_MS = 3000;
@@ -406,6 +408,7 @@ export class Umu {
       ...(options?.protonPath ? { PROTONPATH: options.protonPath } : {}),
       ...(options?.useMangohud ? { MANGOHUD: "1" } : {}),
       ...resolvedLaunchCommand.env,
+      ...(options?.extraEnv ?? {}),
     };
 
     const envCommandPart = Object.entries(launchEnv)

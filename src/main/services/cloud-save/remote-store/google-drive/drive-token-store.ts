@@ -4,6 +4,10 @@ import { db, levelKeys } from "@main/level";
 import { logger } from "@main/services/logger";
 
 import { resolveGoogleClientId } from "./config";
+import {
+  clearDriveReauthRequired,
+  markDriveReauthRequired,
+} from "../../drive-reauth-state";
 
 /**
  * Persistence for Google OAuth tokens.
@@ -127,6 +131,7 @@ const toTokenRefreshError = (error: unknown): Error => {
       googleError === "invalid_grant" ||
       googleError === "unauthorized_client"
     ) {
+      markDriveReauthRequired();
       return new Error("google_drive_reauth_required");
     }
   }
@@ -178,6 +183,10 @@ const requestFreshAccessToken = async (): Promise<string> => {
     },
     { valueEncoding: "json" }
   );
+
+  // A successful refresh means the account is healthy again — reopen the
+  // periodic sync circuit breaker.
+  clearDriveReauthRequired();
 
   return data.access_token;
 };

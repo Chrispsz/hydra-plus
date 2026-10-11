@@ -172,6 +172,13 @@ $disc-menu-transition-duration: 0.15s;
     gap: calc(globals.$spacing-unit / 2);
   }
 
+  &__online-fix-hint {
+    margin: calc(globals.$spacing-unit / 2) 0 0;
+    color: globals.$muted-color;
+    font-size: globals.$small-font-size;
+    line-height: 1.45;
+  }
+
   &__gamemode-toggle {
     display: flex;
     align-items: center;

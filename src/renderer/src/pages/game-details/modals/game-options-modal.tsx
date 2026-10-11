@@ -126,6 +126,9 @@ export function GameOptionsModal({
   const [autoRunGamemode, setAutoRunGamemode] = useState<boolean>(
     game.autoRunGamemode === true
   );
+  const [onlineFixEnabled, setOnlineFixEnabled] = useState<boolean>(
+    game.onlineFixEnabled === true
+  );
   const [gamemodeAvailable, setGamemodeAvailable] = useState(false);
   const [mangohudAvailable, setMangohudAvailable] = useState(false);
   const [winetricksAvailable, setWinetricksAvailable] = useState(false);
@@ -620,6 +623,20 @@ export function GameOptionsModal({
       value
     );
     updateGame();
+  };
+
+  const handleChangeOnlineFixState = async (value: boolean) => {
+    setOnlineFixEnabled(value);
+    try {
+      await globalThis.window.electron.setGameOnlineFixMode(
+        game.shop,
+        game.objectId,
+        value
+      );
+      updateGame();
+    } catch {
+      setOnlineFixEnabled(!value);
+    }
   };
 
   const applyProtonPathChange = async (protonPath: string) => {
@@ -1118,6 +1135,8 @@ export function GameOptionsModal({
                   onChangeGamemodeState={handleChangeGamemodeState}
                   onChangeMangohudState={handleChangeMangohudState}
                   onChangeProtonVersion={handleChangeProtonVersion}
+                  onlineFixEnabled={onlineFixEnabled}
+                  onChangeOnlineFixState={handleChangeOnlineFixState}
                 />
               )}
             {selectedCategory === "downloads" && showDownloadSettings && (
