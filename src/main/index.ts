@@ -20,6 +20,7 @@ import {
   DownloadOrchestrator,
   SSEClient,
   cleanupPortableUpdateCache,
+  runPostUpdateMaintenance,
 } from "@main/services";
 import resources from "@locales";
 import { TorrentService } from "./services/torrent-service";
@@ -103,6 +104,10 @@ const initializeApp = async () => {
 
   // Smart OTA: remove staged update leftovers from previous sessions.
   void cleanupPortableUpdateCache();
+
+  // After every new version: purge regenerable caches + compact the database
+  // (clean-install freshness, user data untouched). No-op on normal boots.
+  void runPostUpdateMaintenance();
 
   logger.info("Crash dumps directory", app.getPath("crashDumps"));
 

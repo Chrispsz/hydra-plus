@@ -22,6 +22,7 @@ export * from "./wine";
 export * from "./umu";
 export * from "./proton-launcher";
 export * from "./portable-updater";
+export * from "./update-maintenance";
 export * from "./lock";
 export * from "./decky-plugin";
 export * from "./user";
