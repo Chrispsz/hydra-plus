@@ -22,6 +22,14 @@ interface MergeUserVariantSnapshotsInput {
   preserveLocalMissingEntryIds?: ReadonlySet<string>;
   preserveCloudOnlyEntryIds?: ReadonlySet<string>;
   treatLocalAsNewRawPaths?: ReadonlySet<string>;
+  /**
+   * When true, a locally-deleted file whose remote copy is unchanged from
+   * the sync base becomes a conflict instead of being silently applied as
+   * a remote deletion. The user then picks keep-remote (restore) or
+   * keep-local (confirm deletion). Analysis always sets this to true;
+   * the legacy behavior only remains for back-compat of direct callers.
+   */
+  requireRemoteDeletionConfirmation?: boolean;
 }
 
 const indexUnique = <T extends SnapshotFile>(files: T[]) => {
@@ -88,6 +96,7 @@ export const mergeUserVariantSnapshots = ({
   preserveLocalMissingEntryIds = new Set<string>(),
   preserveCloudOnlyEntryIds = new Set<string>(),
   treatLocalAsNewRawPaths = new Set<string>(),
+  requireRemoteDeletionConfirmation = false,
 }: MergeUserVariantSnapshotsInput): CloudSaveMergeResult => {
   const localById = indexUnique(local.files);
   const remoteById = indexUnique(remoteFiles);
@@ -278,9 +287,17 @@ export const mergeUserVariantSnapshots = ({
       }
 
       if (sameBytes(remoteFile, baseEntry)) {
-        if (direction === "restore-only") {
+        const resolution = resolutions?.get(entryId);
+        if (direction === "restore-only" || resolution === "keep-remote") {
           files.push(remoteFile);
           restoreEntryIds.add(entryId);
+        } else if (resolution === "keep-local") {
+          deleteRemoteEntryIds.add(entryId);
+        } else if (requireRemoteDeletionConfirmation) {
+          // Keep the remote file in the proposal: the deletion must never
+          // be applied by accident — only an explicit resolution can.
+          files.push(remoteFile);
+          conflicts.push({ entryId, local: null, remote: remoteFile });
         } else {
           deleteRemoteEntryIds.add(entryId);
         }

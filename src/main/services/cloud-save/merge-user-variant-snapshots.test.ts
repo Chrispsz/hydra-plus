@@ -351,6 +351,106 @@ describe("merge user variant snapshots", () => {
     assert.deepEqual(result.restoreEntryIds, []);
   });
 
+  it("turns a proven local deletion into a conflict when confirmation is required", () => {
+    const deleted = file("deleted.sav", "a");
+    const retained = file("retained.sav", "b");
+    const local = context([retained]);
+    local.coverage = [
+      {
+        candidateId: "candidate",
+        ruleId: "rule",
+        variantId,
+        rawPath: deleted.rawPath,
+        selectedRoot: true,
+        authority: "authoritative",
+        outcome: "scanned",
+        enumeratedCompletely: true,
+        warningCodes: [],
+      },
+    ];
+
+    const result = mergeUserVariantSnapshots({
+      local,
+      remoteVariants: [variant],
+      remoteFiles: [deleted, retained],
+      base: anchor([deleted, retained]),
+      requireRemoteDeletionConfirmation: true,
+    });
+
+    // The remote file must be kept intact and the deletion must surface as
+    // a conflict the user resolves instead of a silent remote delete.
+    assert.deepEqual(result.files, [deleted, retained]);
+    assert.deepEqual(result.deleteRemoteEntryIds, []);
+    assert.deepEqual(result.conflicts, [
+      { entryId: cloudSaveFileKey(deleted), local: null, remote: deleted },
+    ]);
+  });
+
+  it("applies the confirmed deletion when the user picks keep-local", () => {
+    const deleted = file("deleted.sav", "a");
+    const retained = file("retained.sav", "b");
+    const local = context([retained]);
+    local.coverage = [
+      {
+        candidateId: "candidate",
+        ruleId: "rule",
+        variantId,
+        rawPath: deleted.rawPath,
+        selectedRoot: true,
+        authority: "authoritative",
+        outcome: "scanned",
+        enumeratedCompletely: true,
+        warningCodes: [],
+      },
+    ];
+
+    const result = mergeUserVariantSnapshots({
+      local,
+      remoteVariants: [variant],
+      remoteFiles: [deleted, retained],
+      base: anchor([deleted, retained]),
+      requireRemoteDeletionConfirmation: true,
+      resolutions: new Map([[cloudSaveFileKey(deleted), "keep-local"]]),
+    });
+
+    assert.deepEqual(result.files, [retained]);
+    assert.deepEqual(result.deleteRemoteEntryIds, [cloudSaveFileKey(deleted)]);
+    assert.deepEqual(result.conflicts, []);
+  });
+
+  it("restores the deleted file when the user picks keep-remote", () => {
+    const deleted = file("deleted.sav", "a");
+    const retained = file("retained.sav", "b");
+    const local = context([retained]);
+    local.coverage = [
+      {
+        candidateId: "candidate",
+        ruleId: "rule",
+        variantId,
+        rawPath: deleted.rawPath,
+        selectedRoot: true,
+        authority: "authoritative",
+        outcome: "scanned",
+        enumeratedCompletely: true,
+        warningCodes: [],
+      },
+    ];
+
+    const result = mergeUserVariantSnapshots({
+      local,
+      remoteVariants: [variant],
+      remoteFiles: [deleted, retained],
+      base: anchor([deleted, retained]),
+      requireRemoteDeletionConfirmation: true,
+      resolutions: new Map([[cloudSaveFileKey(deleted), "keep-remote"]]),
+    });
+
+    assert.deepEqual(result.files, [deleted, retained]);
+    assert.deepEqual(result.restoreEntryIds, [cloudSaveFileKey(deleted)]);
+    assert.deepEqual(result.deleteRemoteEntryIds, []);
+    assert.deepEqual(result.conflicts, []);
+  });
+
   it("deletes one empty profile without affecting another profile", () => {
     const firstVariant: SnapshotVariant = {
       variantId,

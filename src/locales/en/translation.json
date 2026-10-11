@@ -521,8 +521,8 @@
     "cloud_save_v2_sign_in_required_description": "Sign in to your Hydra account and try again.",
     "cloud_save_v2_subscription_required_title": "Subscription required",
     "cloud_save_v2_subscription_required_description": "Cloud saves require an active Hydra Cloud subscription.",
-    "cloud_save_v2_modal_title": "Cloud Save V2 (BETA)",
-    "cloud_save_v2_modal_description": "View and sync this game's saves.",
+    "cloud_save_v2_modal_title": "Cloud saves",
+    "cloud_save_v2_modal_description": "Manage this game's saves: sync, restore or download any version from your Google Drive.",
     "cloud_save_v2_toggle_title": "Automatic sync {{status}}",
     "cloud_save_v2_toggle_enabled": "enabled",
     "cloud_save_v2_toggle_disabled": "disabled",
@@ -1010,7 +1010,12 @@
     "cloud_save_discovery_env_documents": "Documents",
     "cloud_save_discovery_env_home": "Home folder",
     "cloud_save_discovery_env_install_dir": "Game folder",
-    "select_destination": "Select destination"
+    "select_destination": "Select destination",
+    "cloud_save_v2_login_card_title": "Cloud Saves",
+    "cloud_save_v2_login_card_description": "Connect your Google Drive to sync, restore and back up this game's saves.",
+    "cloud_save_v2_login_sign_in": "Sign in",
+    "cloud_save_v2_login_connect_drive": "Connect Google Drive",
+    "cloud_save_v2_conflict_hint": "Your local saves and the cloud differ (files were deleted or changed on one side). \"Use cloud saves\" restores the cloud version to your PC; \"Keep local saves\" applies the local state and deletes the conflicting files from the cloud. Nothing is lost until you choose."
   },
   "activation": {
     "title": "Activate Hydra",

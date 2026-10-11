@@ -25,6 +25,9 @@ export function HydraCloudV2SettingsSection({
     runCloudSaveOperation,
     setAutomaticSyncEnabled,
     requestConflictResolution,
+    cloudSaveAccessAction,
+    connectDrive,
+    openSignIn,
   } = useCloudSaveV2();
 
   return (
@@ -36,6 +39,7 @@ export function HydraCloudV2SettingsSection({
 
       <CloudSavePanel
         showLaunchConflictWarning={false}
+        accessAction={cloudSaveAccessAction}
         overview={overview}
         isLoading={isRefreshing}
         isSyncing={isSyncing}
@@ -51,6 +55,8 @@ export function HydraCloudV2SettingsSection({
         onAutomaticSyncChange={setAutomaticSyncEnabled}
         onResolveConflict={requestConflictResolution}
         onReconnectDrive={() => void reconnectDrive()}
+        onConnectDrive={() => void connectDrive()}
+        onSignIn={openSignIn}
       />
     </div>
   );

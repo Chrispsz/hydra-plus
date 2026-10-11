@@ -282,6 +282,24 @@
     }
   }
 
+  &__conflict-hint {
+    grid-column: 1 / -1;
+    margin: 0;
+    color: globals.$muted-color;
+    font-size: globals.$small-font-size;
+    line-height: 1.45;
+  }
+
+  &__missing-executable-actions {
+    display: flex;
+    flex-direction: column;
+    gap: calc(globals.$spacing-unit / 2);
+  }
+
+  &__login-card {
+    align-items: stretch;
+  }
+
   &__sync-button {
     width: 100%;
 
@@ -318,7 +336,8 @@
   }
 
   &__missing-executable,
-  &__required-setup {
+  &__required-setup,
+  &__login-card {
     display: flex;
     flex-direction: column;
     gap: calc(globals.$spacing-unit * 1.5);

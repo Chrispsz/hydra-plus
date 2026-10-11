@@ -185,6 +185,7 @@ export const analyzeCloudSaveState = async (
     preserveLocalMissingEntryIds,
     preserveCloudOnlyEntryIds,
     treatLocalAsNewRawPaths: new Set(trackingState.pendingRawPaths),
+    requireRemoteDeletionConfirmation: true,
   });
   const mergedCustomPathRawPaths = [
     ...new Set([

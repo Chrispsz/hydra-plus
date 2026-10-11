@@ -43,5 +43,6 @@ export const resolveAnalyzedCloudSaveMerge = (
     preserveCloudOnlyEntryIds: new Set(
       analysis.preserveCloudOnlyEntryIds ?? []
     ),
+    requireRemoteDeletionConfirmation: true,
   });
 };

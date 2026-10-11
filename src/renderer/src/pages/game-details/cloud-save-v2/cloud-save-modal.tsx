@@ -7,6 +7,7 @@ import {
   CloudIcon,
   FolderOpenIcon,
   MonitorIcon,
+  SignInIcon,
   WarningCircleIcon,
 } from "@phosphor-icons/react";
 import { useTranslation } from "react-i18next";
@@ -16,10 +17,13 @@ import type {
   CloudSaveConflictResolution,
   CloudSaveOverview,
   CloudSaveSyncProgressPayload,
+  GameShop,
 } from "@types";
+import type { CloudSaveAccessAction } from "@shared";
 import { formatBytes } from "@shared";
 import { Button, Modal } from "@renderer/components";
 import { useDate } from "@renderer/hooks";
+import { CloudSaveSnapshotHistory } from "./cloud-save-snapshot-history";
 import {
   getCloudSavePanelAction,
   getCloudSaveOperationPresentation,
@@ -33,6 +37,7 @@ import {
 export interface CloudSavePanelProps {
   active?: boolean;
   showLaunchConflictWarning: boolean;
+  accessAction: CloudSaveAccessAction;
   overview: CloudSaveOverview | null;
   isLoading: boolean;
   isSyncing: boolean;
@@ -52,10 +57,15 @@ export interface CloudSavePanelProps {
   onAutomaticSyncChange: (enabled: boolean) => Promise<void>;
   onResolveConflict: (resolution: CloudSaveConflictResolution) => void;
   onReconnectDrive?: () => void;
+  onConnectDrive: () => void;
+  onSignIn: () => void;
 }
 
 interface CloudSaveModalProps extends Omit<CloudSavePanelProps, "active"> {
   visible: boolean;
+  objectId: string;
+  shop: GameShop;
+  onSnapshotRestored?: () => void | Promise<void>;
   onClose: () => void;
 }
 
@@ -139,19 +149,22 @@ function CloudSaveSyncAction({
     case "conflict":
       return (
         <div className="cloud-save-v2__conflict-actions">
-          <Button
-            onClick={() => onResolveConflict("keep-local")}
-            disabled={isLoading || isGameRunning}
-          >
-            <CloudArrowUpIcon size={20} />
-            {t("cloud_save_v2_keep_local")}
-          </Button>
+          <p className="cloud-save-v2__conflict-hint">
+            {t("cloud_save_v2_conflict_hint")}
+          </p>
           <Button
             onClick={() => onResolveConflict("keep-remote")}
             disabled={isLoading || isGameRunning}
           >
             <CloudArrowDownIcon size={20} />
             {t("cloud_save_v2_keep_remote")}
+          </Button>
+          <Button
+            onClick={() => onResolveConflict("keep-local")}
+            disabled={isLoading || isGameRunning}
+          >
+            <CloudArrowUpIcon size={20} />
+            {t("cloud_save_v2_keep_local")}
           </Button>
         </div>
       );
@@ -204,8 +217,40 @@ function CloudSaveSyncAction({
   }
 }
 
+function CloudSaveLoginCard({
+  accessAction,
+  onConnectDrive,
+  onSignIn,
+}: Pick<CloudSavePanelProps, "accessAction" | "onConnectDrive" | "onSignIn">) {
+  const { t } = useTranslation("game_details");
+
+  return (
+    <section className="cloud-save-v2__snapshot cloud-save-v2__login-card">
+      <div className="cloud-save-v2__missing-executable-copy">
+        <strong>
+          <CloudIcon size={18} />
+          {t("cloud_save_v2_login_card_title")}
+        </strong>
+        <span>{t("cloud_save_v2_login_card_description")}</span>
+      </div>
+      {accessAction === "sign-in" ? (
+        <Button className="cloud-save-v2__sync-button" onClick={onSignIn}>
+          <SignInIcon size={20} />
+          <span>{t("cloud_save_v2_login_sign_in")}</span>
+        </Button>
+      ) : (
+        <Button className="cloud-save-v2__sync-button" onClick={onConnectDrive}>
+          <CloudArrowUpIcon size={20} />
+          <span>{t("cloud_save_v2_login_connect_drive")}</span>
+        </Button>
+      )}
+    </section>
+  );
+}
+
 export function CloudSavePanel({
   showLaunchConflictWarning,
+  accessAction,
   overview,
   isLoading,
   isSyncing,
@@ -221,6 +266,8 @@ export function CloudSavePanel({
   onAutomaticSyncChange,
   onResolveConflict,
   onReconnectDrive,
+  onConnectDrive,
+  onSignIn,
 }: Readonly<CloudSavePanelProps>) {
   const { t } = useTranslation("game_details");
   const { formatDateTime } = useDate();
@@ -228,6 +275,23 @@ export function CloudSavePanel({
     isAutomaticSyncEnabled ?? false
   );
   const [isUpdatingAutomaticSync, setIsUpdatingAutomaticSync] = useState(false);
+
+  useEffect(() => {
+    setIsCloudSaveEnabled(isAutomaticSyncEnabled ?? false);
+  }, [isAutomaticSyncEnabled]);
+
+  if (accessAction !== "open") {
+    return (
+      <div className="cloud-save-v2__modal">
+        <CloudSaveLoginCard
+          accessAction={accessAction}
+          onConnectDrive={onConnectDrive}
+          onSignIn={onSignIn}
+        />
+      </div>
+    );
+  }
+
   const cloudSaveToggleTitle = t("cloud_save_v2_toggle_title", {
     status: t(
       isCloudSaveEnabled
@@ -269,10 +333,6 @@ export function CloudSavePanel({
   const panelMode = hasExecutablePath
     ? snapshotPanelMode
     : "missing-executable";
-
-  useEffect(() => {
-    setIsCloudSaveEnabled(isAutomaticSyncEnabled ?? false);
-  }, [isAutomaticSyncEnabled]);
 
   const handleAutomaticSyncChange = async () => {
     const previousValue = isCloudSaveEnabled;
@@ -425,13 +485,22 @@ export function CloudSavePanel({
         </strong>
         <span>{t("cloud_save_v2_executable_required_description")}</span>
       </div>
-      <Button
-        className="cloud-save-v2__sync-button"
-        onClick={onSelectExecutable}
-      >
-        <FolderOpenIcon size={20} />
-        <span>{t("cloud_save_v2_select_executable")}</span>
-      </Button>
+      <div className="cloud-save-v2__missing-executable-actions">
+        <Button
+          className="cloud-save-v2__sync-button"
+          onClick={onSelectExecutable}
+        >
+          <FolderOpenIcon size={20} />
+          <span>{t("cloud_save_v2_select_executable")}</span>
+        </Button>
+        <Button
+          className="cloud-save-v2__sync-button"
+          onClick={onOpenFileBrowser}
+        >
+          <ArrowClockwiseIcon size={20} />
+          <span>{t("cloud_save_history_title")}</span>
+        </Button>
+      </div>
     </section>
   );
 
@@ -527,6 +596,9 @@ export function CloudSavePanel({
 
 export function CloudSaveModal({
   visible,
+  objectId,
+  shop,
+  onSnapshotRestored,
   onClose,
   ...panelProps
 }: Readonly<CloudSaveModalProps>) {
@@ -542,6 +614,14 @@ export function CloudSaveModal({
     >
       <div className="cloud-save-v2__dialog-content">
         <CloudSavePanel {...panelProps} active={visible} />
+        {panelProps.accessAction === "open" && (
+          <CloudSaveSnapshotHistory
+            visible={visible}
+            objectId={objectId}
+            shop={shop}
+            onRestored={onSnapshotRestored}
+          />
+        )}
       </div>
     </Modal>
   );

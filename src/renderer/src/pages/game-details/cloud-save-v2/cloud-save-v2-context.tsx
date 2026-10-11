@@ -15,6 +15,7 @@ import {
   getCloudSaveAccessAction,
   hasCloudSaveExecutableSelection,
   isCloudSaveV2Eligible,
+  type CloudSaveAccessAction,
 } from "@shared";
 import { ConfirmationModal } from "@renderer/components";
 import { gameDetailsContext } from "@renderer/context";
@@ -50,9 +51,12 @@ interface CloudSaveV2ContextValue {
     | "cloud_save_v2_sync_error"
     | null;
   reconnectDrive: () => Promise<void>;
+  connectDrive: () => Promise<void>;
+  openSignIn: () => void;
   progress: CloudSaveSyncProgressPayload | null;
   hasExecutablePath: boolean;
   canUseCloudSaves: boolean;
+  cloudSaveAccessAction: CloudSaveAccessAction;
   openManager: () => void;
   openFileBrowser: () => void;
   runCloudSaveOperation: (
@@ -494,17 +498,12 @@ export function CloudSaveV2Provider({
   ]);
 
   const openManager = useCallback(() => {
-    if (cloudSaveAccessAction === "sign-in") {
-      window.electron.openAuthWindow(AuthPage.SignIn);
-      return;
-    }
-    if (cloudSaveAccessAction === "connect-drive") {
-      void connect();
-      return;
-    }
+    // Always open the manager modal: it now offers inline sign-in and
+    // Google Drive connection cards instead of surprising the user with
+    // OAuth windows popping up out of nowhere.
     setWasOpenedFromLaunchConflict(false);
     setIsModalVisible(true);
-  }, [cloudSaveAccessAction, connect]);
+  }, []);
 
   const handleSelectExecutable = () => {
     setIsModalVisible(false);
@@ -924,14 +923,19 @@ export function CloudSaveV2Provider({
       progress,
       hasExecutablePath,
       canUseCloudSaves,
+      cloudSaveAccessAction,
       openManager,
       openFileBrowser,
       runCloudSaveOperation,
       setAutomaticSyncEnabled,
       requestConflictResolution: setPendingResolution,
+      connectDrive: () => connect(),
+      openSignIn: () => window.electron.openAuthWindow(AuthPage.SignIn),
     }),
     [
       canUseCloudSaves,
+      cloudSaveAccessAction,
+      connect,
       errorMessageKey,
       hasError,
       hasExecutablePath,
@@ -972,6 +976,10 @@ export function CloudSaveV2Provider({
       <CloudSaveModal
         visible={isModalVisible}
         showLaunchConflictWarning={wasOpenedFromLaunchConflict}
+        accessAction={cloudSaveAccessAction}
+        objectId={objectId}
+        shop={shop}
+        onSnapshotRestored={() => void refresh()}
         overview={overview}
         isLoading={isRefreshing}
         isSyncing={isSyncing}
@@ -981,6 +989,8 @@ export function CloudSaveV2Provider({
         hasError={hasError}
         errorMessageKey={errorMessageKey}
         onReconnectDrive={() => void reconnectDrive()}
+        onConnectDrive={() => void connect()}
+        onSignIn={() => window.electron.openAuthWindow(AuthPage.SignIn)}
         progress={progress}
         onSync={() => void runCloudSaveOperation()}
         onOpenFileBrowser={() => setIsFileBrowserVisible(true)}
