@@ -34,6 +34,7 @@ import { GofileApi } from "./services/hosters";
 import { startSteamSyncOnStartup } from "./services/steam-integration/steam-startup-sync";
 import { watchSteamLibraries } from "./services/steam-integration/steam-install-watcher";
 import { migrateGameVisibilityFields } from "./services/library-sync/game-visibility-migration";
+import { seedDefaultDownloadSources } from "./helpers/seed-default-download-sources";
 import { defaultDownloadsPath } from "@main/constants";
 
 const hasMissingSeedFiles = async (download: Download): Promise<boolean> => {
@@ -121,6 +122,9 @@ export const loadState = async () => {
   await HydraApi.setupApi().then(async () => {
     uploadGamesBatch();
     void migrateDownloadSources();
+
+    // First-run: curated download sources so search works out of the box.
+    void seedDefaultDownloadSources();
 
     const { syncDownloadSourcesFromApi } = await import("./services/user");
     void syncDownloadSourcesFromApi();

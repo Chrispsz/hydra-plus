@@ -25,14 +25,12 @@ interface CompatibilitySettingsSectionProps {
   winetricksAvailable: boolean;
   mangohudSiteUrl: string;
   gamemodeSiteUrl: string;
-  onlineFixEnabled: boolean;
   onChangeWinePrefixPath: () => Promise<void>;
   onClearWinePrefixPath: () => Promise<void>;
   onOpenWinetricks: () => Promise<void>;
   onChangeGamemodeState: (value: boolean) => Promise<void>;
   onChangeMangohudState: (value: boolean) => Promise<void>;
   onChangeProtonVersion: (value: string) => void;
-  onChangeOnlineFixState: (value: boolean) => Promise<void>;
 }
 
 export function CompatibilitySettingsSection({
@@ -49,14 +47,12 @@ export function CompatibilitySettingsSection({
   winetricksAvailable,
   mangohudSiteUrl,
   gamemodeSiteUrl,
-  onlineFixEnabled,
   onChangeWinePrefixPath,
   onClearWinePrefixPath,
   onOpenWinetricks,
   onChangeGamemodeState,
   onChangeMangohudState,
   onChangeProtonVersion,
-  onChangeOnlineFixState,
 }: Readonly<CompatibilitySettingsSectionProps>) {
   const { t } = useTranslation("game_details");
 
@@ -257,28 +253,6 @@ export function CompatibilitySettingsSection({
           {mangohudToggleDisabled && mangohudTooltipId && (
             <Tooltip id={mangohudTooltipId} />
           )}
-        </div>
-
-        <div className="game-options-modal__mangohud-toggle">
-          <CheckboxField
-            label={
-              <span className="game-options-modal__mangohud-label">
-                <span>
-                  {t("online_fix_mode_title", {
-                    defaultValue: "Online mode (Online-Fix)",
-                  })}
-                </span>
-              </span>
-            }
-            checked={onlineFixEnabled}
-            onChange={(event) => onChangeOnlineFixState(event.target.checked)}
-          />
-          <p className="game-options-modal__online-fix-hint">
-            {t("online_fix_mode_description", {
-              defaultValue:
-                "Launches the game with the Steam client running and native Direct3D, so Online-Fix multiplayer (Spacewar lobbies) works. Everyone must play the same patched version.",
-            })}
-          </p>
         </div>
       </div>
 

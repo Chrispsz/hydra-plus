@@ -843,6 +843,7 @@
     "settings_category_hydra_cloud_description": "Configure o comportamento da sincronização na nuvem para este jogo",
     "settings_category_compatibility": "Compatibilidade",
     "settings_category_compatibility_description": "Configurações de compatibilidade do Linux, incluindo Wine e Proton",
+    "settings_category_online": "Online",
     "settings_category_downloads": "Downloads",
     "settings_category_downloads_description": "Gerencie as opções de download e os arquivos de instalação",
     "settings_category_danger_zone": "Zona de perigo",
@@ -984,8 +985,15 @@
     "cloud_save_v2_login_sign_in": "Entrar na conta",
     "cloud_save_v2_login_connect_drive": "Conectar Google Drive",
     "cloud_save_v2_conflict_hint": "Os saves locais e a nuvem estão diferentes (arquivos foram apagados ou alterados de um lado). \"Usar saves da nuvem\" restaura a versão da nuvem no seu PC; \"Manter saves locais\" aplica o estado local e apaga da nuvem os arquivos conflitantes. Nada é perdido até você escolher.",
-    "online_fix_mode_title": "Modo online (Online-Fix)",
-    "online_fix_mode_description": "Inicia o jogo com o cliente Steam aberto e Direct3D nativo, para o multiplayer Online-Fix (lobbies Spacewar, convites) funcionar como no Windows. Todos precisam jogar a mesma versão do patch com a Steam conectada."
+    "online_mode_title": "Modo Online (Online-Fix)",
+    "online_mode_description": "Prepara o jogo para o multiplayer via Online-Fix: o Hydra abre o Steam conectado na sua conta e carrega todas as DLLs que o jogo tiver na pasta, do mesmo jeito que os launchers da comunidade.",
+    "online_mode_enable": "Ativar modo online para este jogo",
+    "online_mode_steam_running": "Cliente Steam detectado",
+    "online_mode_steam_not_running": "Steam não detectado — será aberto automaticamente quando você jogar",
+    "online_mode_steam_unknown": "Status do Steam indisponível",
+    "online_mode_note_steam": "O Steam precisa estar conectado na sua conta para os lobbies aparecerem pros seus amigos.",
+    "online_mode_note_dlls": "A pasta do jogo é escaneada a cada partida: todas as DLLs embutidas (steam_api, winmm, dinput8 e qualquer proxy do fix) carregam de forma nativa.",
+    "online_mode_note_version": "Todos que entrarem na sessão precisam usar a mesma versão corrigida do jogo."
   },
   "activation": {
     "title": "Ativação",

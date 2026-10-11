@@ -44,10 +44,12 @@ import {
   DownloadIcon,
   FileDirectoryIcon,
   GearIcon,
+  GlobeIcon,
   ImageIcon,
 } from "@primer/octicons-react";
 import { Wrench } from "lucide-react";
 import { GameAssetsSettings } from "./game-assets-settings";
+import { OnlineModeSettingsSection } from "./game-options-modal/online-mode-section";
 import { debounce } from "lodash-es";
 import { levelDBService } from "@renderer/services/leveldb.service";
 import { getGameKey, getGameTitleFromExecutablePath } from "@renderer/helpers";
@@ -831,6 +833,11 @@ export function GameOptionsModal({
             },
           ]
         : []),
+      {
+        id: "online" as const,
+        label: t("settings_category_online"),
+        icon: <GlobeIcon size={16} />,
+      },
       ...(showDownloadSettings
         ? [
             {
@@ -1135,10 +1142,14 @@ export function GameOptionsModal({
                   onChangeGamemodeState={handleChangeGamemodeState}
                   onChangeMangohudState={handleChangeMangohudState}
                   onChangeProtonVersion={handleChangeProtonVersion}
-                  onlineFixEnabled={onlineFixEnabled}
-                  onChangeOnlineFixState={handleChangeOnlineFixState}
                 />
               )}
+            {selectedCategory === "online" && (
+              <OnlineModeSettingsSection
+                onlineFixEnabled={onlineFixEnabled}
+                onChangeOnlineFixState={handleChangeOnlineFixState}
+              />
+            )}
             {selectedCategory === "downloads" && showDownloadSettings && (
               <DownloadsSettingsSection
                 game={game}

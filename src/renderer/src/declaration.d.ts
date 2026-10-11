@@ -315,6 +315,7 @@ declare global {
     ) => Promise<boolean>;
     installGameOnSteam: (steamAppId: string) => Promise<void>;
     isMangohudAvailable: () => Promise<boolean>;
+    getSteamClientStatus: () => Promise<{ running: boolean }>;
     isWinetricksAvailable: () => Promise<boolean>;
     addGameToLibrary: (
       shop: GameShop,

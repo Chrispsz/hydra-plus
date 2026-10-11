@@ -770,6 +770,7 @@
     "settings_category_hydra_cloud_description": "Configure cloud sync behavior for this game",
     "settings_category_compatibility": "Compatibility",
     "settings_category_compatibility_description": "Linux compatibility settings including Wine and Proton",
+    "settings_category_online": "Online",
     "settings_category_downloads": "Downloads",
     "settings_category_downloads_description": "Manage download options and installation files",
     "settings_category_danger_zone": "Danger Zone",
@@ -1018,8 +1019,15 @@
     "cloud_save_v2_login_sign_in": "Sign in",
     "cloud_save_v2_login_connect_drive": "Connect Google Drive",
     "cloud_save_v2_conflict_hint": "Your local saves and the cloud differ (files were deleted or changed on one side). \"Use cloud saves\" restores the cloud version to your PC; \"Keep local saves\" applies the local state and deletes the conflicting files from the cloud. Nothing is lost until you choose.",
-    "online_fix_mode_title": "Online mode (Online-Fix)",
-    "online_fix_mode_description": "Launches the game with the Steam client running and a native Direct3D path, so Online-Fix multiplayer (Spacewar lobbies, invites) works like on Windows. Everyone must play the same patched version with Steam signed in."
+    "online_mode_title": "Online mode (Online-Fix)",
+    "online_mode_description": "Prepares the game for Online-Fix multiplayer: Hydra starts the Steam client signed in to your account and loads every DLL the game ships with, exactly like the community launchers do.",
+    "online_mode_enable": "Enable online mode for this game",
+    "online_mode_steam_running": "Steam client detected",
+    "online_mode_steam_not_running": "Steam not detected — it will be started automatically when you play",
+    "online_mode_steam_unknown": "Steam status unavailable",
+    "online_mode_note_steam": "Steam must be signed in to your account so the lobbies appear for your friends.",
+    "online_mode_note_dlls": "The game folder is scanned on every launch: all shipped DLLs (steam_api, winmm, dinput8 and any fix proxies) load natively.",
+    "online_mode_note_version": "Everyone joining the session must use the same patched game version."
   },
   "activation": {
     "title": "Activate Hydra",

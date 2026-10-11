@@ -218,6 +218,8 @@ export const ProtonRunner = {
       launchOptions?: string | null;
       useMangohud?: boolean;
       useGamemode?: boolean;
+      /** Extra environment variables appended last (e.g. Online-Fix mode). */
+      extraEnv?: Record<string, string>;
     }
   ): Promise<void> {
     if (!options?.winePrefixPath) {
@@ -239,7 +241,10 @@ export const ProtonRunner = {
       winePrefixPath: options.winePrefixPath,
       gameId: options.gameId,
       useMangohud: options.useMangohud,
-      extraEnv: resolvedLaunchCommand.env,
+      extraEnv: {
+        ...(options.extraEnv ?? {}),
+        ...resolvedLaunchCommand.env,
+      },
     });
 
     const logPath = getProtonLogPath();

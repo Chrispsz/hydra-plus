@@ -528,6 +528,7 @@ contextBridge.exposeInMainWorld("electron", {
   installGameOnSteam: (steamAppId: string) =>
     ipcRenderer.invoke("installGameOnSteam", steamAppId),
   isMangohudAvailable: () => ipcRenderer.invoke("isMangohudAvailable"),
+  getSteamClientStatus: () => ipcRenderer.invoke("getSteamClientStatus"),
   isWinetricksAvailable: () => ipcRenderer.invoke("isWinetricksAvailable"),
   addGameToLibrary: (
     shop: GameShop,

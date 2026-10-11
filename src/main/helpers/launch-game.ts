@@ -159,7 +159,8 @@ const launchWithWine = async (
   launchOptions?: string | null,
   useMangohud = false,
   useGamemode = false,
-  winePrefixPath?: string | null
+  winePrefixPath?: string | null,
+  extraEnv?: Record<string, string>
 ): Promise<boolean> => {
   const workingDirectory = path.dirname(executablePath);
   const resolvedLaunchCommand = resolveLaunchCommand({
@@ -183,6 +184,7 @@ const launchWithWine = async (
         cwd: workingDirectory,
         env: {
           ...process.env,
+          ...(extraEnv ?? {}),
           ...(winePrefixPath ? { WINEPREFIX: winePrefixPath } : {}),
           ...resolvedLaunchCommand.env,
         },
@@ -427,7 +429,7 @@ const launchWindowsBinaryOnLinux = async (
   launchOptions: string | null | undefined,
   useMangohud: boolean,
   useGamemode: boolean,
-  onlineFixEnabled: boolean
+  onlineFixEnv: Record<string, string> | null
 ): Promise<boolean> => {
   const { protonPath, winePrefixPath } = compatibilityContext;
 
@@ -446,7 +448,7 @@ const launchWindowsBinaryOnLinux = async (
       launchOptions,
       useGamemode,
       useMangohud,
-      extraEnv: onlineFixEnabled ? getOnlineFixLaunchEnv() : undefined,
+      extraEnv: onlineFixEnv ?? undefined,
     });
     PowerSaveBlockerManager.markCompatibilityLaunchStarted(gameKey);
     return true;
@@ -466,6 +468,7 @@ const launchWindowsBinaryOnLinux = async (
         launchOptions,
         useGamemode,
         useMangohud,
+        extraEnv: onlineFixEnv ?? undefined,
       });
       logger.info("Game launched with direct Proton (umu unavailable)", {
         gameKey,
@@ -486,7 +489,8 @@ const launchWindowsBinaryOnLinux = async (
     launchOptions,
     useMangohud,
     useGamemode,
-    winePrefixPath
+    winePrefixPath,
+    onlineFixEnv ?? undefined
   );
 
   if (launchedWithWine) {
@@ -626,7 +630,7 @@ const launchResolvedGame = async (
   launchOptions: string | null | undefined,
   useMangohud: boolean,
   useGamemode: boolean,
-  onlineFixEnabled: boolean
+  onlineFixEnv: Record<string, string> | null
 ) => {
   if (process.platform !== "linux") {
     return launchNatively(parsedPath, launchOptions, useMangohud, useGamemode);
@@ -646,7 +650,7 @@ const launchResolvedGame = async (
       launchOptions,
       useMangohud,
       useGamemode,
-      onlineFixEnabled
+      onlineFixEnv
     );
     if (launched) return null;
     clearCloudSaveLaunchGuard(objectId, shop);
@@ -710,12 +714,19 @@ const launchGameWithCloudSaveChecks = async (
     isGamemodeAvailable();
 
   // Online (Online-Fix) sessions need the real Steam client running and
-  // signed in before the game starts (lobby/relay via Spacewar).
-  const onlineFixEnabled =
-    process.platform === "linux" && game?.onlineFixEnabled === true;
+  // signed in before the game starts (lobby/relay via Spacewar) — on both
+  // Windows and Linux.
+  const onlineFixEnabled = game?.onlineFixEnabled === true;
   if (onlineFixEnabled) {
     await ensureSteamClientRunning();
   }
+
+  // Pre-computed once for the Linux chain (umu → direct Proton → Wine all
+  // receive it) and the Steam protocol dispatch path.
+  const onlineFixEnv =
+    onlineFixEnabled && process.platform === "linux"
+      ? getOnlineFixLaunchEnv(path.dirname(parsedPath))
+      : null;
 
   const steamCompatibilityPrefixPath =
     process.platform === "linux" &&
@@ -896,7 +907,7 @@ const launchGameWithCloudSaveChecks = async (
           launchOptions,
           useMangohud,
           useGamemode,
-          onlineFixEnabled
+          onlineFixEnv
         );
       }
     );
@@ -929,7 +940,7 @@ const launchGameWithCloudSaveChecks = async (
     launchOptions,
     useMangohud,
     useGamemode,
-    onlineFixEnabled
+    onlineFixEnv
   );
 };
 
