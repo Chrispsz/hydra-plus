@@ -6,28 +6,22 @@
 export const MAX_SCANNED_DLL_OVERRIDES = 64;
 
 /**
- * Community recipe (SOFL/OFLL): force the native Direct3D path so the
- * Steam networking hooks and overlay load as on Windows instead of the
- * wined3d translations.
- */
-export const ONLINE_FIX_D3D_OVERRIDES = [
-  "d3d11=n",
-  "d3d10=n",
-  "d3d10core=n",
-  "dxgi=n",
-  "openvr_api_dxvk=n",
-  "d3d12=n",
-  "d3d12core=n",
-  "d3d9=n",
-  "d3d8=n",
-] as const;
-
-/**
  * The fix's OWN payload modules (patch loader, overlay, networking, the
  * patched steam_api and known fix loaders shipped by online-fix.me
- * packages). Forced as STRICT native (`=n`): if Wine answered with a
- * built-in here, the fix could not hook the game and the session dies
- * with "error 126". Mirrors OFLL's FixParser and slsdeck's fix policy.
+ * packages) plus the classic loader proxies. Every entry is loaded as
+ * "native,builtin" (`=n,b`): when the package ships the file it shadows
+ * Wine's built-in exactly as on Windows; when it does not (or an
+ * antivirus quarantined it) Wine falls back to its built-in instead of
+ * dying with ERROR_MOD_NOT_FOUND — the "error 126".
+ *
+ * Wine loader proof (dlls/ntdll/unix/loader.c, map_pe_file): under a
+ * STRICT `=n` override the loader REJECTS any file that maps as a Wine
+ * built-in/fake dll with STATUS_DLL_NOT_FOUND — it never keeps looking
+ * for a native copy. Forcing `=n` on system DLL names (d3d11, dxgi,
+ * d3d9, …) therefore breaks the load of every game that does not ship
+ * them — the recurring "error 126" on Linux that even SOFL/OFLL carry
+ * in their recipes. `=n,b` is strictly dominant: native first, built-in
+ * only when the native file genuinely does not exist.
  */
 export const ONLINE_FIX_PAYLOAD_DLLS = [
   "onlinefix64",
@@ -105,11 +99,7 @@ export const ONLINE_FIX_MARKER_DLLS = [
   "steamoverlay64.dll",
 ] as const;
 
-const D3D_OVERRIDE_NAMES = new Set(
-  ONLINE_FIX_D3D_OVERRIDES.map((override) => override.split("=")[0])
-);
-
-/** API-set / driver shims must never be forced native. */
+/** API-set / driver shims must never be overridden. */
 export const isSkippableDllName = (name: string) =>
   name.startsWith("api-ms-win-") || name.startsWith("ext-ms-");
 
@@ -118,44 +108,30 @@ export const normalizeDllOverrideName = (rawName: string): string | null => {
     .toLowerCase()
     .trim()
     .replace(/\.dll$/, "");
-  if (!name || D3D_OVERRIDE_NAMES.has(name) || isSkippableDllName(name)) {
-    return null;
-  }
+  if (!name || isSkippableDllName(name)) return null;
   return name;
 };
 
 /**
  * Builds the WINEDLLOVERRIDES value for an online session from the DLL
- * file names found next to the game's executable: the community D3D
- * recipe + the fix payload family as strict native (`=n`) + loader
- * proxy DLLs and every other shipped DLL as "native,builtin".
+ * file names found next to the game's executable: the fix payload family
+ * + loader proxies + every other shipped DLL, all as "native,builtin"
+ * (`=n,b`) — see the payload family rationale above for why strict
+ * `=n` is never used.
  */
-const PAYLOAD_OVERRIDE_NAMES = new Set(
-  ONLINE_FIX_PAYLOAD_DLLS.map((name) => name.toLowerCase())
-);
-
-/** Fix loader families detected by name prefix (EOS SDK shims etc.). */
-const isStrictPayloadName = (name: string) =>
-  PAYLOAD_OVERRIDE_NAMES.has(name) ||
-  name.startsWith("eos_") ||
-  name.startsWith("onlinefix") ||
-  name.startsWith("steamoverlay");
-
 export const buildOnlineFixDllOverrides = (dllNames: string[]): string => {
-  const overrides = new Set<string>(ONLINE_FIX_D3D_OVERRIDES);
+  const overrides = new Set<string>();
   let scanned = 0;
 
-  const addOverride = (name: string, strict: boolean) => {
+  const addOverride = (name: string) => {
     if (!name || isSkippableDllName(name)) return false;
-    if (overrides.has(`${name}=n`) || overrides.has(`${name}=n,b`)) {
-      return false;
-    }
-    overrides.add(`${name}=${strict ? "n" : "n,b"}`);
+    if (overrides.has(`${name}=n,b`)) return false;
+    overrides.add(`${name}=n,b`);
     return true;
   };
 
-  ONLINE_FIX_PAYLOAD_DLLS.forEach((name) => addOverride(name, true));
-  ONLINE_FIX_PROXY_DLLS.forEach((name) => addOverride(name, false));
+  ONLINE_FIX_PAYLOAD_DLLS.forEach(addOverride);
+  ONLINE_FIX_PROXY_DLLS.forEach(addOverride);
 
   for (const rawName of dllNames) {
     if (scanned >= MAX_SCANNED_DLL_OVERRIDES) break;
@@ -163,7 +139,7 @@ export const buildOnlineFixDllOverrides = (dllNames: string[]): string => {
     const name = normalizeDllOverrideName(rawName);
     if (!name) continue;
 
-    if (addOverride(name, isStrictPayloadName(name))) scanned += 1;
+    if (addOverride(name)) scanned += 1;
   }
 
   return Array.from(overrides).join(";");

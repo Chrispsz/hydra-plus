@@ -31,10 +31,13 @@ const execFileAsync = promisify(execFile);
  *    Linux: `steam` on the PATH);
  * 2. on Wine/Proton sessions, load the game's OWN DLLs natively — the
  *    executable folder AND the game root are scanned and every shipped
- *    DLL gets a "native,builtin" override, so the fix's payload DLLs
- *    (OnlineFix64, SteamOverlay64, dnet, steam_api64, proxy DLLs like
- *    winmm/dinput8) shadow Wine's built-ins exactly as on Windows,
- *    alongside the community D3D override recipe;
+ *    DLL gets a "native,builtin" override (`=n,b`), so the fix's payload
+ *    DLLs (OnlineFix64, SteamOverlay64, dnet, steam_api64, proxy DLLs
+ *    like winmm/dinput8) shadow Wine's built-ins exactly as on Windows.
+ *    STRICT `=n` overrides are never emitted: the Wine loader
+ *    (dlls/ntdll/unix/loader.c, map_pe_file) rejects built-in-resolving
+ *    files under a strict native override with STATUS_DLL_NOT_FOUND —
+ *    the recurring "error 126". `=n,b` is strictly dominant.
  * 3. on Wine/Proton sessions the Steam overlay is injected the way OFLL
  *    does it: LD_PRELOAD the native gameoverlayrenderer.so (32+64) from
  *    the Steam client install plus SteamOverlayGameId (from the fix's
@@ -113,6 +116,9 @@ export const getOnlineFixLaunchEnv = (
   if (overlayPreload) {
     env.LD_PRELOAD = overlayPreload;
     env.SteamOverlayGameId = overlayGameId || STEAM_OVERLAY_GAME_ID;
+    // OFLL recipe: let the native Steam Vulkan/GL layer register so the
+    // preloaded gameoverlayrenderer attaches to Wine's swapchain.
+    env.ENABLE_VK_LAYER_VALVE_steam_overlay_1 = "1";
   }
 
   return env;

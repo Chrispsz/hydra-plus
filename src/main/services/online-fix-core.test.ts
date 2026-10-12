@@ -16,20 +16,21 @@ const findEntry = (overrides: string, name: string) =>
     .find((entry) => entry.startsWith(`${name}=`) || entry === name);
 
 describe("buildOnlineFixDllOverrides", () => {
-  it("always includes the community D3D recipe", () => {
-    const overrides = buildOnlineFixDllOverrides([]);
-    for (const required of [
-      "d3d11=n",
-      "d3d10=n",
-      "d3d10core=n",
-      "dxgi=n",
-      "openvr_api_dxvk=n",
-      "d3d12=n",
-      "d3d12core=n",
-      "d3d9=n",
-      "d3d8=n",
-    ]) {
-      assert.ok(overrides.split(";").includes(required), `missing ${required}`);
+  it("never emits a strict native override anywhere in the string", () => {
+    // Wine's loader (map_pe_file) returns STATUS_DLL_NOT_FOUND when a
+    // strict `=n` override resolves to a Wine built-in — the recurring
+    // "error 126". Every entry must be `=n,b` (native first, built-in
+    // fallback) so a missing native file can never kill the load.
+    const overrides = buildOnlineFixDllOverrides([
+      "OnlineFix64.dll",
+      "dxgi.dll",
+      "d3d11.dll",
+      "eos_sdk.dll",
+      "winmm.dll",
+      "SOME-GAME_HOOK.dll",
+    ]);
+    for (const entry of overrides.split(";")) {
+      assert.equal(entry.endsWith("=n,b"), true, `strict entry: ${entry}`);
     }
   });
 
@@ -40,7 +41,7 @@ describe("buildOnlineFixDllOverrides", () => {
     }
   });
 
-  it("forces the Online-Fix payload family as strict native even without a scan", () => {
+  it("forces the Online-Fix payload family as native,builtin even without a scan", () => {
     const overrides = buildOnlineFixDllOverrides([]);
     for (const payload of [
       "onlinefix64",
@@ -49,11 +50,11 @@ describe("buildOnlineFixDllOverrides", () => {
       "steam_api64",
       "steamclient64",
     ]) {
-      assert.equal(findEntry(overrides, payload), `${payload}=n`);
+      assert.equal(findEntry(overrides, payload), `${payload}=n,b`);
     }
   });
 
-  it("maps scanned DLLs to native,builtin and fix payload names to strict native", () => {
+  it("maps scanned DLLs to native,builtin", () => {
     const overrides = buildOnlineFixDllOverrides([
       "OnlineFix64.dll",
       "Steam_API64.DLL",
@@ -62,14 +63,14 @@ describe("buildOnlineFixDllOverrides", () => {
       "winmm.dll",
     ]);
 
-    assert.equal(findEntry(overrides, "onlinefix64"), "onlinefix64=n");
-    assert.equal(findEntry(overrides, "steam_api64"), "steam_api64=n");
-    assert.equal(findEntry(overrides, "eos_sdk"), "eos_sdk=n");
+    assert.equal(findEntry(overrides, "onlinefix64"), "onlinefix64=n,b");
+    assert.equal(findEntry(overrides, "steam_api64"), "steam_api64=n,b");
+    assert.equal(findEntry(overrides, "eos_sdk"), "eos_sdk=n,b");
     assert.equal(findEntry(overrides, "some-game_hook"), "some-game_hook=n,b");
     assert.equal(findEntry(overrides, "winmm"), "winmm=n,b");
   });
 
-  it("never duplicates the D3D family from the folder scan", () => {
+  it("emits each scanned system-named DLL exactly once (no D3D family)", () => {
     const overrides = buildOnlineFixDllOverrides(["dxgi.dll", "d3d11.dll"]);
     const entries = overrides.split(";");
     assert.equal(entries.filter((entry) => entry.startsWith("dxgi")).length, 1);
@@ -77,8 +78,8 @@ describe("buildOnlineFixDllOverrides", () => {
       entries.filter((entry) => entry.startsWith("d3d11")).length,
       1
     );
-    assert.ok(entries.includes("dxgi=n"));
-    assert.ok(entries.includes("d3d11=n"));
+    assert.ok(entries.includes("dxgi=n,b"));
+    assert.ok(entries.includes("d3d11=n,b"));
   });
 
   it("skips API-set shims", () => {
