@@ -103,6 +103,14 @@ export const ONLINE_FIX_MARKER_DLLS = [
 export const isSkippableDllName = (name: string) =>
   name.startsWith("api-ms-win-") || name.startsWith("ext-ms-");
 
+/**
+ * The Steam appid the fix relays through. Online-Fix drives multiplayer
+ * with Valve's Spacewar demo (480): the running client shows it while the
+ * game's patched steam_api drives the lobbies. The Steam context env must
+ * pin this id so the client and the fix agree on the session.
+ */
+export const ONLINE_FIX_STEAM_APP_ID = "480";
+
 export const normalizeDllOverrideName = (rawName: string): string | null => {
   const name = rawName
     .toLowerCase()
@@ -200,4 +208,107 @@ export const buildWindowsOnlineFixPath = (
     .filter((entry) => entry.toLowerCase() !== gameDirectory.toLowerCase());
 
   return [gameDirectory, ...existingEntries].join(separator);
+};
+
+// ---------------------------------------------------------------------------
+// Steam install kind (pure decision part)
+// ---------------------------------------------------------------------------
+
+export type SteamInstallKind = "native" | "flatpak" | "snap" | "unknown";
+
+export interface SteamInstallKindSignals {
+  /** A native `steam` launcher binary exists (e.g. /usr/bin/steam). */
+  nativeBinaryAvailable: boolean;
+  /** The native Steam root exists (~/.steam/steam symlink). */
+  nativeSteamRootPresent: boolean;
+  /** `flatpak info com.valvesoftware.Steam` succeeded. */
+  flatpakRegistered: boolean;
+  /** The Flatpak app data directory exists (may be a leftover). */
+  flatpakDirPresent: boolean;
+  /** `snap list steam` succeeded. */
+  snapRegistered: boolean;
+  /** The Snap data directory exists (may be a leftover). */
+  snapDirPresent: boolean;
+}
+
+/**
+ * Decides how the Steam client is installed from raw signals. Order is
+ * load-bearing: package-manager signals beat data directories because
+ * LEFTOVER directories are common — a machine that once tried the Flatpak
+ * Steam keeps ~/.var/app/com.valvesoftware.Steam forever, even after the
+ * user switched to the distribution's native package. Native wins first:
+ * a native `steam` binary is what actually launches when the client is
+ * started, so it is the truth that matters for the online session.
+ */
+export const resolveSteamInstallKind = (
+  signals: SteamInstallKindSignals
+): SteamInstallKind => {
+  if (signals.nativeBinaryAvailable || signals.nativeSteamRootPresent) {
+    return "native";
+  }
+  if (signals.flatpakRegistered || signals.flatpakDirPresent) {
+    return "flatpak";
+  }
+  if (signals.snapRegistered || signals.snapDirPresent) {
+    return "snap";
+  }
+  return "unknown";
+};
+
+// ---------------------------------------------------------------------------
+// Steam session context env (pure)
+// ---------------------------------------------------------------------------
+
+export interface OnlineFixSteamContextEnv {
+  SteamAppId: string;
+  SteamGameId: string;
+  SteamOverlayGameId: string;
+  ENABLE_VK_LAYER_VALVE_steam_overlay_1: string;
+}
+
+/**
+ * Steam context for an Online-Fix session (Windows + Linux). The fix
+ * relays multiplayer through Spacewar (480) on the user's real client:
+ * pinning SteamAppId/SteamGameId to 480 aligns the Wine side with the
+ * client, and SteamOverlayGameId joins the overlay to the fix's own
+ * session (the onlinefix.ini FakeAppId when present). The Vulkan layer
+ * flag is the OFLL recipe that lets the preloaded native overlay renderer
+ * attach under Proton.
+ */
+export const buildOnlineFixSteamContextEnv = (
+  fakeAppId?: string | null
+): OnlineFixSteamContextEnv => ({
+  SteamAppId: ONLINE_FIX_STEAM_APP_ID,
+  SteamGameId: ONLINE_FIX_STEAM_APP_ID,
+  SteamOverlayGameId: fakeAppId || ONLINE_FIX_STEAM_APP_ID,
+  ENABLE_VK_LAYER_VALVE_steam_overlay_1: "1",
+});
+
+// ---------------------------------------------------------------------------
+// Steam Linux Runtime candidates (pure)
+// ---------------------------------------------------------------------------
+
+/**
+ * Steam Linux Runtime entry points to try, in order, for each Steam
+ * library root. Modern Proton builds are compiled against the sniper
+ * runtime; wrapping the launch with its _v2-entry-point reproduces the
+ * container Steam itself uses, so host library mismatches stop mattering.
+ */
+export const buildSteamRuntimeCandidatePaths = (
+  libraryRoots: string[]
+): string[] => {
+  const runtimes = ["SteamLinuxRuntime_sniper", "SteamLinuxRuntime_soldier"];
+  const candidates: string[] = [];
+
+  for (const libraryRoot of libraryRoots) {
+    for (const runtime of runtimes) {
+      candidates.push(
+        [libraryRoot, "steamapps", "common", runtime, "_v2-entry-point"].join(
+          "/"
+        )
+      );
+    }
+  }
+
+  return candidates;
 };

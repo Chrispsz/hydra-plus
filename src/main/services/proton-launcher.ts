@@ -220,6 +220,13 @@ export const ProtonRunner = {
       useGamemode?: boolean;
       /** Extra environment variables appended last (e.g. Online-Fix mode). */
       extraEnv?: Record<string, string>;
+      /**
+       * Steam Linux Runtime _v2-entry-point. When provided the launch is
+       * wrapped as `<entry-point> -- proton waitforexitandrun <exe>` —
+       * the same container Steam itself uses, so host library mismatches
+       * stop mattering (Online-Fix sessions require this reliability).
+       */
+      steamRuntimeEntryPoint?: string | null;
     }
   ): Promise<void> {
     if (!options?.winePrefixPath) {
@@ -237,6 +244,20 @@ export const ProtonRunner = {
       wrapperCommands: [...(options.useGamemode ? ["gamemoderun"] : [])],
     });
 
+    let launchCommand = resolvedLaunchCommand.command;
+    let launchArgs = resolvedLaunchCommand.args;
+
+    if (options.steamRuntimeEntryPoint) {
+      if (path.basename(launchCommand).toLowerCase() === "gamemoderun") {
+        // gamemoderun stays outside the runtime container:
+        // gamemoderun <entry-point> -- proton run <exe>
+        launchArgs = [options.steamRuntimeEntryPoint, "--", ...launchArgs];
+      } else {
+        launchCommand = options.steamRuntimeEntryPoint;
+        launchArgs = ["--", resolvedLaunchCommand.command, ...launchArgs];
+      }
+    }
+
     const env = await buildProtonEnv({
       winePrefixPath: options.winePrefixPath,
       gameId: options.gameId,
@@ -253,14 +274,14 @@ export const ProtonRunner = {
       .join(" ");
     appendProtonLog(
       `\n[${new Date().toISOString()}] Launching with direct Proton\n` +
-        `Command: ${envCommandPart} "${resolvedLaunchCommand.command}" ${resolvedLaunchCommand.args
+        `Command: ${envCommandPart} "${launchCommand}" ${launchArgs
           .map((arg) => `"${arg}"`)
           .join(" ")}\n`
     );
 
     logger.info("Launching game with direct Proton", {
-      command: resolvedLaunchCommand.command,
-      args: resolvedLaunchCommand.args,
+      command: launchCommand,
+      args: launchArgs,
       cwd: workingDirectory,
       winePrefixPath: options.winePrefixPath,
     });
@@ -279,22 +300,18 @@ export const ProtonRunner = {
         callback();
       };
 
-      const child = spawn(
-        resolvedLaunchCommand.command,
-        resolvedLaunchCommand.args,
-        {
-          detached: true,
-          stdio: shouldPipeToTerminal
-            ? "inherit"
-            : ["ignore", logFileDescriptor, logFileDescriptor],
-          shell: false,
-          cwd: workingDirectory,
-          env: {
-            ...process.env,
-            ...env,
-          },
-        }
-      );
+      const child = spawn(launchCommand, launchArgs, {
+        detached: true,
+        stdio: shouldPipeToTerminal
+          ? "inherit"
+          : ["ignore", logFileDescriptor, logFileDescriptor],
+        shell: false,
+        cwd: workingDirectory,
+        env: {
+          ...process.env,
+          ...env,
+        },
+      });
 
       let quickExitTimer: NodeJS.Timeout | null = null;
 

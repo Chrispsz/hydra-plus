@@ -1,4 +1,4 @@
-import { execFile, spawn } from "node:child_process";
+import { execFile, spawn, spawnSync } from "node:child_process";
 import { promisify } from "node:util";
 import fs from "node:fs";
 import path from "node:path";
@@ -10,10 +10,14 @@ import {
   ONLINE_FIX_PAYLOAD_DIRECTORIES,
   ONLINE_FIX_PAYLOAD_FILES,
   buildOnlineFixDllOverrides,
+  buildOnlineFixSteamContextEnv,
+  buildSteamRuntimeCandidatePaths,
   buildWindowsOnlineFixPath,
   findOnlineFixMarkerDlls,
+  resolveSteamInstallKind,
   sanitizeOnlineFixIni,
 } from "./online-fix-core";
+import { getSteamLibraryFolders } from "./steam";
 
 const execFileAsync = promisify(execFile);
 
@@ -98,8 +102,17 @@ export const collectOnlineFixDllNames = (
 };
 
 /**
- * Wine env for online sessions (native D3D path + game DLLs + Steam
+ * Wine env for online sessions (Steam context + game DLLs + Steam
  * overlay injection, quiet-but-diagnosable logs). Linux only.
+ *
+ * The Steam context is the part umu cannot provide: umu-run blanks
+ * STEAM_COMPAT_CLIENT_INSTALL_PATH and forces SteamAppId=0, which
+ * disconnects the fix's steam_api from the running client — the
+ * persistent "steam overlay dll error 126". This env therefore pins the
+ * Spacewar relay (480), joins the overlay to the fix's session and
+ * enables the Vulkan overlay layer (OFLL recipe); the launch itself
+ * goes through direct Proton with the Steam Linux Runtime wrap (see
+ * launch-game.ts), exactly like the community launchers do it.
  */
 export const getOnlineFixLaunchEnv = (
   gameDir: string,
@@ -110,15 +123,12 @@ export const getOnlineFixLaunchEnv = (
       collectOnlineFixDllNames(gameDir)
     ),
     WINEDEBUG: "+err",
+    ...buildOnlineFixSteamContextEnv(overlayGameId),
   };
 
-  const overlayPreload = buildSteamOverlayPreload();
+  const overlayPreload = buildSteamOverlayPreload(getSteamClientRoot());
   if (overlayPreload) {
     env.LD_PRELOAD = overlayPreload;
-    env.SteamOverlayGameId = overlayGameId || STEAM_OVERLAY_GAME_ID;
-    // OFLL recipe: let the native Steam Vulkan/GL layer register so the
-    // preloaded gameoverlayrenderer attaches to Wine's swapchain.
-    env.ENABLE_VK_LAYER_VALVE_steam_overlay_1 = "1";
   }
 
   return env;
@@ -127,12 +137,15 @@ export const getOnlineFixLaunchEnv = (
 /**
  * Windows env for online sessions: the game folder must be on PATH so
  * the patch's payload DLLs resolve by name regardless of the working
- * directory the game is spawned with.
+ * directory the game is spawned with, plus the Spacewar Steam context
+ * (the fix relays through the running client).
  */
 export const getWindowsOnlineFixLaunchEnv = (
-  gameDir: string
+  gameDir: string,
+  overlayGameId?: string | null
 ): Record<string, string> => ({
   PATH: buildWindowsOnlineFixPath(gameDir, process.env.PATH ?? ""),
+  ...buildOnlineFixSteamContextEnv(overlayGameId),
 });
 
 // ---------------------------------------------------------------------------
@@ -158,21 +171,82 @@ const OVERLAY_LIB_RELATIVE_PATHS = [
 ];
 
 /**
- * Builds the LD_PRELOAD value pointing at the native Steam overlay
- * renderer (32+64 bit) when the Steam client install provides one.
- * Returns null (and leaves the env untouched) when no overlay library
- * exists on this machine, so non-Steam setups launch exactly as before.
+ * Resolves the REAL Steam client root for the detected install kind.
+ * Returns null when no client root exists on this machine.
  */
-export const buildSteamOverlayPreload = (): string | null => {
-  const overlayPaths: string[] = [];
+export const getSteamClientRoot = (): string | null => {
+  const home = process.env.HOME ?? "";
+  const kind = detectSteamInstallKind();
 
-  for (const steamBase of STEAM_BASE_DIRECTORIES) {
+  const candidatesByKind: Record<string, string[]> = {
+    native: [
+      path.join(home, ".steam", "steam"),
+      path.join(home, ".local", "share", "Steam"),
+    ],
+    flatpak: [
+      path.join(
+        home,
+        ".var",
+        "app",
+        "com.valvesoftware.Steam",
+        "data",
+        "Steam"
+      ),
+      path.join(
+        home,
+        ".var",
+        "app",
+        "com.valvesoftware.Steam",
+        ".local",
+        "share",
+        "Steam"
+      ),
+    ],
+    snap: [
+      path.join(home, "snap", "steam", "common", ".local", "share", "Steam"),
+    ],
+  };
+
+  const candidates =
+    kind === "unknown"
+      ? STEAM_BASE_DIRECTORIES
+      : (candidatesByKind[kind] ?? STEAM_BASE_DIRECTORIES);
+
+  for (const candidate of candidates) {
+    try {
+      if (candidate && fs.existsSync(candidate)) return candidate;
+    } catch {
+      // Unreadable location — try the next one.
+    }
+  }
+
+  return null;
+};
+
+/**
+ * Builds the LD_PRELOAD value pointing at the native Steam overlay
+ * renderer (32+64 bit) of the given client root (falls back to the
+ * known Steam base directories). Returns null — and leaves the env
+ * untouched — when no overlay library exists, so non-Steam setups
+ * launch exactly as before.
+ */
+export const buildSteamOverlayPreload = (
+  steamRoot?: string | null
+): string | null => {
+  const overlayPaths: string[] = [];
+  const baseDirectories = steamRoot
+    ? [steamRoot, ...STEAM_BASE_DIRECTORIES]
+    : STEAM_BASE_DIRECTORIES;
+
+  for (const steamBase of baseDirectories) {
     if (!steamBase) continue;
 
     for (const relativePath of OVERLAY_LIB_RELATIVE_PATHS) {
       const overlayPath = path.join(steamBase, relativePath);
       try {
-        if (fs.existsSync(overlayPath)) overlayPaths.push(overlayPath);
+        if (fs.existsSync(overlayPath) && !overlayPaths.includes(overlayPath)) {
+          overlayPaths.push(overlayPath);
+        }
       } catch {
         // Unreadable location — skip this candidate.
       }
@@ -187,6 +261,27 @@ export const buildSteamOverlayPreload = (): string | null => {
     .filter(Boolean);
 
   return parts.join(":");
+};
+
+/**
+ * Finds the Steam Linux Runtime _v2-entry-point in the client's
+ * libraries (sniper first, soldier fallback). Wrapping the direct
+ * Proton launch with it reproduces the container Steam itself uses.
+ */
+export const findSteamRuntimeEntryPoint = async (): Promise<string | null> => {
+  try {
+    const libraries = await getSteamLibraryFolders();
+    for (const candidate of buildSteamRuntimeCandidatePaths(libraries)) {
+      try {
+        if (fs.existsSync(candidate)) return candidate;
+      } catch {
+        // Unreadable library — try the next candidate.
+      }
+    }
+  } catch {
+    // Library parsing is best-effort.
+  }
+  return null;
 };
 
 /**
@@ -528,6 +623,26 @@ export const isSteamClientRunning = async (): Promise<boolean> => {
   }
 };
 
+const spawnDetached = (file: string, args: string[]): boolean => {
+  try {
+    if (file.includes("/")) {
+      fs.accessSync(file, fs.constants.X_OK);
+    }
+    const child = spawn(file, args, {
+      detached: true,
+      stdio: "ignore",
+    });
+    child.unref();
+    return true;
+  } catch (error) {
+    logger.warn("[Online Fix] Failed to spawn the Steam client candidate", {
+      file,
+      error,
+    });
+    return false;
+  }
+};
+
 const spawnSteamClient = async (): Promise<boolean> => {
   try {
     if (process.platform === "win32") {
@@ -537,38 +652,101 @@ const spawnSteamClient = async (): Promise<boolean> => {
         return false;
       }
 
-      const child = spawn(steamExe, ["-silent"], {
-        detached: true,
-        stdio: "ignore",
-      });
-      child.unref();
-      return true;
+      return spawnDetached(steamExe, ["-silent"]);
     }
 
-    // Native Steam first; Flatpak/Snap installs have no `steam` binary
-    // on PATH (OFLL #65) — launch them through their runtimes.
-    try {
-      const child = spawn("steam", ["-silent"], {
-        detached: true,
-        stdio: "ignore",
-      });
-      child.unref();
-      return true;
-    } catch {
-      try {
-        const child = spawn(
-          "flatpak",
-          ["run", "com.valvesoftware.Steam", "-silent"],
-          { detached: true, stdio: "ignore" }
-        );
-        child.unref();
-        return true;
-      } catch {
-        return false;
+    // Launch the client through the SAME channel the user's system
+    // actually uses for Steam — spawning the wrong kind fails silently
+    // or opens a second, broken install (OFLL #65).
+    const kind = detectSteamInstallKind();
+
+    const candidates: string[][] =
+      kind === "flatpak"
+        ? [["flatpak", "run", "com.valvesoftware.Steam", "-silent"]]
+        : kind === "snap"
+          ? [
+              ["/snap/bin/steam", "-silent"],
+              ["snap", "run", "steam", "-silent"],
+            ]
+          : kind === "unknown"
+            ? [
+                ["steam", "-silent"],
+                ["flatpak", "run", "com.valvesoftware.Steam", "-silent"],
+                ["/snap/bin/steam", "-silent"],
+              ]
+            : [["steam", "-silent"]];
+
+    for (const [file, ...args] of candidates) {
+      if (spawnDetached(file, args)) {
+        // Give the client a short window to appear before trying the
+        // next candidate so the wrong-channel spawn can be detected.
+        const appeared = await waitForSteamClient(8_000);
+        if (appeared) return true;
       }
     }
+
+    return false;
   } catch (error) {
     logger.warn("[Online Fix] Failed to spawn the Steam client", error);
+    return false;
+  }
+};
+
+const NATIVE_STEAM_BINARY_PATHS = [
+  "/usr/bin/steam",
+  "/usr/local/bin/steam",
+  "/bin/steam",
+  "/usr/games/steam",
+];
+
+const hasNativeSteamBinary = (): boolean => {
+  for (const binaryPath of NATIVE_STEAM_BINARY_PATHS) {
+    try {
+      if (fs.existsSync(binaryPath)) return true;
+    } catch {
+      // Unreadable location — try the next one.
+    }
+  }
+
+  try {
+    const which = spawnSync("which", ["steam"], {
+      stdio: ["ignore", "pipe", "ignore"],
+      encoding: "utf8",
+    });
+    return which.status === 0;
+  } catch {
+    return false;
+  }
+};
+
+const isFlatpakSteamRegistered = (): boolean => {
+  try {
+    const info = spawnSync("flatpak", ["info", "com.valvesoftware.Steam"], {
+      stdio: ["ignore", "ignore", "ignore"],
+      encoding: "utf8",
+    });
+    return info.status === 0;
+  } catch {
+    return false;
+  }
+};
+
+const isSnapSteamRegistered = (): boolean => {
+  try {
+    const list = spawnSync("snap", ["list", "steam"], {
+      stdio: ["ignore", "pipe", "ignore"],
+      encoding: "utf8",
+    });
+    return list.status === 0;
+  } catch {
+    return false;
+  }
+};
+
+const directoryPresent = (segments: readonly string[]): boolean => {
+  try {
+    return fs.existsSync(path.join(process.env.HOME ?? "", ...segments));
+  } catch {
     return false;
   }
 };
@@ -576,27 +754,27 @@ const spawnSteamClient = async (): Promise<boolean> => {
 export type SteamInstallKind = "native" | "flatpak" | "snap" | "unknown";
 
 /**
- * Detects how the Steam client is installed (native, Flatpak, Snap) —
- * Flatpak/Snap setups are the recurring "126 with Steam installed"
- * report (OFLL #65): the overlay libraries and the client binary live
- * outside the usual paths and must be handled explicitly.
+ * Detects how the Steam client is installed. Package-level signals
+ * (native binary, `flatpak info`, `snap list`) decide first; data
+ * directories are the LAST resort because leftover directories are
+ * common — a machine that once tried the Flatpak Steam keeps
+ * ~/.var/app/com.valvesoftware.Steam even after switching to the
+ * distribution's native package (multilib and friends), which made the
+ * old directory-first check report "Flatpak" for native users.
  */
-export const detectSteamInstallKind = (): SteamInstallKind => {
-  const home = process.env.HOME ?? "";
-  try {
-    if (
-      fs.existsSync(path.join(home, ".var", "app", "com.valvesoftware.Steam"))
-    ) {
-      return "flatpak";
-    }
-    if (fs.existsSync(path.join(home, "snap", "steam"))) {
-      return "snap";
-    }
-  } catch {
-    return "unknown";
-  }
-  return "native";
-};
+export const detectSteamInstallKind = (): SteamInstallKind =>
+  resolveSteamInstallKind({
+    nativeBinaryAvailable: hasNativeSteamBinary(),
+    nativeSteamRootPresent: directoryPresent([".steam", "steam"]),
+    flatpakRegistered: isFlatpakSteamRegistered(),
+    flatpakDirPresent: directoryPresent([
+      ".var",
+      "app",
+      "com.valvesoftware.Steam",
+    ]),
+    snapRegistered: isSnapSteamRegistered(),
+    snapDirPresent: directoryPresent(["snap", "steam"]),
+  });
 
 const waitForSteamClient = async (timeoutMs: number): Promise<boolean> => {
   const deadline = Date.now() + timeoutMs;

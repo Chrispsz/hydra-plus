@@ -33,6 +33,7 @@ import { dispatchSteamProtocolLaunch } from "@main/services/steam-integration/st
 import {
   ensureOnlineFixRuntimeReady,
   ensureSteamClientRunning,
+  findSteamRuntimeEntryPoint,
   getOnlineFixLaunchEnv,
   getWindowsOnlineFixLaunchEnv,
   prepareOnlineFixGameFolder,
@@ -454,6 +455,42 @@ const launchWindowsBinaryOnLinux = async (
     });
   }
 
+  // Online-Fix sessions MUST run with the real Steam client context:
+  // umu-run blanks STEAM_COMPAT_CLIENT_INSTALL_PATH and forces
+  // SteamAppId=0 (umu_run.py defaults), which cuts the fix's steam_api
+  // off the running client — the persistent "steam overlay dll error
+  // 126". Direct Proton with the Steam Linux Runtime wrap plus the
+  // Spacewar context (SteamAppId 480, overlay session id) is the recipe
+  // proven by the community launchers (SOFL/OFLL) and by Steam itself.
+  // umu stays below as the universal fallback.
+  if (onlineFixEnv && isValidProtonForDirectLaunch(protonPath)) {
+    try {
+      const steamRuntimeEntryPoint = await findSteamRuntimeEntryPoint();
+      await ProtonRunner.launchExecutable(parsedPath, [], {
+        winePrefixPath,
+        protonPath,
+        gameId: objectId,
+        launchOptions,
+        useGamemode,
+        useMangohud,
+        extraEnv: onlineFixEnv,
+        steamRuntimeEntryPoint,
+      });
+      logger.info("Online-Fix game launched with direct Proton", {
+        gameKey,
+        protonPath,
+        steamRuntimeEntryPoint,
+      });
+      PowerSaveBlockerManager.markCompatibilityLaunchStarted(gameKey);
+      return true;
+    } catch (error) {
+      logger.warn(
+        "Online-Fix direct Proton launch failed — falling back to umu-run",
+        error
+      );
+    }
+  }
+
   // umu-run is the universal Proton runner: it provisions the Steam Linux
   // Runtime container that every modern Proton (Valve, GE, CachyOS, UMU)
   // requires, and honors PROTONPATH so ANY installed Proton build works.
@@ -766,7 +803,10 @@ const launchGameWithCloudSaveChecks = async (
     onlineFixEnv =
       process.platform === "linux"
         ? getOnlineFixLaunchEnv(executableDirectory, preparation.fakeAppId)
-        : getWindowsOnlineFixLaunchEnv(executableDirectory);
+        : getWindowsOnlineFixLaunchEnv(
+            executableDirectory,
+            preparation.fakeAppId
+          );
   }
 
   const steamCompatibilityPrefixPath =

@@ -3,10 +3,13 @@ import { describe, it } from "node:test";
 
 import {
   buildOnlineFixDllOverrides,
+  buildOnlineFixSteamContextEnv,
+  buildSteamRuntimeCandidatePaths,
   buildWindowsOnlineFixPath,
   findOnlineFixMarkerDlls,
   isSkippableDllName,
   MAX_SCANNED_DLL_OVERRIDES,
+  resolveSteamInstallKind,
   sanitizeOnlineFixIni,
 } from "./online-fix-core.js";
 
@@ -190,5 +193,96 @@ describe("buildWindowsOnlineFixPath", () => {
       buildWindowsOnlineFixPath("C:\\Games\\Game", ""),
       "C:\\Games\\Game"
     );
+  });
+});
+
+describe("resolveSteamInstallKind", () => {
+  const base = {
+    nativeBinaryAvailable: false,
+    nativeSteamRootPresent: false,
+    flatpakRegistered: false,
+    flatpakDirPresent: false,
+    snapRegistered: false,
+    snapDirPresent: false,
+  };
+
+  it("prefers the native binary even when a Flatpak data dir is left over", () => {
+    // The reported false positive: multilib native Steam + an old
+    // ~/.var/app/com.valvesoftware.Steam directory.
+    assert.equal(
+      resolveSteamInstallKind({
+        ...base,
+        nativeBinaryAvailable: true,
+        flatpakDirPresent: true,
+      }),
+      "native"
+    );
+    assert.equal(
+      resolveSteamInstallKind({
+        ...base,
+        nativeSteamRootPresent: true,
+        flatpakRegistered: true,
+      }),
+      "native"
+    );
+  });
+
+  it("reports Flatpak on package or directory signals", () => {
+    assert.equal(
+      resolveSteamInstallKind({ ...base, flatpakRegistered: true }),
+      "flatpak"
+    );
+    assert.equal(
+      resolveSteamInstallKind({ ...base, flatpakDirPresent: true }),
+      "flatpak"
+    );
+  });
+
+  it("reports Snap only after native and Flatpak are ruled out", () => {
+    assert.equal(
+      resolveSteamInstallKind({ ...base, snapRegistered: true }),
+      "snap"
+    );
+    assert.equal(
+      resolveSteamInstallKind({ ...base, snapDirPresent: true }),
+      "snap"
+    );
+  });
+
+  it("falls back to unknown without any signal", () => {
+    assert.equal(resolveSteamInstallKind(base), "unknown");
+  });
+});
+
+describe("buildOnlineFixSteamContextEnv", () => {
+  it("pins the Spacewar relay as the Steam session", () => {
+    assert.deepEqual(buildOnlineFixSteamContextEnv(null), {
+      SteamAppId: "480",
+      SteamGameId: "480",
+      SteamOverlayGameId: "480",
+      ENABLE_VK_LAYER_VALVE_steam_overlay_1: "1",
+    });
+  });
+
+  it("joins the overlay to the fix's FakeAppId when present", () => {
+    const env = buildOnlineFixSteamContextEnv("1234567");
+    assert.equal(env.SteamOverlayGameId, "1234567");
+    assert.equal(env.SteamAppId, "480");
+  });
+});
+
+describe("buildSteamRuntimeCandidatePaths", () => {
+  it("tries sniper before soldier for every library", () => {
+    const candidates = buildSteamRuntimeCandidatePaths(["/games", "/steam"]);
+    assert.deepEqual(candidates, [
+      "/games/steamapps/common/SteamLinuxRuntime_sniper/_v2-entry-point",
+      "/games/steamapps/common/SteamLinuxRuntime_soldier/_v2-entry-point",
+      "/steam/steamapps/common/SteamLinuxRuntime_sniper/_v2-entry-point",
+      "/steam/steamapps/common/SteamLinuxRuntime_soldier/_v2-entry-point",
+    ]);
+  });
+
+  it("returns nothing without libraries", () => {
+    assert.deepEqual(buildSteamRuntimeCandidatePaths([]), []);
   });
 });
