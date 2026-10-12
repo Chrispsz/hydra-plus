@@ -19,6 +19,7 @@ export const levelKeys = {
   downloadSourcesCheckBaseline: "downloadSourcesCheckBaseline", // When we last started the app
   downloadSourcesSinceValue: "downloadSourcesSinceValue", // The 'since' value API used (for modal comparison)
   defaultDownloadSourcesSeededV2: "defaultDownloadSourcesSeededV2", // Whether the curated per-URL sources were handled
+  defaultDownloadSourcesSeededV3: "defaultDownloadSourcesSeededV3", // Whether the Hydra Library curated sources were handled
   auth: "auth", // Hydra account session (accessToken + refreshToken)
   user: "user", // Hydra account profile
   commonRedistPassed: "commonRedistPassed", // Whether common redistributables preflight has passed

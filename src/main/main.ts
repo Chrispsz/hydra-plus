@@ -16,6 +16,7 @@ import {
   DownloadManager,
   HydraApi,
   syncDownloadSourcesFromApi,
+  syncProfileLibraryFromApi,
   startMainLoop,
   Ludusavi,
   Lock,
@@ -119,8 +120,10 @@ export const loadState = async () => {
   // First-run: curated download sources so search works out of the box.
   void seedDefaultDownloadSources();
 
-  // Signed-in users get their account's sources synced over on boot.
+  // Signed-in users get their account's sources and game catalogue
+  // synced over on boot.
   void syncDownloadSourcesFromApi();
+  void syncProfileLibraryFromApi();
 
   // Check for new download options on startup (if enabled)
   void DownloadSourcesChecker.checkForChanges();

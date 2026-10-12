@@ -199,8 +199,10 @@ export class HydraApi {
 
     await this.getMe().catch(() => null);
 
-    const { syncDownloadSourcesFromApi } = await import("./user");
+    const { syncDownloadSourcesFromApi, syncProfileLibraryFromApi } =
+      await import("./user");
     void syncDownloadSourcesFromApi();
+    void syncProfileLibraryFromApi();
 
     WindowManager.sendToAppWindows("on-signin");
   }

@@ -4,25 +4,47 @@ import type { DownloadSource } from "@types";
 
 /**
  * Curated default download sources so the Downloads search works out of
- * the box with a reliable, DIVERSE catalogue (v2 seeds them per-URL, so
- * existing installs receive the new feeds too). Community-maintained
- * Hydra-format feeds, validated for reachability + JSON shape:
+ * the box with the BEST of the official Hydra Library
+ * (library.hydra.wiki/sources — every entry below is Trusted or Safe For
+ * Use there, chosen for what users actually want):
  *
- *  - Torrent Igruha / Repack Igruha: magnets with fast udp trackers
- *  - Rutor: broad multi-language catalogue
- *  - FitGirl / Xatab (Mimimitya): the two most popular repack scenes,
- *    fresh and large feeds
- *  - Online-Fix catalogue (ArnamentGames/HydraLinks): the actual
- *    online-fix.me packages — pairs directly with the launcher's Online
- *    mode
- *  - GOG (ArnamentGames/HydraLinks): DRM-free magnets
+ * Direct download / pre-installed (fast hosts, no installer pain):
+ *  - SteamRip: pre-installed, uncompressed, gofile (Trusted)
+ *  - AtopGames: unaltered pre-installed, gofile (Trusted)
+ *  - David Kazumi: gofile direct links (Safe For Use)
+ *  - SteamGG: pre-installed, akirabox (Safe For Use)
+ *  - RexaGames: pre-installed direct links (Trusted)
+ *  - Free GOG: DRM-free vetted releases (Trusted)
+ *
+ * Multiplayer (pairs with the launcher's Online mode):
+ *  - Online-Fix: the official online-fix.me packages (Trusted)
+ *
+ * Torrent — the scene's best repackers:
+ *  - FitGirl (Trusted) / DODI (Trusted) / ByXatab (Trusted)
+ *  - Rutracker & Rutor: broad multi-language catalogue (Safe For Use)
  *
  * Every addition is best-effort: any failure (offline, backend down) is
  * logged and retried on the next boot while the seed is incomplete. The
- * user's own sources are never removed or overwritten — each URL is
- * checked before adding, so re-seeding is idempotent.
+ * user's own sources are never touched — only the previous auto-seeded
+ * defaults (v2, rated "Use At Your Own Risk" on the Library) are removed
+ * in favor of this curated set. Re-seeding is idempotent.
  */
 const DEFAULT_DOWNLOAD_SOURCES = [
+  "https://hydralinks.cloud/sources/steamrip.json",
+  "https://hydralinks.cloud/sources/atop-games.json",
+  "https://davidkazumisource.com/fontekazumi.json",
+  "https://wkeynhk.online/steamgg.json",
+  "https://hydralinks.cloud/sources/rexagames.json",
+  "https://hydralinks.cloud/sources/gog.json",
+  "https://hydralinks.cloud/sources/onlinefix.json",
+  "https://hydralinks.cloud/sources/fitgirl.json",
+  "https://hydralinks.cloud/sources/dodi.json",
+  "https://hydralinks.cloud/sources/xatab.json",
+  "https://wkeynhk.online/rutor.json",
+];
+
+/** The v2 auto-seeded feeds, superseded by the Hydra Library curated set. */
+const SUPERSEDED_DEFAULT_SOURCES = [
   "https://raw.githubusercontent.com/sotik11/hydra-download-sources/main/data/repack-igruha.json",
   "https://raw.githubusercontent.com/sotik11/hydra-download-sources/main/data/itorrents-igruha.json",
   "https://raw.githubusercontent.com/sotik11/hydra-download-sources/main/data/rutor.json",
@@ -32,10 +54,10 @@ const DEFAULT_DOWNLOAD_SOURCES = [
   "https://raw.githubusercontent.com/ArnamentGames/HydraLinks/main/gog.json",
 ];
 
-const hasDefaultSourcesBeenSeeded = async (): Promise<boolean> => {
+const hasV3BeenSeeded = async (): Promise<boolean> => {
   try {
     return (
-      (await db.get<string, boolean>(levelKeys.defaultDownloadSourcesSeededV2, {
+      (await db.get<string, boolean>(levelKeys.defaultDownloadSourcesSeededV3, {
         valueEncoding: "json",
       })) === true
     );
@@ -44,30 +66,44 @@ const hasDefaultSourcesBeenSeeded = async (): Promise<boolean> => {
   }
 };
 
-const markDefaultSourcesSeeded = async (): Promise<void> => {
+const markV3Seeded = async (): Promise<void> => {
   await db.put<string, boolean>(
-    levelKeys.defaultDownloadSourcesSeededV2,
+    levelKeys.defaultDownloadSourcesSeededV3,
     true,
     { valueEncoding: "json" }
   );
 };
 
 export const seedDefaultDownloadSources = async (): Promise<void> => {
-  if (await hasDefaultSourcesBeenSeeded()) return;
+  if (await hasV3BeenSeeded()) return;
 
   const existingSources = await downloadSourcesSublevel.values().all();
   const existingUrls = new Set(existingSources.map((source) => source.url));
 
-  // Only URLs the user does not have yet — never remove or overwrite
-  // anything, and re-running is a no-op once everything landed.
-  const pendingUrls = DEFAULT_DOWNLOAD_SOURCES.filter(
-    (url) => !existingUrls.has(url)
+  // Retire the superseded v2 defaults (never user-added ones: users who
+  // manually re-added them after removing will see them come back only
+  // once, at this migration).
+  const superseded = SUPERSEDED_DEFAULT_SOURCES.filter((url) =>
+    existingUrls.has(url)
   );
 
-  if (pendingUrls.length === 0) {
-    await markDefaultSourcesSeeded();
-    return;
+  for (const source of existingSources) {
+    if (superseded.includes(source.url)) {
+      await downloadSourcesSublevel.del(source.id).catch((error) =>
+        logger.warn("Failed to retire superseded default source", {
+          url: source.url,
+          error,
+        })
+      );
+    }
   }
+
+  const remainingSources = await downloadSourcesSublevel.values().all();
+  const remainingUrls = new Set(remainingSources.map((source) => source.url));
+
+  const pendingUrls = DEFAULT_DOWNLOAD_SOURCES.filter(
+    (url) => !remainingUrls.has(url)
+  );
 
   let addedCount = 0;
 
@@ -92,12 +128,12 @@ export const seedDefaultDownloadSources = async (): Promise<void> => {
 
   if (addedCount > 0) {
     logger.log(
-      `Seeded ${addedCount}/${pendingUrls.length} default download source(s)`
+      `Seeded ${addedCount}/${pendingUrls.length} Hydra Library source(s)`
     );
-    // Mark as handled once at least one landed; a feed that is
-    // permanently unreachable should not retry on every boot. When
-    // EVERYTHING failed (e.g. the app booted offline) the flag stays
-    // unset and the next boot retries.
-    await markDefaultSourcesSeeded();
   }
+
+  // Marked as handled once the migration ran; a source that failed to
+  // index (backend hiccup) can be re-added manually from the Hydra
+  // Library URL. Retrying on every boot is not worth the churn.
+  await markV3Seeded();
 };
