@@ -26,7 +26,7 @@ export class Lock {
   public static async releaseLock() {
     return new Promise<void>((resolve, reject) => {
       fs.unlink(this.lockFilePath, (err) => {
-        if (err) {
+        if (err && (err as NodeJS.ErrnoException).code !== "ENOENT") {
           logger.error("Error releasing the lock", err);
           reject(err);
         }

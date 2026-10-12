@@ -10,7 +10,6 @@ export const DOWNLOADER_NAME = {
   [Downloader.FuckingFast]: "FuckingFast",
   [Downloader.TorBox]: "TorBox",
   [Downloader.Hydra]: "Nimbus",
-  [Downloader.VikingFile]: "VikingFile",
   [Downloader.Rootz]: "Rootz",
   [Downloader.Premiumize]: "Premiumize",
   [Downloader.AllDebrid]: "AllDebrid",

@@ -28,16 +28,12 @@ import { DeleteGameModal } from "@renderer/pages/downloads/delete-game-modal";
 import {
   useAppSelector,
   useDownload,
-  useGameCollections,
   useGoogleDriveCloud,
   useIsNonSteamExecutable,
   useLibrary,
   useToast,
-  useUserDetails,
 } from "@renderer/hooks";
 import { RemoveGameFromLibraryModal } from "./remove-from-library-modal";
-import { ChangeGamePlaytimeModal } from "./change-game-playtime-modal";
-import { ResetPlaytimeModal } from "./reset-playtime-modal";
 import {
   AlertIcon,
   CloudIcon,
@@ -45,10 +41,8 @@ import {
   FileDirectoryIcon,
   GearIcon,
   GlobeIcon,
-  ImageIcon,
 } from "@primer/octicons-react";
 import { Wrench } from "lucide-react";
-import { GameAssetsSettings } from "./game-assets-settings";
 import { OnlineModeSettingsSection } from "./game-options-modal/online-mode-section";
 import { debounce } from "lodash-es";
 import { levelDBService } from "@renderer/services/leveldb.service";
@@ -90,7 +84,6 @@ export function GameOptionsModal({
 
   const { showSuccessToast, showErrorToast } = useToast();
   const { updateLibrary } = useLibrary();
-  const { loadCollections } = useGameCollections();
 
   const {
     updateGame,
@@ -98,7 +91,6 @@ export function GameOptionsModal({
     setShowRepacksModal,
     repacks,
     selectGameExecutable,
-    shopDetails,
     isTransferring,
   } = useContext(gameDetailsContext);
 
@@ -113,8 +105,6 @@ export function GameOptionsModal({
   const [gameTitle, setGameTitle] = useState(game.title ?? "");
   const [updatingGameTitle, setUpdatingGameTitle] = useState(false);
   const [launchOptions, setLaunchOptions] = useState(game.launchOptions ?? "");
-  const [showChangePlaytimeModal, setShowChangePlaytimeModal] = useState(false);
-  const [showResetPlaytimeModal, setShowResetPlaytimeModal] = useState(false);
   const [creatingSteamShortcut, setCreatingSteamShortcut] = useState(false);
   const [saveFolderPath, setSaveFolderPath] = useState<string | null>(null);
   const [loadingSaveFolder, setLoadingSaveFolder] = useState(false);
@@ -152,12 +142,8 @@ export function GameOptionsModal({
     isGameDeleting,
     cancelDownload,
   } = useDownload();
-  const { userDetails } = useUserDetails();
   const { isDriveCloudActive } = useGoogleDriveCloud();
-  const cloudSaveAccessAction = getCloudSaveAccessAction(
-    Boolean(userDetails),
-    isDriveCloudActive
-  );
+  const cloudSaveAccessAction = getCloudSaveAccessAction(isDriveCloudActive);
   const { showV2: showCloudSaveV2Settings } = getCloudSaveVisibility(
     game.shop,
     game.platform
@@ -323,11 +309,7 @@ export function GameOptionsModal({
   const handleRemoveGameFromLibrary = async () => {
     if (isGameDownloading) await cancelDownload(game.shop, game.objectId);
     await removeGameFromLibrary(game.shop, game.objectId);
-    await Promise.all([
-      refreshGameDetails(),
-      updateLibrary(),
-      loadCollections(),
-    ]);
+    await Promise.all([refreshGameDetails(), updateLibrary()]);
     onClose();
     if (game.shop === "custom" && onNavigateHome) onNavigateHome();
   };
@@ -810,12 +792,7 @@ export function GameOptionsModal({
               icon: <FileDirectoryIcon size={16} />,
             },
           ]),
-      {
-        id: "assets" as const,
-        label: t("settings_category_customization"),
-        icon: <ImageIcon size={16} />,
-      },
-      ...(showCloudSaveV2Settings && cloudSaveAccessAction !== "sign-in"
+      ...(showCloudSaveV2Settings
         ? [
             {
               id: "hydra_cloud" as const,
@@ -914,33 +891,6 @@ export function GameOptionsModal({
   };
   const shouldShowCreateStartMenuShortcut =
     globalThis.window.electron.platform === "win32";
-
-  const handleChangePlaytime = async (sec: number) => {
-    try {
-      await globalThis.window.electron.changeGamePlayTime(
-        game.shop,
-        game.objectId,
-        sec
-      );
-      await updateGame();
-      showSuccessToast(t("update_playtime_success"));
-    } catch {
-      showErrorToast(t("update_playtime_error"));
-    }
-  };
-
-  const handleResetPlaytime = async () => {
-    try {
-      await globalThis.window.electron.resetGamePlayTime(
-        game.shop,
-        game.objectId
-      );
-      await updateGame();
-      showSuccessToast(t("reset_playtime_success"));
-    } catch {
-      showErrorToast(t("reset_playtime_error"));
-    }
-  };
 
   const handleToggleHydraPlaytimeEnabled = useCallback(
     async (enabled: boolean) => {
@@ -1044,18 +994,6 @@ export function GameOptionsModal({
         removeGameFromLibrary={handleRemoveGameFromLibrary}
         game={game}
       />
-      <ChangeGamePlaytimeModal
-        visible={showChangePlaytimeModal}
-        onClose={() => setShowChangePlaytimeModal(false)}
-        changePlaytime={handleChangePlaytime}
-        game={game}
-      />
-      <ResetPlaytimeModal
-        visible={showResetPlaytimeModal}
-        onClose={() => setShowResetPlaytimeModal(false)}
-        resetPlaytime={handleResetPlaytime}
-        game={game}
-      />
       <CreateSteamShortcutModal
         visible={showSteamShortcutModal}
         creating={creatingSteamShortcut}
@@ -1076,13 +1014,7 @@ export function GameOptionsModal({
             selectedCategory={selectedCategory}
             onSelectCategory={handleSelectCategory}
           />
-          <div
-            className={`game-options-modal__panel${
-              selectedCategory === "assets"
-                ? " game-options-modal__panel--assets"
-                : ""
-            }`}
-          >
+          <div className="game-options-modal__panel">
             {selectedCategory === "general" && (
               <GeneralSettingsSection
                 {...baseGeneralSettingsProps}
@@ -1100,13 +1032,6 @@ export function GameOptionsModal({
                 showShortcutsSection={false}
                 showLaunchOptionsSection={false}
                 showSteamPlaytimeSection={false}
-              />
-            )}
-            {selectedCategory === "assets" && (
-              <GameAssetsSettings
-                game={game}
-                shopDetails={shopDetails}
-                onGameUpdated={updateGame}
               />
             )}
             {selectedCategory === "hydra_cloud" &&
@@ -1146,6 +1071,8 @@ export function GameOptionsModal({
               )}
             {selectedCategory === "online" && (
               <OnlineModeSettingsSection
+                shop={game.shop}
+                objectId={game.objectId}
                 onlineFixEnabled={onlineFixEnabled}
                 onChangeOnlineFixState={handleChangeOnlineFixState}
               />
@@ -1165,10 +1092,7 @@ export function GameOptionsModal({
                 game={game}
                 deleting={deleting}
                 isGameDownloading={isGameDownloading}
-                userDetails={userDetails}
                 onOpenRemoveFromLibrary={() => setShowRemoveGameModal(true)}
-                onOpenChangePlaytime={() => setShowChangePlaytimeModal(true)}
-                onOpenResetPlaytime={() => setShowResetPlaytimeModal(true)}
                 onOpenRemoveFiles={() => setShowDeleteModal(true)}
               />
             )}

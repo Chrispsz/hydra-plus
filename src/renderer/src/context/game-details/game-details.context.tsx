@@ -22,8 +22,6 @@ import {
   GameOptionsCategoryId,
 } from "./game-details.context.types";
 import {
-  applyHosterAvailability,
-  fetchHosterAvailability,
   filterDownloadableRepacks,
   getGameExecutableFilters,
   SteamContentDescriptor,
@@ -381,16 +379,6 @@ export function GameDetailsContextProvider({
         );
 
         setRepacks(downloadOptions);
-
-        const results = await fetchHosterAvailability(
-          downloadOptions,
-          (url, data) =>
-            window.electron.hydraApi.post(url, { data, needsAuth: false })
-        );
-
-        if (cancelled || results.length === 0) return;
-
-        setRepacks(applyHosterAvailability(downloadOptions, results));
       } catch (error) {
         console.error("Failed to fetch download sources:", error);
       }

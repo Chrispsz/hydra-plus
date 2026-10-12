@@ -5,11 +5,8 @@ import {
   librarySlice,
   userPreferencesSlice,
   toastSlice,
-  userDetailsSlice,
   gameRunningSlice,
-  subscriptionSlice,
   catalogueSearchSlice,
-  collectionsSlice,
 } from "@renderer/features";
 
 export const store = configureStore({
@@ -19,11 +16,8 @@ export const store = configureStore({
     userPreferences: userPreferencesSlice.reducer,
     download: downloadSlice.reducer,
     toast: toastSlice.reducer,
-    userDetails: userDetailsSlice.reducer,
     gameRunning: gameRunningSlice.reducer,
-    subscription: subscriptionSlice.reducer,
     catalogueSearch: catalogueSearchSlice.reducer,
-    collections: collectionsSlice.reducer,
   },
 });
 

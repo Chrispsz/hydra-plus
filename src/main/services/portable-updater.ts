@@ -166,10 +166,11 @@ const downloadWithHashes = async (
   targetPath: string,
   onProgress?: (percent: number) => void
 ): Promise<{ sha256: string; sha512: string }> => {
-  const { data } = await axios.get<NodeJS.ReadableStream>(url, {
+  const { data: responseStream } = await axios.get<NodeJS.ReadableStream>(url, {
     responseType: "stream",
     timeout: 0,
   });
+  const data = responseStream as unknown as import("node:stream").Readable;
 
   const hash256 = crypto.createHash("sha256");
   const hash512 = crypto.createHash("sha512");
@@ -179,7 +180,21 @@ const downloadWithHashes = async (
   await new Promise<void>((resolve, reject) => {
     const writer = fs.createWriteStream(targetPath);
 
+    // Inactivity watchdog: a stalled socket used to leave the promise
+    // pending forever (timeout: 0 disables axios's own guard so the body
+    // can take as long as it needs — this only kills silence).
+    let stallTimer: NodeJS.Timeout | null = null;
+    const STALL_TIMEOUT_MS = 30_000;
+    const resetStallTimer = () => {
+      if (stallTimer) clearTimeout(stallTimer);
+      stallTimer = setTimeout(() => {
+        data.destroy(new Error("portable_update_stalled"));
+      }, STALL_TIMEOUT_MS);
+    };
+    resetStallTimer();
+
     data.on("data", (chunk: Buffer) => {
+      resetStallTimer();
       hash256.update(chunk);
       hash512.update(chunk);
       received += chunk.length;
@@ -189,7 +204,10 @@ const downloadWithHashes = async (
     });
     data.on("error", reject);
     writer.on("error", reject);
-    writer.on("finish", () => resolve());
+    writer.on("finish", () => {
+      if (stallTimer) clearTimeout(stallTimer);
+      resolve();
+    });
     data.pipe(writer);
   });
 

@@ -16,7 +16,6 @@ import {
   MediafireApi,
   PixelDrainApi,
   FuckingFastApi,
-  VikingFileApi,
   RootzApi,
 } from "../hosters";
 import { TorrentService } from "../torrent-service";
@@ -495,7 +494,17 @@ export class DownloadManager {
       };
 
       if (status.status === "active" || status.status === "complete") {
-        await downloadsSublevel.put(downloadId, updatedDownload);
+        // Persist only on change — this runs every poll tick and the
+        // record is large (file list metadata included).
+        const unchanged =
+          download.bytesDownloaded === bytesDownloaded &&
+          download.progress === progress &&
+          download.status === updatedDownload.status &&
+          download.fileSize === effectiveFileSize;
+
+        if (!unchanged) {
+          await downloadsSublevel.put(downloadId, updatedDownload);
+        }
       }
 
       return {
@@ -1079,6 +1088,12 @@ export class DownloadManager {
     await this.processNextQueuedDownload();
   }
 
+  private static seedSizeCache = new Map<
+    string,
+    { size: number; at: number }
+  >();
+  private static readonly SEED_SIZE_CACHE_TTL_MS = 60_000;
+
   public static async getSeedStatus() {
     let seedStatus: LibtorrentPayload[] = [];
 
@@ -1097,16 +1112,26 @@ export class DownloadManager {
       return;
     }
 
-    logger.log(seedStatus);
+    const now = Date.now();
 
     for (const status of seedStatus) {
       const download = await downloadsSublevel.get(status.gameId);
 
       if (!download) continue;
 
-      const totalSize = await getDirSize(
-        path.join(download.downloadPath, status.folderName)
-      );
+      // A full recursive stat walk per seeded torrent per 2s tick is
+      // wasted IO; the folder only shrinks when files are deleted.
+      const cacheKey = `${status.gameId}:${download.downloadPath}:${status.folderName}`;
+      const cached = this.seedSizeCache.get(cacheKey);
+      let totalSize: number;
+      if (cached && now - cached.at < this.SEED_SIZE_CACHE_TTL_MS) {
+        totalSize = cached.size;
+      } else {
+        totalSize = await getDirSize(
+          path.join(download.downloadPath, status.folderName)
+        );
+        this.seedSizeCache.set(cacheKey, { size: totalSize, at: now });
+      }
 
       if (totalSize < status.fileSize) {
         await this.pauseSeeding(status.gameId);
@@ -1229,8 +1254,6 @@ export class DownloadManager {
         return this.getTorBoxDownloadOptions(download, resumingFilename);
       case Downloader.Hydra:
         throw new Error(DownloadError.NotCachedOnHydra);
-      case Downloader.VikingFile:
-        return this.getVikingFileDownloadOptions(download, resumingFilename);
       case Downloader.Rootz:
         return this.getRootzDownloadOptions(download, resumingFilename);
       case Downloader.ArchiveOrg:
@@ -1548,26 +1571,6 @@ export class DownloadManager {
     );
   }
 
-  private static async getVikingFileDownloadOptions(
-    download: Download,
-    resumingFilename?: string
-  ) {
-    logger.log(
-      `[DownloadManager] Processing VikingFile download for URI: ${download.uri}`
-    );
-    const downloadUrl = await VikingFileApi.getDownloadUrl(download.uri);
-    const filename = this.resolveFilename(
-      resumingFilename,
-      download.uri,
-      downloadUrl
-    );
-    return this.buildDownloadOptions(
-      downloadUrl,
-      download.downloadPath,
-      filename
-    );
-  }
-
   private static async getArchiveOrgDownloadOptions(
     download: Download,
     resumingFilename?: string
@@ -1751,18 +1754,6 @@ export class DownloadManager {
       }
       case Downloader.Hydra: {
         throw new Error(DownloadError.NotCachedOnHydra);
-      }
-      case Downloader.VikingFile: {
-        logger.log(
-          `[DownloadManager] Processing VikingFile download for URI: ${download.uri}`
-        );
-        const downloadUrl = await VikingFileApi.getDownloadUrl(download.uri);
-        return this.createDownloadPayload(
-          downloadUrl,
-          download.uri,
-          downloadId,
-          download.downloadPath
-        );
       }
       case Downloader.Rootz: {
         const downloadUrl = await RootzApi.getDownloadUrl(download.uri);

@@ -16,9 +16,9 @@ import {
   clearGamesPlaytime,
   WindowManager,
   Lock,
+  SevenZip,
   PowerSaveBlockerManager,
   DownloadOrchestrator,
-  SSEClient,
   cleanupPortableUpdateCache,
   runPostUpdateMaintenance,
 } from "@main/services";
@@ -29,16 +29,6 @@ import { GameShop, UserPreferences } from "@types";
 import { launchGame } from "./helpers";
 import { refreshPortableShortcutLauncher } from "./helpers/shortcut-launch";
 import { loadState } from "./main";
-import {
-  closeSteamOpenIdWindow,
-  notifySteamConnectError,
-  notifySteamConnected,
-} from "./services/steam-integration/steam-store-session";
-import {
-  completeSteamOpenIdConnection,
-  parseSteamOpenIdReturn,
-} from "./services/steam-integration/steam-openid-return";
-import { steamSyncOrchestrator } from "./services/steam-integration/steam-sync-orchestrator";
 
 crashReporter.start({
   uploadToServer: false,
@@ -187,9 +177,8 @@ const initializeApp = async () => {
     logger.error("Failed to load app state during startup", error);
   }
 
-  // Suspend can outlive the 60s stall watchdog; reconnect right away instead
+  // Suspend can outlive the 60s stall watchdog; resume downloads right away
   powerMonitor.on("resume", () => {
-    SSEClient.reconnectNow();
     DownloadOrchestrator.onNetworkStatusChanged({
       online: true,
       switched: true,
@@ -305,30 +294,6 @@ const handleDeepLinkPath = (uri?: string) => {
       WindowManager.redirect(`settings${url.search}`);
       return;
     }
-
-    if (url.host === "profile") {
-      const userId = url.searchParams.get("userId");
-
-      if (userId) {
-        WindowManager.redirect(`profile/${userId}`);
-      }
-
-      return;
-    }
-
-    if (url.host === "steam-connected") {
-      closeSteamOpenIdWindow();
-      const result = parseSteamOpenIdReturn(uri);
-      if (result?.kind === "error") {
-        notifySteamConnectError(result.code);
-        return;
-      }
-      completeSteamOpenIdConnection({
-        clearReconnectRequired: () =>
-          steamSyncOrchestrator.clearReconnectRequired(),
-        notifyConnected: notifySteamConnected,
-      });
-    }
   } catch (error) {
     logger.error("Error handling deep link", uri, error);
   }
@@ -376,6 +341,10 @@ app.on("before-quit", async (e) => {
     if (isAppClosing) return;
     isAppClosing = true;
     PowerSaveBlockerManager.reset();
+    // Stop any in-flight 7z extraction so quitting never leaves an
+    // orphaned 7zzs process chewing disk IO.
+    SevenZip.cancelActiveExtraction();
+
     const results = await Promise.allSettled([
       Lock.releaseLock(),
       TorrentService.shutdown(),

@@ -12,7 +12,7 @@ import { useDate } from "@renderer/hooks";
 import cn from "classnames";
 
 import type { LocalNotification } from "@types";
-import "./notification-item.scss";
+import "./notifications.scss";
 
 interface LocalNotificationItemProps {
   notification: LocalNotification;

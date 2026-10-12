@@ -1,5 +1,5 @@
-import { cloudSaveSyncAnchorsSublevel, db, levelKeys } from "@main/level";
-import type { CloudSaveSyncAnchor, GameShop, User } from "@types";
+import { cloudSaveSyncAnchorsSublevel } from "@main/level";
+import type { CloudSaveSyncAnchor, GameShop } from "@types";
 
 import {
   CLOUD_SAVE_HASH_PATTERN,
@@ -10,6 +10,7 @@ import {
   isCloudSaveSyncAnchorKeyForGame,
 } from "./sync-anchor-key";
 import { hasCloudSaveV4AnchorSchema } from "./sync-anchor-policy";
+import { getCurrentCloudSaveUserId } from "./cloud-save-user-id";
 
 const isValidAnchor = (
   anchor: CloudSaveSyncAnchor | null,
@@ -49,13 +50,7 @@ const isValidAnchor = (
   return anchor.unresolvedRemoteEntryIds.every((id) => ids.has(id));
 };
 
-const getCurrentUserId = async () => {
-  const user = await db.get<string, User>(levelKeys.user, {
-    valueEncoding: "json",
-  });
-  if (!user?.id) throw new Error("Cloud save sync requires a signed-in user");
-  return user.id;
-};
+const getCurrentUserId = getCurrentCloudSaveUserId;
 
 const getLegacyAnchorKey = async (shop: GameShop, objectId: string) =>
   JSON.stringify([await getCurrentUserId(), shop, objectId]);

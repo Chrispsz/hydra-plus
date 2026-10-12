@@ -10,12 +10,7 @@ import {
 } from "@primer/octicons-react";
 import { Button } from "@renderer/components";
 import { XCircle } from "lucide-react";
-import {
-  useDownload,
-  useLibrary,
-  useToast,
-  useUserDetails,
-} from "@renderer/hooks";
+import { useDownload, useLibrary, useToast } from "@renderer/hooks";
 import { useContext, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { gameDetailsContext } from "@renderer/context";
@@ -28,7 +23,6 @@ export function HeroPanelActions() {
     useState(false);
 
   const { isGameDeleting } = useDownload();
-  const { userDetails } = useUserDetails();
 
   const {
     game,
@@ -302,7 +296,7 @@ export function HeroPanelActions() {
           {game.favorite ? <HeartFillIcon /> : <HeartIcon />}
         </Button>
 
-        {userDetails && game.shop !== "custom" && (
+        {game.shop !== "custom" && (
           <Button
             onClick={toggleGamePinned}
             theme="outline"

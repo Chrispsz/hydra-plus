@@ -13,8 +13,7 @@ const INTEGRATION_DISPLAY_KEYS = [
 ] as const;
 
 const INTEGRATION_SOURCE_FILES = [
-  "src/renderer/src/pages/settings/settings-steam.tsx",
-  "src/renderer/src/pages/settings/settings-steam-state.ts",
+  "src/renderer/src/pages/settings/settings-debrid.tsx",
 ] as const;
 
 const LANGUAGE_NEUTRAL_KEYS = new Set(["steam", "steam_sync_progress"]);

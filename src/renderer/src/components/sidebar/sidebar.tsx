@@ -6,13 +6,8 @@ import { useLocation, useNavigate } from "react-router-dom";
 import type { LibraryGame } from "@types";
 import { removeDiacritics } from "@shared";
 
-import { ConfirmationModal, TextField } from "@renderer/components";
-import {
-  useAppSelector,
-  useDownload,
-  useLibrary,
-  useToast,
-} from "@renderer/hooks";
+import { TextField } from "@renderer/components";
+import { useAppSelector, useDownload, useLibrary } from "@renderer/hooks";
 import { selectIsLibraryLoading } from "@renderer/features";
 import { routes } from "./routes";
 
@@ -31,7 +26,6 @@ import type { SortOption } from "@renderer/pages/library/filter-options";
 
 import { CheckCircleFillIcon, CheckCircleIcon } from "@primer/octicons-react";
 import { Tooltip } from "react-tooltip";
-import deckyIcon from "@renderer/assets/icons/decky.png";
 import cn from "classnames";
 import { SidebarFilterMenu } from "./sidebar-filter-menu";
 import {
@@ -63,13 +57,6 @@ export function Sidebar() {
   const { t } = useTranslation(["sidebar", "library"]);
   const { library, updateLibrary } = useLibrary();
   const isLibraryLoading = useAppSelector(selectIsLibraryLoading);
-  const [deckyPluginInfo, setDeckyPluginInfo] = useState<{
-    installed: boolean;
-    version: string | null;
-    outdated: boolean;
-  }>({ installed: false, version: null, outdated: false });
-  const [homebrewFolderExists, setHomebrewFolderExists] = useState(false);
-  const [showDeckyConfirmModal, setShowDeckyConfirmModal] = useState(false);
   const navigate = useNavigate();
 
   const filterRef = useRef<HTMLInputElement>(null);
@@ -156,8 +143,6 @@ export function Sidebar() {
   );
 
   const { lastPacket, progress } = useDownload();
-
-  const { showSuccessToast, showErrorToast } = useToast();
 
   const [isGameListScrolled, setIsGameListScrolled] = useState(false);
   const [scrollbarWidth, setScrollbarWidth] = useState(0);
@@ -255,60 +240,6 @@ export function Sidebar() {
     localStorage.setItem("sidebar-favorites-first", String(next));
   }, []);
 
-  const loadDeckyPluginInfo = async () => {
-    if (window.electron.platform !== "linux") return;
-
-    try {
-      const [info, folderExists] = await Promise.all([
-        window.electron.getHydraDeckyPluginInfo(),
-        window.electron.checkHomebrewFolderExists(),
-      ]);
-
-      setDeckyPluginInfo({
-        installed: info.installed,
-        version: info.version,
-        outdated: info.outdated,
-      });
-      setHomebrewFolderExists(folderExists);
-    } catch (error) {
-      console.error("Failed to load Decky plugin info:", error);
-    }
-  };
-
-  const handleInstallHydraDeckyPlugin = () => {
-    if (deckyPluginInfo.installed && !deckyPluginInfo.outdated) {
-      return;
-    }
-    setShowDeckyConfirmModal(true);
-  };
-
-  const handleConfirmDeckyInstallation = async () => {
-    setShowDeckyConfirmModal(false);
-
-    try {
-      const result = await window.electron.installHydraDeckyPlugin();
-
-      if (result.success) {
-        showSuccessToast(
-          t("decky_plugin_installed", {
-            version: result.currentVersion,
-          })
-        );
-        await loadDeckyPluginInfo();
-      } else {
-        showErrorToast(
-          t("decky_plugin_installation_failed", {
-            error: result.error || "Unknown error",
-          })
-        );
-      }
-    } catch (error) {
-      showErrorToast(
-        t("decky_plugin_installation_error", { error: String(error) })
-      );
-    }
-  };
-
   useEffect(() => {
     updateLibrary();
   }, [lastPacket?.gameId, updateLibrary]);
@@ -323,10 +254,6 @@ export function Sidebar() {
       window.removeEventListener("hydra:game-pin-toggled", handlePinToggled);
     };
   }, [updateLibrary]);
-
-  useEffect(() => {
-    loadDeckyPluginInfo();
-  }, []);
 
   const sidebarRef = useRef<HTMLElement>(null);
 
@@ -444,31 +371,6 @@ export function Sidebar() {
                   </button>
                 </li>
               ))}
-
-              {window.electron.platform === "linux" && homebrewFolderExists && (
-                <li className="sidebar__menu-item sidebar__menu-item--decky">
-                  <button
-                    type="button"
-                    className="sidebar__menu-item-button"
-                    onClick={handleInstallHydraDeckyPlugin}
-                  >
-                    <img
-                      src={deckyIcon}
-                      alt=""
-                      style={{ width: 16, height: 16 }}
-                    />
-                    <span>
-                      {deckyPluginInfo.installed && !deckyPluginInfo.outdated
-                        ? t("decky_plugin_installed_version", {
-                            version: deckyPluginInfo.version,
-                          })
-                        : deckyPluginInfo.installed && deckyPluginInfo.outdated
-                          ? t("update_decky_plugin")
-                          : t("install_decky_plugin")}
-                    </span>
-                  </button>
-                </li>
-              )}
             </ul>
           </section>
 
@@ -575,24 +477,6 @@ export function Sidebar() {
         type="button"
         className="sidebar__handle"
         onMouseDown={handleMouseDown}
-      />
-
-      <ConfirmationModal
-        visible={showDeckyConfirmModal}
-        title={
-          deckyPluginInfo.installed && deckyPluginInfo.outdated
-            ? t("update_decky_plugin_title")
-            : t("install_decky_plugin_title")
-        }
-        descriptionText={
-          deckyPluginInfo.installed && deckyPluginInfo.outdated
-            ? t("update_decky_plugin_message")
-            : t("install_decky_plugin_message")
-        }
-        onClose={() => setShowDeckyConfirmModal(false)}
-        onConfirm={handleConfirmDeckyInstallation}
-        cancelButtonLabel={t("cancel")}
-        confirmButtonLabel={t("confirm")}
       />
     </aside>
   );

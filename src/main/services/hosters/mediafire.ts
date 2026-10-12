@@ -11,7 +11,9 @@ export class MediafireApi {
   public static async getDownloadUrl(mediafireUrl: string): Promise<string> {
     try {
       const processedUrl = this.processUrl(mediafireUrl);
-      const response = await fetch(processedUrl);
+      const response = await fetch(processedUrl, {
+        signal: AbortSignal.timeout(30_000),
+      });
 
       if (!response.ok) throw new Error("Failed to fetch Mediafire page");
 

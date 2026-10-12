@@ -9,22 +9,41 @@
     "src/types/**/*",
     "src/big-picture/vite-scope-big-picture-css.ts"
   ],
-  "exclude": ["src/**/*.test.ts"],
+  "exclude": [
+    "src/**/*.test.ts"
+  ],
   "compilerOptions": {
     "module": "ESNext",
     "composite": true,
-    "types": ["electron-vite/node"],
+    "types": [
+      "electron-vite/node"
+    ],
     "baseUrl": ".",
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
     "strictPropertyInitialization": false,
     "paths": {
-      "@main/*": ["src/main/*"],
-      "@renderer/*": ["src/renderer/*"],
-      "@types": ["src/types/index.ts"],
-      "@locales": ["src/locales/index.ts"],
-      "@resources": ["src/resources/index.ts"],
-      "@shared": ["src/shared/index.ts"]
+      "@main/*": [
+        "src/main/*"
+      ],
+      "@renderer/*": [
+        "src/renderer/*"
+      ],
+      "@types": [
+        "src/types/index.ts"
+      ],
+      "@locales": [
+        "src/locales/index.ts"
+      ],
+      "@resources": [
+        "src/resources/index.ts"
+      ],
+      "@shared": [
+        "src/shared/index.ts"
+      ],
+      "@shared/*": [
+        "src/shared/*"
+      ]
     }
   }
 }

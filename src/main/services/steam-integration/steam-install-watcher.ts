@@ -138,6 +138,14 @@ export const watchSteamLibraries = async () => {
       );
     }
   }
+
+  // Libraries that disappeared must stop being watched, otherwise the
+  // watcher map only grows across re-watch cycles.
+  for (const [watchedDirectory, watcher] of directoryWatchers) {
+    if (watchedDirectories.includes(watchedDirectory)) continue;
+    watcher.close();
+    directoryWatchers.delete(watchedDirectory);
+  }
 };
 
 export const watchSteamAppInstall = async (steamAppId: string) => {

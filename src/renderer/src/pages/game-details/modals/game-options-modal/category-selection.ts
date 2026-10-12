@@ -28,7 +28,7 @@ export const getAvailableGameSettingsCategory = (
   if (
     category === "hydra_cloud" &&
     (!availability.showCloudSaveV2Settings ||
-      availability.cloudSaveAccessAction === "sign-in")
+      availability.cloudSaveAccessAction !== "open")
   ) {
     return "general";
   }

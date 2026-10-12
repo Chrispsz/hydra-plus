@@ -4,10 +4,7 @@ import { useTranslation } from "react-i18next";
 import { ImageIcon, ClockIcon, ToolsIcon } from "@primer/octicons-react";
 import HydraIcon from "@renderer/assets/icons/hydra.svg?react";
 import { MAX_MINUTES_TO_SHOW_IN_PLAYTIME } from "@renderer/constants";
-import { darkenColor } from "@renderer/helpers";
-import { logger } from "@renderer/logger";
 import { getDisplayedPlayTimeInMilliseconds } from "@shared";
-import { average } from "color.js";
 import type { Game, GameShop, ShopAssets } from "@types";
 import "./game-launcher.scss";
 
@@ -32,8 +29,6 @@ export default function GameLauncher() {
   const [imageResolved, setImageResolved] = useState(false);
   const [imageError, setImageError] = useState(false);
   const [imageLoaded, setImageLoaded] = useState(false);
-  const [accentColor, setAccentColor] = useState<string | null>(null);
-  const [colorExtracted, setColorExtracted] = useState(false);
   const [windowShown, setWindowShown] = useState(false);
   const [isMainWindowOpen, setIsMainWindowOpen] = useState(false);
   const [preflightStatus, setPreflightStatus] =
@@ -149,18 +144,6 @@ export default function GameLauncher() {
   const isWindowsExecutable =
     game?.executablePath?.toLowerCase().endsWith(".exe") ?? false;
 
-  const extractAccentColor = useCallback(async (imageUrl: string) => {
-    try {
-      const color = await average(imageUrl, { amount: 1, format: "hex" });
-      const colorString = typeof color === "string" ? color : color.toString();
-      setAccentColor(colorString);
-    } catch (error) {
-      logger.error("Failed to extract accent color:", error);
-    } finally {
-      setColorExtracted(true);
-    }
-  }, []);
-
   const isStatusRunning =
     preflightStatus === "checking" ||
     preflightStatus === "downloading" ||
@@ -186,13 +169,10 @@ export default function GameLauncher() {
 
     setImageError(false);
     setImageLoaded(false);
-    setColorExtracted(false);
-    setAccentColor(null);
     setImageResolved(false);
 
     if (!coverImageSource) {
       setCoverImage("");
-      setColorExtracted(true);
       setImageResolved(true);
       return;
     }
@@ -212,7 +192,6 @@ export default function GameLauncher() {
       if (!proxiedImage) {
         setImageError(true);
         setCoverImage("");
-        setColorExtracted(true);
       } else {
         setCoverImage(proxiedImage);
       }
@@ -224,12 +203,6 @@ export default function GameLauncher() {
       cancelled = true;
     };
   }, [coverImageSource]);
-
-  useEffect(() => {
-    if (coverImage && !colorExtracted) {
-      extractAccentColor(coverImage);
-    }
-  }, [coverImage, colorExtracted, extractAccentColor]);
 
   useEffect(() => {
     let cancelled = false;
@@ -261,9 +234,7 @@ export default function GameLauncher() {
   // can auto-close — otherwise isReady would stay false forever on a broken
   // local cover and leave a hidden, never-closing launcher window.
   const isReady =
-    imageResolved &&
-    (coverImage && !imageError ? imageLoaded : true) &&
-    colorExtracted;
+    imageResolved && (coverImage && !imageError ? imageLoaded : true);
 
   useEffect(() => {
     if (windowShown) return;
@@ -274,20 +245,8 @@ export default function GameLauncher() {
     }
   }, [isReady, windowShown]);
 
-  const backgroundStyle = accentColor
-    ? {
-        background: `linear-gradient(135deg, ${darkenColor(accentColor, 0.7)} 0%, ${darkenColor(accentColor, 0.8, 0.9)} 50%, ${darkenColor(accentColor, 0.85, 0.8)} 100%)`,
-      }
-    : undefined;
-
-  const glowStyle = accentColor
-    ? {
-        background: `radial-gradient(ellipse at top right, ${darkenColor(accentColor, 0.3, 0.15)} 0%, transparent 50%)`,
-      }
-    : undefined;
-
   return (
-    <div className="game-launcher" style={backgroundStyle}>
+    <div className="game-launcher">
       {coverImage && (
         <div
           className="game-launcher__background"
@@ -295,7 +254,7 @@ export default function GameLauncher() {
         />
       )}
       <div className="game-launcher__overlay" />
-      <div className="game-launcher__glow" style={glowStyle} />
+      <div className="game-launcher__glow" />
 
       <div className="game-launcher__logo-badge">
         <HydraIcon />

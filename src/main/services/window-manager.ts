@@ -4,13 +4,6 @@ import { db, gamesSublevel, levelKeys } from "@main/level";
 import icon from "@resources/icon.png?asset";
 import trayIconDark from "@resources/tray-icon-dark.png?asset";
 import trayIcon from "@resources/tray-icon.png?asset";
-import {
-  AUTH_WINDOW_CONTENT_HEIGHT,
-  AUTH_WINDOW_CONTENT_WIDTH,
-  AuthPage,
-  CUSTOM_WINDOW_BORDER_WIDTH,
-  CUSTOM_WINDOW_TITLE_BAR_HEIGHT,
-} from "@shared";
 import type { ScreenState, UserPreferences } from "@types";
 import {
   BrowserWindow,
@@ -18,7 +11,6 @@ import {
   MenuItem,
   MenuItemConstructorOptions,
   Tray,
-  WebContentsView,
   app,
   nativeImage,
   nativeTheme,
@@ -29,12 +21,7 @@ import { t } from "i18next";
 import { orderBy } from "lodash-es";
 import path from "node:path";
 import UserAgent from "user-agents";
-import { HydraApi } from "./hydra-api";
 import { logger } from "./logger";
-import {
-  addSteamGridDbCacheControl,
-  isSteamGridDbArtworkRequest,
-} from "./steam-grid-db-cache";
 
 const isLinuxWayland =
   process.platform === "linux" &&
@@ -45,7 +32,6 @@ export class WindowManager {
   private static mainWindowInstance: Electron.BrowserWindow | null = null;
   private static gameLauncherWindowInstance: Electron.BrowserWindow | null =
     null;
-  private static authWindow: Electron.BrowserWindow | null = null;
 
   private static isArtworkRendererRequest(
     webContentsId: number | undefined
@@ -287,13 +273,12 @@ export class WindowManager {
         const isArtworkRendererRequest = this.isArtworkRendererRequest(
           details.webContentsId
         );
-        const responseHeaders =
-          isArtworkRendererRequest && isSteamGridDbArtworkRequest(details)
-            ? addSteamGridDbCacheControl(details.responseHeaders)
-            : details.responseHeaders;
 
         if (!isArtworkRendererRequest) {
-          return callback({ ...details, responseHeaders });
+          return callback({
+            ...details,
+            responseHeaders: details.responseHeaders,
+          });
         }
 
         const headers = {
@@ -308,7 +293,7 @@ export class WindowManager {
           return callback({
             cancel: false,
             responseHeaders: {
-              ...responseHeaders,
+              ...details.responseHeaders,
               ...headers,
             },
             statusLine: "HTTP/1.1 200 OK",
@@ -317,7 +302,7 @@ export class WindowManager {
 
         return callback({
           responseHeaders: {
-            ...responseHeaders,
+            ...details.responseHeaders,
             ...headers,
           },
         });
@@ -415,149 +400,6 @@ export class WindowManager {
   public static focusMainWindowAndNavigate(path: string) {
     this.focusMainWindow();
     this.mainWindow?.webContents.send("on-navigate", path);
-  }
-
-  private static bindAuthNavigation(
-    contents: Electron.WebContents,
-    closeWindow: () => void
-  ) {
-    contents.on("will-navigate", (_event, url) => {
-      if (url.startsWith("hydralauncher://auth")) {
-        closeWindow();
-
-        HydraApi.handleExternalAuth(url);
-        return;
-      }
-
-      if (url.startsWith("hydralauncher://update-account")) {
-        closeWindow();
-
-        WindowManager.sendToAppWindows("on-account-updated");
-      }
-    });
-  }
-
-  public static openAuthWindow(page: AuthPage, searchParams: URLSearchParams) {
-    const parentWindow = this.mainWindow;
-
-    if (!parentWindow || parentWindow.isDestroyed()) return;
-
-    const authUrl = `${import.meta.env.MAIN_VITE_AUTH_URL}${page}?${searchParams.toString()}`;
-
-    if (process.platform === "linux") {
-      this.openLinuxAuthWindow(parentWindow, authUrl);
-      return;
-    }
-
-    const authWindow = new BrowserWindow({
-      width: AUTH_WINDOW_CONTENT_WIDTH,
-      height: AUTH_WINDOW_CONTENT_HEIGHT,
-      backgroundColor: "#1c1c1c",
-      parent: parentWindow,
-      modal: true,
-      show: false,
-      maximizable: false,
-      resizable: false,
-      minimizable: false,
-      webPreferences: {
-        sandbox: false,
-        nodeIntegrationInSubFrames: true,
-      },
-    });
-
-    authWindow.removeMenu();
-
-    if (!app.isPackaged) authWindow.webContents.openDevTools();
-
-    authWindow.loadURL(authUrl);
-
-    authWindow.once("ready-to-show", () => {
-      authWindow.show();
-    });
-
-    authWindow.once("closed", () => {
-      if (!parentWindow.isDestroyed()) {
-        parentWindow.focus();
-      }
-    });
-
-    this.bindAuthNavigation(authWindow.webContents, () => authWindow.close());
-  }
-
-  private static openLinuxAuthWindow(
-    parentWindow: Electron.BrowserWindow,
-    authUrl: string
-  ) {
-    const authWindow = new BrowserWindow({
-      width: AUTH_WINDOW_CONTENT_WIDTH + CUSTOM_WINDOW_BORDER_WIDTH * 2,
-      height:
-        AUTH_WINDOW_CONTENT_HEIGHT +
-        CUSTOM_WINDOW_TITLE_BAR_HEIGHT +
-        CUSTOM_WINDOW_BORDER_WIDTH * 2,
-      parent: parentWindow,
-      modal: true,
-      show: false,
-      maximizable: false,
-      resizable: false,
-      frame: false,
-      icon,
-      backgroundColor: "#1c1c1c",
-      webPreferences: {
-        preload: path.join(__dirname, "../preload/index.mjs"),
-        sandbox: false,
-      },
-    });
-
-    this.authWindow = authWindow;
-
-    authWindow.removeMenu();
-
-    const authView = new WebContentsView({
-      webPreferences: {
-        sandbox: false,
-        nodeIntegrationInSubFrames: true,
-      },
-    });
-
-    authWindow.contentView.addChildView(authView);
-    authView.setBounds({
-      x: CUSTOM_WINDOW_BORDER_WIDTH,
-      y: CUSTOM_WINDOW_BORDER_WIDTH + CUSTOM_WINDOW_TITLE_BAR_HEIGHT,
-      width: AUTH_WINDOW_CONTENT_WIDTH,
-      height: AUTH_WINDOW_CONTENT_HEIGHT,
-    });
-
-    this.loadWindowURL(authWindow, "auth-window");
-    authView.webContents.loadURL(authUrl);
-
-    if (!app.isPackaged) authView.webContents.openDevTools();
-
-    authWindow.once("ready-to-show", () => {
-      authWindow.show();
-    });
-
-    authWindow.once("closed", () => {
-      this.authWindow = null;
-      if (!parentWindow.isDestroyed()) {
-        parentWindow.focus();
-      }
-    });
-
-    this.bindAuthNavigation(authView.webContents, () => {
-      if (!authWindow.isDestroyed()) authWindow.close();
-    });
-  }
-
-  public static minimizeAuthWindow() {
-    if (this.authWindow && !this.authWindow.isDestroyed()) {
-      this.authWindow.minimize();
-    }
-  }
-
-  public static closeAuthWindow() {
-    if (this.authWindow && !this.authWindow.isDestroyed()) {
-      this.authWindow.close();
-    }
   }
 
   private static readonly GAME_LAUNCHER_WINDOW_WIDTH = 550;

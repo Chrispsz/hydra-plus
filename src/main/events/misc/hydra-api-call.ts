@@ -7,8 +7,6 @@ interface HydraApiCallPayload {
   data?: unknown;
   params?: unknown;
   options?: {
-    needsAuth?: boolean;
-    needsSubscription?: boolean;
     ifModifiedSince?: Date;
     acceptedStatuses?: number[];
   };

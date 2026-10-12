@@ -1,35 +1,8 @@
 import { registerEvent } from "../register-event";
-import {
-  gamesArtworkSelectionSublevel,
-  gamesSublevel,
-  gamesShopAssetsSublevel,
-  levelKeys,
-} from "@main/level";
-import {
-  WindowManager,
-  logger,
-  uploadCustomArtwork,
-  deleteCustomArtwork,
-} from "@main/services";
-import type { ArtworkAssetType, GameShop, Game } from "@types";
+import { gamesSublevel, gamesShopAssetsSublevel, levelKeys } from "@main/level";
+import { WindowManager, logger } from "@main/services";
+import type { GameShop, Game } from "@types";
 import fs from "node:fs";
-import { reconcileArtworkSelection } from "./reconcile-artwork-selection";
-
-type CustomAssetField =
-  | "customIconUrl"
-  | "customLogoImageUrl"
-  | "customHeroImageUrl"
-  | "customCoverImageUrl";
-
-const ASSET_CLOUD_SYNC_FIELDS = [
-  { field: "customIconUrl", type: "icon" },
-  { field: "customLogoImageUrl", type: "logo" },
-  { field: "customHeroImageUrl", type: "hero" },
-  { field: "customCoverImageUrl", type: "grid" },
-] as const satisfies ReadonlyArray<{
-  field: CustomAssetField;
-  type: ArtworkAssetType;
-}>;
 
 const collectOldAssetPaths = (
   existingGame: Game,
@@ -134,37 +107,6 @@ const deleteOldAssetFiles = async (oldAssetPaths: string[]): Promise<void> => {
   }
 };
 
-const updateArtworkSelections = async (
-  gameKey: string,
-  existingGame: Game,
-  params: UpdateGameCustomAssetsParams
-) => {
-  const selection = await gamesArtworkSelectionSublevel.get(gameKey);
-  const { selected, changed } = reconcileArtworkSelection(
-    selection?.selected ?? {},
-    ASSET_CLOUD_SYNC_FIELDS.map(({ field, type }) => ({
-      type,
-      previousUrl: existingGame[field],
-      nextUrl: params[field],
-      artworkId: params.customArtworkIds?.[type],
-      clear: params.clearArtworkTypes?.includes(type),
-    }))
-  );
-
-  if (!changed) return;
-
-  if (Object.keys(selected).length) {
-    await gamesArtworkSelectionSublevel.put(gameKey, {
-      objectId: params.objectId,
-      shop: params.shop,
-      selected,
-      updatedAt: Date.now(),
-    });
-  } else {
-    await gamesArtworkSelectionSublevel.del(gameKey);
-  }
-};
-
 interface UpdateGameCustomAssetsParams {
   shop: GameShop;
   objectId: string;
@@ -177,29 +119,7 @@ interface UpdateGameCustomAssetsParams {
   customOriginalLogoPath?: string | null;
   customOriginalHeroPath?: string | null;
   customOriginalCoverPath?: string | null;
-  customArtworkIds?: Partial<Record<ArtworkAssetType, number | null>>;
-  clearArtworkTypes?: ArtworkAssetType[];
 }
-
-const syncCustomAssetsToCloud = (
-  shop: GameShop,
-  objectId: string,
-  existingGame: Game,
-  params: UpdateGameCustomAssetsParams
-): void => {
-  for (const { field, type } of ASSET_CLOUD_SYNC_FIELDS) {
-    const newValue = params[field];
-    if (newValue === undefined || newValue === existingGame[field]) continue;
-
-    if (newValue === null) {
-      if (existingGame[field]) {
-        deleteCustomArtwork(shop, objectId, type).catch(() => {});
-      }
-    } else if (newValue.startsWith("local:")) {
-      uploadCustomArtwork(shop, objectId, type, newValue).catch(() => {});
-    }
-  }
-};
 
 const updateGameCustomAssets = async (
   _event: Electron.IpcMainInvokeEvent,
@@ -249,13 +169,9 @@ const updateGameCustomAssets = async (
 
   await updateShopAssets(gameKey, title);
 
-  await updateArtworkSelections(gameKey, existingGame, params);
-
   await deleteOldAssetFiles(oldAssetPaths);
 
   WindowManager.sendToAppWindows("on-library-batch-complete");
-
-  syncCustomAssetsToCloud(shop, objectId, existingGame, params);
 
   return updatedGame;
 };

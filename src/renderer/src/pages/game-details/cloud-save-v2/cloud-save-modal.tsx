@@ -7,7 +7,6 @@ import {
   CloudIcon,
   FolderOpenIcon,
   MonitorIcon,
-  SignInIcon,
   WarningCircleIcon,
 } from "@phosphor-icons/react";
 import { useTranslation } from "react-i18next";
@@ -58,7 +57,6 @@ export interface CloudSavePanelProps {
   onResolveConflict: (resolution: CloudSaveConflictResolution) => void;
   onReconnectDrive?: () => void;
   onConnectDrive: () => void;
-  onSignIn: () => void;
 }
 
 interface CloudSaveModalProps extends Omit<CloudSavePanelProps, "active"> {
@@ -218,10 +216,8 @@ function CloudSaveSyncAction({
 }
 
 function CloudSaveLoginCard({
-  accessAction,
   onConnectDrive,
-  onSignIn,
-}: Pick<CloudSavePanelProps, "accessAction" | "onConnectDrive" | "onSignIn">) {
+}: Pick<CloudSavePanelProps, "onConnectDrive">) {
   const { t } = useTranslation("game_details");
 
   return (
@@ -233,17 +229,10 @@ function CloudSaveLoginCard({
         </strong>
         <span>{t("cloud_save_v2_login_card_description")}</span>
       </div>
-      {accessAction === "sign-in" ? (
-        <Button className="cloud-save-v2__sync-button" onClick={onSignIn}>
-          <SignInIcon size={20} />
-          <span>{t("cloud_save_v2_login_sign_in")}</span>
-        </Button>
-      ) : (
-        <Button className="cloud-save-v2__sync-button" onClick={onConnectDrive}>
-          <CloudArrowUpIcon size={20} />
-          <span>{t("cloud_save_v2_login_connect_drive")}</span>
-        </Button>
-      )}
+      <Button className="cloud-save-v2__sync-button" onClick={onConnectDrive}>
+        <CloudArrowUpIcon size={20} />
+        <span>{t("cloud_save_v2_login_connect_drive")}</span>
+      </Button>
     </section>
   );
 }
@@ -267,7 +256,6 @@ export function CloudSavePanel({
   onResolveConflict,
   onReconnectDrive,
   onConnectDrive,
-  onSignIn,
 }: Readonly<CloudSavePanelProps>) {
   const { t } = useTranslation("game_details");
   const { formatDateTime } = useDate();
@@ -283,11 +271,7 @@ export function CloudSavePanel({
   if (accessAction !== "open") {
     return (
       <div className="cloud-save-v2__modal">
-        <CloudSaveLoginCard
-          accessAction={accessAction}
-          onConnectDrive={onConnectDrive}
-          onSignIn={onSignIn}
-        />
+        <CloudSaveLoginCard onConnectDrive={onConnectDrive} />
       </div>
     );
   }

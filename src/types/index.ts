@@ -1,12 +1,10 @@
 import type { DownloadSourceStatus, Downloader } from "@shared";
 import type { SteamAppDetails } from "./steam.types";
-import type { Download, Game, Subscription } from "./level.types";
+import type { Download, Game } from "./level.types";
 import type { GameShop } from "./game.types";
 import type { ArtworkAssetType } from "./artwork.types";
 
 export * from "./download-contract";
-
-export type HydraCloudFeature = "backup" | "customization" | "vikingfile";
 
 export interface DiskUsage {
   free: number;
@@ -89,7 +87,6 @@ export type UserGame = {
   hasManuallyUpdatedPlaytime: boolean;
   hasActiveSteamImport?: boolean;
   isFavorite: boolean;
-  isHiddenFromOthers?: boolean;
   isConcealed?: boolean;
   isPinned: boolean;
   pinnedDate?: Date | null;
@@ -105,12 +102,6 @@ export interface UserLibraryResponse {
   pinnedGames: UserGame[];
 }
 
-export interface GameCollection {
-  id: string;
-  name: string;
-  gamesCount: number;
-}
-
 export interface GameRunning {
   id: string;
   title: string;
@@ -120,11 +111,6 @@ export interface GameRunning {
   objectId: string;
   shop: GameShop;
   sessionDurationInMillis: number;
-}
-
-export interface Steam250Game {
-  title: string;
-  objectId: string;
 }
 
 export interface SteamGame {
@@ -150,82 +136,6 @@ export interface StartGameDownloadPayload {
   fileSize?: string | null;
   fileIndices?: number[];
   selectedFilesSize?: number | null;
-}
-
-export interface NotificationSync {
-  notificationCount: number;
-}
-
-export type UserProfileCurrentGame = GameRunning &
-  ShopAssets & {
-    sessionDurationInSeconds: number;
-    isHiddenFromOthers?: boolean;
-  };
-
-export type ProfileVisibility = "PUBLIC" | "PRIVATE" | "FRIENDS";
-
-export interface Badge {
-  name: string;
-  title: string;
-  description: string;
-  badge: {
-    url: string;
-  };
-}
-
-export interface UserDetails {
-  id: string;
-  username: string;
-  email: string | null;
-  displayName: string;
-  profileImageUrl: string | null;
-  backgroundImageUrl: string | null;
-  profileVisibility: ProfileVisibility;
-  allowCloudGifts: boolean;
-  bio: string;
-  subscription: Subscription | null;
-  karma: number;
-  quirks?: {
-    backupsPerGameLimit: number;
-  };
-}
-
-export interface UserProfile {
-  id: string;
-  displayName: string;
-  profileImageUrl: string | null;
-  email: string | null;
-  backgroundImageUrl: string | null;
-  profileVisibility: ProfileVisibility;
-  libraryGames: UserGame[];
-  recentGames: UserGame[];
-  currentGame: UserProfileCurrentGame | null;
-  bio: string;
-  hasActiveSubscription: boolean;
-  canReceiveCloudGift: boolean;
-  allowCloudGifts?: boolean;
-  karma: number;
-  quirks: {
-    backupsPerGameLimit: number;
-  };
-  badges: string[];
-  badgesDetails?: { badge: string; unlockedAt: string }[];
-  hasCompletedWrapped2025: boolean;
-}
-
-export interface UpdateProfileRequest {
-  displayName?: string;
-  profileVisibility?: ProfileVisibility;
-  profileImageUrl?: string | null;
-  backgroundImageUrl?: string | null;
-  bio?: string;
-  language?: string;
-  allowCloudGifts?: boolean;
-}
-
-export interface OpenCheckoutOptions {
-  path?: "/" | "/gift" | `/gifts/${string}`;
-  recipientId?: string;
 }
 
 export interface DownloadSourceDownload {

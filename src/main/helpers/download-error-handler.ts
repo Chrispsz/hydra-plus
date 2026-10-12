@@ -1,18 +1,10 @@
 import { AxiosError } from "axios";
-import {
-  Downloader,
-  DownloadError,
-  SubscriptionRequiredError,
-  UserNotLoggedInError,
-} from "@shared";
+import { Downloader, DownloadError } from "@shared";
 
 type DownloadErrorResult = { ok: false; error?: string };
 const KNOWN_DOWNLOAD_ERRORS = new Set<string>(Object.values(DownloadError));
 
-const HYDRA_UNLOCK_DOWNLOADERS = new Set<Downloader>([
-  Downloader.Datanodes,
-  Downloader.VikingFile,
-]);
+const HYDRA_UNLOCK_DOWNLOADERS = new Set<Downloader>([Downloader.Datanodes]);
 
 const handleHydraUnlockError = (
   err: AxiosError,
@@ -21,23 +13,6 @@ const handleHydraUnlockError = (
   if (!HYDRA_UNLOCK_DOWNLOADERS.has(downloader)) return null;
 
   const status = err.response?.status;
-  const data = err.response?.data;
-  const message =
-    typeof data === "string"
-      ? data
-      : (data as { message?: unknown } | undefined)?.message;
-
-  if (status === 429 && downloader === Downloader.VikingFile) {
-    return { ok: false, error: DownloadError.VikingFileQuotaExceeded };
-  }
-
-  if (
-    status === 400 &&
-    downloader === Downloader.VikingFile &&
-    typeof message === "string"
-  ) {
-    return { ok: false, error: DownloadError.VikingFileSubscriptionRequired };
-  }
 
   if (status === 401) {
     return { ok: false, error: DownloadError.HosterUnlockLoginRequired };
@@ -357,20 +332,6 @@ export const handleDownloadError = (
   if (err instanceof AxiosError) {
     const result = handleAxiosError(err, downloader);
     if (result) return result;
-  }
-
-  if (
-    err instanceof SubscriptionRequiredError &&
-    downloader === Downloader.VikingFile
-  ) {
-    return { ok: false, error: DownloadError.VikingFileSubscriptionRequired };
-  }
-
-  if (
-    err instanceof UserNotLoggedInError &&
-    HYDRA_UNLOCK_DOWNLOADERS.has(downloader)
-  ) {
-    return { ok: false, error: DownloadError.HosterUnlockLoginRequired };
   }
 
   if (err instanceof Error) return handleThrownError(err, downloader);

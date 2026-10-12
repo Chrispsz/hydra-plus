@@ -23,8 +23,11 @@ export function useDownload() {
 
   const userPrefs = useAppSelector((state) => state.userPreferences.value);
 
-  const { lastPacket, gamesWithDeletionInProgress } = useAppSelector(
-    (state) => state.download
+  // Split selectors: grabbing the whole slice re-rendered every consumer
+  // on each 2s progress packet even when only deletion state was read.
+  const lastPacket = useAppSelector((state) => state.download.lastPacket);
+  const gamesWithDeletionInProgress = useAppSelector(
+    (state) => state.download.gamesWithDeletionInProgress
   );
   const dispatch = useAppDispatch();
 

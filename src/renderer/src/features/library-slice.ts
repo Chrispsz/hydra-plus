@@ -8,7 +8,6 @@ export interface LibraryState {
   downloadLibrary: LibraryGame[];
   searchQuery: string;
   hasLoaded: boolean;
-  isSyncingRemote: boolean;
 }
 
 const initialState: LibraryState = {
@@ -16,7 +15,6 @@ const initialState: LibraryState = {
   downloadLibrary: [],
   searchQuery: "",
   hasLoaded: false,
-  isSyncingRemote: false,
 };
 
 export const librarySlice = createSlice({
@@ -27,9 +25,6 @@ export const librarySlice = createSlice({
       state.value = action.payload.filter((game) => !game.isConcealed);
       state.downloadLibrary = action.payload;
       state.hasLoaded = true;
-    },
-    setLibrarySyncingRemote: (state, action: PayloadAction<boolean>) => {
-      state.isSyncingRemote = action.payload;
     },
 
     updateGameNewDownloadOptions: (
@@ -57,38 +52,15 @@ export const librarySlice = createSlice({
     setLibrarySearchQuery: (state, action: PayloadAction<string>) => {
       state.searchQuery = action.payload;
     },
-    setGameCollectionIds: (
-      state,
-      action: PayloadAction<{
-        shop: LibraryGame["shop"];
-        objectId: string;
-        collectionIds: string[];
-      }>
-    ) => {
-      for (const library of [state.value, state.downloadLibrary]) {
-        const game = library.find(
-          (g) =>
-            g.shop === action.payload.shop &&
-            g.objectId === action.payload.objectId
-        );
-
-        if (game) {
-          game.collectionIds = action.payload.collectionIds;
-        }
-      }
-    },
   },
 });
 
 export const {
   setLibrary,
-  setLibrarySyncingRemote,
   updateGameNewDownloadOptions,
   clearNewDownloadOptions,
   setLibrarySearchQuery,
-  setGameCollectionIds,
 } = librarySlice.actions;
 
 export const selectIsLibraryLoading = (state: { library: LibraryState }) =>
-  !state.library.hasLoaded ||
-  (state.library.isSyncingRemote && state.library.value.length === 0);
+  !state.library.hasLoaded || state.library.value.length === 0;

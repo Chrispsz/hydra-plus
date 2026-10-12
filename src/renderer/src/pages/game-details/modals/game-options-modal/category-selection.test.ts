@@ -31,14 +31,14 @@ describe("game options category selection", () => {
     );
   });
 
-  it("keeps hydra_cloud while the user still needs to connect Drive", () => {
+  it("falls back to general while the user still needs to connect Drive", () => {
     assert.equal(
       getAvailableGameSettingsCategory("hydra_cloud", {
         cloudSaveAccessAction: "connect-drive",
         showCloudSaveV2Settings: true,
         showDownloadSettings: true,
       }),
-      "hydra_cloud"
+      "general"
     );
   });
 
@@ -56,7 +56,7 @@ describe("game options category selection", () => {
   it("falls back to general when the user is not signed in", () => {
     assert.equal(
       getAvailableGameSettingsCategory("hydra_cloud", {
-        cloudSaveAccessAction: "sign-in",
+        cloudSaveAccessAction: "connect-drive",
         showCloudSaveV2Settings: true,
         showDownloadSettings: true,
       }),

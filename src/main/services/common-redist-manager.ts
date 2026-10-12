@@ -245,6 +245,7 @@ export class CommonRedistManager {
         `https://github.com/hydralauncher/hydra-common-redist/raw/refs/heads/main/${redist}`,
         {
           responseType: "arraybuffer",
+          timeout: 30_000,
         }
       );
 

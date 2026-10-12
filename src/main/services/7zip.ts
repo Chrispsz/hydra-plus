@@ -24,6 +24,20 @@ export interface ExtractionResult {
 }
 
 export class SevenZip {
+  /** Handle of the currently running extraction, so quit/cancel can stop it. */
+  private static activeExtractionChild: ReturnType<typeof spawn> | null = null;
+
+  public static cancelActiveExtraction(): void {
+    const child = this.activeExtractionChild;
+    if (!child) return;
+    this.activeExtractionChild = null;
+    try {
+      child.kill();
+    } catch {
+      // Already gone.
+    }
+  }
+
   private static readonly binaryPath = app.isPackaged
     ? path.join(process.resourcesPath, binaryName[process.platform])
     : path.join(
@@ -112,6 +126,18 @@ export class SevenZip {
           cwd: destination,
           detached: true,
           windowsHide: true,
+        });
+
+        this.activeExtractionChild = stream._childProcess;
+        stream.once("end", () => {
+          if (this.activeExtractionChild === stream._childProcess) {
+            this.activeExtractionChild = null;
+          }
+        });
+        stream.once("error", () => {
+          if (this.activeExtractionChild === stream._childProcess) {
+            this.activeExtractionChild = null;
+          }
         });
 
         stream.on("progress", (progress) => {
@@ -247,37 +273,6 @@ export class SevenZip {
       signal?.addEventListener("abort", onAbort, { once: true });
 
       if (signal?.aborted) onAbort();
-    });
-  }
-
-  public static listFiles(
-    filePath: string,
-    password?: string
-  ): Promise<string[]> {
-    return new Promise((resolve, reject) => {
-      const files: string[] = [];
-
-      const options: CommandLineSwitches = {
-        $bin: this.binaryPath,
-        noWildcards: true,
-        password: password || undefined,
-      };
-
-      const stream = Seven.list(filePath, options);
-
-      stream.on("data", (data) => {
-        if (data.file) {
-          files.push(data.file);
-        }
-      });
-
-      stream.on("end", () => {
-        resolve(files);
-      });
-
-      stream.on("error", (err) => {
-        reject(err);
-      });
     });
   }
 }

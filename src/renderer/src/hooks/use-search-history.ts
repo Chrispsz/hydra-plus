@@ -50,7 +50,9 @@ export function useSearchHistory() {
           (entry) => entry.query.toLowerCase() !== query.toLowerCase().trim()
         );
         const updated = [newEntry, ...filtered].slice(0, MAX_HISTORY_ENTRIES);
-        levelDBService.put(LEVELDB_KEY, updated, null, "json");
+        levelDBService
+          .put(LEVELDB_KEY, updated, null, "json")
+          .catch(() => undefined);
         return updated;
       });
     },

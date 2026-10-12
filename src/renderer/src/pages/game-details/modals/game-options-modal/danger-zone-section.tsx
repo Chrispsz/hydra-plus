@@ -1,16 +1,13 @@
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@renderer/components";
-import type { LibraryGame, UserDetails } from "@types";
+import type { LibraryGame } from "@types";
 
 interface DangerZoneSectionProps {
   game: LibraryGame;
   deleting: boolean;
   isGameDownloading: boolean;
-  userDetails: UserDetails | null;
   onOpenRemoveFromLibrary: () => void;
-  onOpenChangePlaytime: () => void;
-  onOpenResetPlaytime: () => void;
   onOpenRemoveFiles: () => void;
 }
 
@@ -19,8 +16,6 @@ export function DangerZoneSection({
   deleting,
   isGameDownloading,
   onOpenRemoveFromLibrary,
-  onOpenChangePlaytime,
-  onOpenResetPlaytime,
   onOpenRemoveFiles,
 }: Readonly<DangerZoneSectionProps>) {
   const { t } = useTranslation("game_details");
@@ -41,14 +36,6 @@ export function DangerZoneSection({
           disabled={deleting}
         >
           {t("remove_from_library")}
-        </Button>
-
-        <Button onClick={onOpenChangePlaytime} theme="danger">
-          {t("update_game_playtime")}
-        </Button>
-
-        <Button onClick={onOpenResetPlaytime} theme="danger">
-          {t("reset_playtime")}
         </Button>
 
         {game.shop !== "custom" && (

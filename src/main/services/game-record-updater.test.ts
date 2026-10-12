@@ -3,10 +3,6 @@ import { describe, it } from "node:test";
 
 import type { Game } from "@types";
 
-import {
-  mergeImportedProfileGame,
-  type ImportedProfileGame,
-} from "./library-sync/merge-imported-profile-game.js";
 import { createGameRecordUpdater } from "./game-record-updater-core.js";
 
 const game: Game = {
@@ -47,7 +43,7 @@ describe("game record updater", () => {
     assert.equal(storedGame.enableHydraPlaytimeTracking, true);
   });
 
-  it("keeps process updates made while Steam exit sync waits for remote data", async () => {
+  it("keeps process updates made while an async merge waits for external data", async () => {
     let storedGame = { ...game };
     const updateGame = createGameRecordUpdater({
       get: async () => ({ ...storedGame }),
@@ -55,15 +51,17 @@ describe("game record updater", () => {
         storedGame = { ...value };
       },
     });
-    let finishRemoteFetch!: (remoteGame: ImportedProfileGame) => void;
-    const remoteFetch = new Promise<ImportedProfileGame>((resolve) => {
+    let finishRemoteFetch!: (steamPlayTimeInMilliseconds: number) => void;
+    const remoteFetch = new Promise<number>((resolve) => {
       finishRemoteFetch = resolve;
     });
-    const exitSync = (async () => {
-      const remoteGame = await remoteFetch;
-      await updateGame("steam:620", (currentGame) =>
-        mergeImportedProfileGame(currentGame, remoteGame)
-      );
+    const externalMerge = (async () => {
+      const steamPlayTimeInSeconds = await remoteFetch;
+      await updateGame("steam:620", (currentGame) => ({
+        ...currentGame,
+        steamPlayTimeInMilliseconds: steamPlayTimeInSeconds * 1_000,
+        hasActiveSteamImport: true,
+      }));
     })();
 
     await updateGame("steam:620", {
@@ -72,14 +70,8 @@ describe("game record updater", () => {
       executablePath: "/games/Portal 2/portal2",
       enableHydraPlaytimeTracking: true,
     });
-    finishRemoteFetch({
-      id: "remote-id",
-      objectId: "620",
-      shop: "steam",
-      runtimeByPlatform: { hydra: 660, steam: 3_600 },
-      hasActiveSteamImport: true,
-    });
-    await exitSync;
+    finishRemoteFetch(3_600);
+    await externalMerge;
 
     assert.equal(storedGame.playTimeInMilliseconds, 780_000);
     assert.equal(storedGame.unsyncedDeltaPlayTimeInMilliseconds, 180_000);

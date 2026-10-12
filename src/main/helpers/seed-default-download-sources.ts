@@ -54,8 +54,7 @@ export const seedDefaultDownloadSources = async (): Promise<void> => {
     try {
       const downloadSource = await HydraApi.post<DownloadSource>(
         "/download-sources",
-        { url },
-        { needsAuth: false }
+        { url }
       );
 
       await downloadSourcesSublevel.put(downloadSource.id, {

@@ -74,9 +74,14 @@ export class UpdateManager {
 
     if (app.isPackaged) {
       autoUpdater.autoDownload = isAutoInstallAvailable;
-      autoUpdater.checkForUpdates().then((result) => {
-        logger.log(`Check for updates result: ${result}`);
-      });
+      autoUpdater
+        .checkForUpdates()
+        .then((result) => {
+          logger.log(`Check for updates result: ${result}`);
+        })
+        .catch((error) => {
+          logger.warn("Check for updates failed", error);
+        });
     } else if (sendEventsForDebug) {
       this.mockValuesForDebug();
     }

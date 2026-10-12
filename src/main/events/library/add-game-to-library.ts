@@ -1,6 +1,6 @@
 import { registerEvent } from "../register-event";
 import type { GameShop } from "@types";
-import { createGame } from "@main/services/library-sync";
+import { createGame } from "@main/services";
 import {
   gamesShopAssetsSublevel,
   gamesShopCacheSublevel,

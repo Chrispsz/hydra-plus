@@ -27,7 +27,6 @@ export function HydraCloudV2SettingsSection({
     requestConflictResolution,
     cloudSaveAccessAction,
     connectDrive,
-    openSignIn,
   } = useCloudSaveV2();
 
   return (
@@ -56,7 +55,6 @@ export function HydraCloudV2SettingsSection({
         onResolveConflict={requestConflictResolution}
         onReconnectDrive={() => void reconnectDrive()}
         onConnectDrive={() => void connectDrive()}
-        onSignIn={openSignIn}
       />
     </div>
   );

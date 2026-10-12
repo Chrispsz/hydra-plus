@@ -7,6 +7,11 @@ on:
         description: "Build flavor: ci, release or nightly"
         type: string
         required: true
+      runsOn:
+        description: "Runner matrix override (JSON array)"
+        type: string
+        required: false
+        default: '["windows-2022", "ubuntu-24.04"]'
 
 permissions:
   contents: read
@@ -15,9 +20,7 @@ jobs:
   build:
     strategy:
       matrix:
-        include:
-          - os: windows-2022
-          - os: ubuntu-latest
+        os: ${{ fromJSON(inputs.runsOn) }}
       fail-fast: false
 
     runs-on: ${{ matrix.os }}
@@ -71,9 +74,27 @@ jobs:
           restore-keys: |
             ${{ steps.native-cache.outputs.prefix }}-
 
+      - name: Cache Electron distributions
+        uses: actions/cache@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0
+        with:
+          path: |
+            ~/.cache/electron
+            ~/.cache/electron-builder
+            ~/AppData/Local/electron/Cache
+            ~/AppData/Local/electron-builder/cache
+          key: electron-${{ runner.os }}-${{ hashFiles('node_modules/electron/package.json') }}
+
+      - name: Cache ludusavi binary
+        uses: actions/cache@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0
+        with:
+          path: ludusavi
+          key: ludusavi-${{ hashFiles('scripts/postinstall.cjs') }}
+
+      # Ubuntu images already ship cmake/ninja/pkg-config/build-essential —
+      # only the vcpkg bootstrap extras are actually needed here.
       - name: Install Linux native build prerequisites
         if: runner.os == 'Linux'
-        run: sudo apt-get update && sudo apt-get install -y build-essential cmake ninja-build pkg-config curl zip unzip tar autoconf automake libtool
+        run: sudo apt-get update && sudo apt-get install -y curl zip unzip tar autoconf automake libtool ninja-build
 
       - name: Install dependencies
         run: yarn --frozen-lockfile
@@ -87,7 +108,7 @@ jobs:
           key: ${{ steps.vcpkg-cache.outputs.cache-primary-key }}
 
       - name: Build Linux
-        if: matrix.os == 'ubuntu-latest'
+        if: runner.os == 'Linux'
         run: yarn build:linux
         env:
           MAIN_VITE_API_URL: ${{ vars.MAIN_VITE_API_URL }}
@@ -99,7 +120,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build Windows
-        if: matrix.os == 'windows-2022'
+        if: runner.os == 'Windows'
         run: yarn build:win
         env:
           MAIN_VITE_API_URL: ${{ vars.MAIN_VITE_API_URL }}

@@ -216,7 +216,10 @@ export class DownloadOrchestrator {
 
   private static async getDownloadsWithLayout() {
     const downloads = await this.getAllDownloads();
-    const layoutState = await syncDownloadLayoutState(downloads);
+    // Read-only: normalizing + persisting on every read meant a LevelDB
+    // write on every Downloads-page render and status broadcast. Mutators
+    // (pause/resume/cancel) persist the layout themselves.
+    const layoutState = await getNormalizedDownloadLayoutState(downloads);
 
     return { downloads, layoutState };
   }
@@ -379,7 +382,7 @@ export class DownloadOrchestrator {
 
   static async getLayoutState() {
     const downloads = await this.getAllDownloads();
-    return syncDownloadLayoutState(downloads);
+    return getNormalizedDownloadLayoutState(downloads);
   }
 
   static async startPreparedDownload(download: Download) {

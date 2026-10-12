@@ -2,9 +2,7 @@ import type { GameShop, LibraryGame } from "@types";
 
 import { getDisplayedPlayTimeInMilliseconds } from "@shared";
 
-import Color from "color";
 import i18next from "i18next";
-import { v4 as uuidv4 } from "uuid";
 import { logger } from "./logger";
 import type { SortOption } from "./pages/library/filter-options";
 import type { SkuRegion } from "./helpers/sku-region";
@@ -90,9 +88,6 @@ export const buildGameDetailsPath = (
   return `/game/${game.shop}/${game.objectId}?${searchParams.toString()}`;
 };
 
-export const darkenColor = (color: string, amount: number, alpha: number = 1) =>
-  new Color(color).darken(amount).alpha(alpha).toString();
-
 export const formatNumber = (num: number): string => {
   const locale = i18next.resolvedLanguage || i18next.language || undefined;
 
@@ -107,10 +102,6 @@ export const formatNumber = (num: number): string => {
  * Generates a UUID v4
  * @returns A random UUID string
  */
-export const generateUUID = (): string => {
-  return uuidv4();
-};
-
 export const getGameKey = (shop: GameShop, objectId: string): string => {
   return `${shop}:${objectId}`;
 };
@@ -229,19 +220,6 @@ export const sortLibraryGames = (
 
     return compareLibraryGamesByTitle(a, b);
   });
-};
-
-export const getGameCollectionIds = (game: {
-  collectionIds?: string[] | null;
-}): string[] => {
-  if (Array.isArray(game.collectionIds)) {
-    return game.collectionIds;
-  }
-
-  const legacyCollectionId = (game as { collectionId?: string | null })
-    .collectionId;
-
-  return legacyCollectionId ? [legacyCollectionId] : [];
 };
 
 export {

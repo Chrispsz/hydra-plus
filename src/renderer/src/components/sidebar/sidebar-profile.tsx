@@ -1,187 +1,42 @@
 import { useNavigate } from "react-router-dom";
-import {
-  BellIcon,
-  ChevronDownIcon,
-  PersonIcon,
-  SignOutIcon,
-} from "@primer/octicons-react";
-import { useAppSelector, useToast, useUserDetails } from "@renderer/hooks";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { BellIcon } from "@primer/octicons-react";
+import { useAppSelector } from "@renderer/hooks";
+import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import SteamLogo from "@renderer/assets/steam-logo.svg?react";
-import { Avatar } from "../avatar/avatar";
-import { ConfirmationModal } from "../confirmation-modal/confirmation-modal";
-import { AuthPage } from "@shared";
 import { logger } from "@renderer/logger";
-import type {
-  NotificationCountResponse,
-  NotificationsChangedDetail,
-} from "@types";
 import "./sidebar-profile.scss";
 
 export function SidebarProfile() {
   const navigate = useNavigate();
 
-  const { t } = useTranslation(["sidebar", "user_profile"]);
-
-  const { userDetails, signOut } = useUserDetails();
-  const { showSuccessToast } = useToast();
+  const { t } = useTranslation("sidebar");
 
   const { gameRunning } = useAppSelector((state) => state.gameRunning);
 
   const [notificationCount, setNotificationCount] = useState(0);
-  const [dropdownOpen, setDropdownOpen] = useState(false);
-  const [isDropdownClosing, setIsDropdownClosing] = useState(false);
-  const [isSigningOut, setIsSigningOut] = useState(false);
-  const [showSignOutModal, setShowSignOutModal] = useState(false);
 
-  const apiNotificationCountRef = useRef(0);
-  const hasFetchedInitialCount = useRef(false);
-  const containerRef = useRef<HTMLDivElement>(null);
-
-  const fetchLocalNotificationCount = useCallback(async () => {
+  const fetchNotificationCount = useCallback(async () => {
     try {
       const localCount = await window.electron.getLocalNotificationsCount();
-      setNotificationCount(localCount + apiNotificationCountRef.current);
+      setNotificationCount(localCount);
     } catch (error) {
       logger.error("Failed to fetch local notification count", error);
     }
   }, []);
 
-  const fetchApiNotificationCount = useCallback(async () => {
-    try {
-      const response =
-        await window.electron.hydraApi.get<NotificationCountResponse>(
-          "/profile/notifications/count",
-          { needsAuth: true }
-        );
-      apiNotificationCountRef.current = response.count;
-    } catch {
-      // Ignore API errors
-    }
-    fetchLocalNotificationCount();
-  }, [fetchLocalNotificationCount]);
-
   useEffect(() => {
-    fetchLocalNotificationCount();
-  }, [fetchLocalNotificationCount]);
+    fetchNotificationCount();
 
-  useEffect(() => {
-    if (userDetails && !hasFetchedInitialCount.current) {
-      hasFetchedInitialCount.current = true;
-      fetchApiNotificationCount();
-    } else if (!userDetails) {
-      hasFetchedInitialCount.current = false;
-      apiNotificationCountRef.current = 0;
-      fetchLocalNotificationCount();
-    }
-  }, [userDetails, fetchApiNotificationCount, fetchLocalNotificationCount]);
-
-  useEffect(() => {
     const unsubscribe = window.electron.onLocalNotificationCreated(() => {
-      fetchLocalNotificationCount();
+      fetchNotificationCount();
     });
+
     return () => unsubscribe();
-  }, [fetchLocalNotificationCount]);
-
-  useEffect(() => {
-    const handleNotificationsChange = (event: Event) => {
-      const detail = (event as CustomEvent<NotificationsChangedDetail>).detail;
-
-      if (detail?.resetApiUnread) {
-        apiNotificationCountRef.current = 0;
-      } else if (typeof detail?.apiUnreadDelta === "number") {
-        apiNotificationCountRef.current = Math.max(
-          0,
-          apiNotificationCountRef.current + detail.apiUnreadDelta
-        );
-      }
-
-      fetchLocalNotificationCount();
-    };
-    window.addEventListener("notificationsChanged", handleNotificationsChange);
-    return () => {
-      window.removeEventListener(
-        "notificationsChanged",
-        handleNotificationsChange
-      );
-    };
-  }, [fetchLocalNotificationCount]);
-
-  useEffect(() => {
-    const unsubscribe = window.electron.onSyncNotificationCount(
-      (notification) => {
-        apiNotificationCountRef.current = notification.notificationCount;
-        fetchLocalNotificationCount();
-      }
-    );
-    return () => unsubscribe();
-  }, [fetchLocalNotificationCount]);
-
-  useEffect(() => {
-    if (!dropdownOpen) return;
-    const handleClickOutside = (event: MouseEvent) => {
-      if (
-        containerRef.current &&
-        !containerRef.current.contains(event.target as Node)
-      ) {
-        closeDropdown();
-      }
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [dropdownOpen]);
-
-  const closeDropdown = () => {
-    setIsDropdownClosing(true);
-    setTimeout(() => {
-      setDropdownOpen(false);
-      setIsDropdownClosing(false);
-    }, 150);
-  };
-
-  const handleProfileClick = () => {
-    if (userDetails === null) {
-      window.electron.openAuthWindow(AuthPage.SignIn);
-      return;
-    }
-    if (dropdownOpen) {
-      closeDropdown();
-    } else {
-      setDropdownOpen(true);
-    }
-  };
-
-  const handleViewProfile = () => {
-    if (!userDetails) return;
-    closeDropdown();
-    navigate(`/profile/${userDetails.id}`);
-  };
-
-  const handleNotificationsClick = () => {
-    closeDropdown();
-    navigate("/notifications");
-  };
-
-  const handleSignOutClick = () => {
-    closeDropdown();
-    setShowSignOutModal(true);
-  };
-
-  const handleSignOut = async () => {
-    setIsSigningOut(true);
-    try {
-      await signOut();
-      showSuccessToast(t("user_profile:successfully_signed_out"));
-    } finally {
-      setIsSigningOut(false);
-      setShowSignOutModal(false);
-    }
-    navigate("/");
-  };
+  }, [fetchNotificationCount]);
 
   const gameRunningDetails = () => {
-    if (!userDetails || !gameRunning) return null;
+    if (!gameRunning) return null;
 
     if (gameRunning.iconUrl) {
       return (
@@ -198,94 +53,37 @@ export function SidebarProfile() {
   };
 
   return (
-    <div className="sidebar-profile" ref={containerRef}>
+    <div className="sidebar-profile">
       <button
         type="button"
-        className={`sidebar-profile__button${dropdownOpen ? " sidebar-profile__button--active" : ""}`}
-        onClick={handleProfileClick}
+        className="sidebar-profile__button"
+        onClick={() => navigate("/notifications")}
       >
         <div className="sidebar-profile__button-content">
-          <Avatar
-            size={35}
-            src={userDetails?.profileImageUrl}
-            alt={userDetails?.displayName}
-          />
-
           <div className="sidebar-profile__button-information">
             <p className="sidebar-profile__button-title">
-              {userDetails ? userDetails.displayName : t("sign_in")}
+              {gameRunning ? gameRunning.title : t("notifications")}
             </p>
 
-            {userDetails && gameRunning && (
+            {gameRunning && (
               <div className="sidebar-profile__button-game-running-title">
-                <small>{gameRunning.title}</small>
+                <small>{t("game_running")}</small>
               </div>
             )}
           </div>
 
           {gameRunningDetails()}
 
-          {userDetails && (
-            <ChevronDownIcon
-              size={12}
-              className={`sidebar-profile__chevron${dropdownOpen ? " sidebar-profile__chevron--open" : ""}`}
-            />
-          )}
-        </div>
-      </button>
-
-      {dropdownOpen && userDetails && (
-        <div
-          className={`sidebar-profile__dropdown${isDropdownClosing ? " sidebar-profile__dropdown--closing" : ""}`}
-        >
-          <button
-            type="button"
-            className="sidebar-profile__dropdown-item"
-            onClick={handleViewProfile}
-          >
-            <PersonIcon size={16} />
-            <span>{t("user_profile:see_profile")}</span>
-          </button>
-
-          <button
-            type="button"
-            className="sidebar-profile__dropdown-item"
-            onClick={handleNotificationsClick}
-          >
+          <div className="sidebar-profile__notification-badge">
             <BellIcon size={16} />
-            <span>{t("notifications")}</span>
             {notificationCount > 0 && (
               <small className="sidebar-profile__dropdown-badge">
                 {notificationCount > 99 ? "99+" : notificationCount}
               </small>
             )}
-          </button>
-
-          <div className="sidebar-profile__dropdown-separator" />
-
-          <button
-            type="button"
-            className="sidebar-profile__dropdown-item sidebar-profile__dropdown-item--danger"
-            onClick={handleSignOutClick}
-            disabled={isSigningOut}
-          >
-            <SignOutIcon size={16} />
-            <span>{t("user_profile:sign_out")}</span>
-          </button>
+          </div>
         </div>
-      )}
-
-      <ConfirmationModal
-        visible={showSignOutModal}
-        title={t("user_profile:sign_out_modal_title")}
-        descriptionText={t("user_profile:sign_out_modal_text")}
-        confirmButtonLabel={t("user_profile:sign_out")}
-        cancelButtonLabel={t("user_profile:cancel")}
-        confirmButtonTheme="danger"
-        buttonsIsDisabled={isSigningOut}
-        onConfirm={() => void handleSignOut()}
-        onClose={() => setShowSignOutModal(false)}
-      />
+      </button>
     </div>
   );
 }

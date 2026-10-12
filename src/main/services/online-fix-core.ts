@@ -3,7 +3,7 @@
  * it stays unit-testable under node --test.
  */
 
-export const MAX_SCANNED_DLL_OVERRIDES = 40;
+export const MAX_SCANNED_DLL_OVERRIDES = 64;
 
 /**
  * Community recipe (SOFL/OFLL): force the native Direct3D path so the
@@ -23,11 +23,18 @@ export const ONLINE_FIX_D3D_OVERRIDES = [
 ] as const;
 
 /**
- * Classic proxy DLLs used by Online-Fix/FreeTP patches. Forced as
+ * DLLs shipped by Online-Fix patches and classic proxy loaders. Forced as
  * "native,builtin": when the patch ships one, the native copy wins;
  * when it does not, Wine falls back to the built-in harmlessly.
+ *
+ * `onlinefix64`/`steamoverlay64`/`dnet` are the fix's own payload and
+ * overlay modules (mirroring SOFL's default override list) — they MUST
+ * win over any built-in or they fail to hook the game.
  */
 export const ONLINE_FIX_PROXY_DLLS = [
+  "onlinefix64",
+  "steamoverlay64",
+  "dnet",
   "winmm",
   "version",
   "dinput8",
@@ -38,6 +45,18 @@ export const ONLINE_FIX_PROXY_DLLS = [
   "xinput9_1_0",
 ] as const;
 
+/**
+ * The files an Online-Fix patch drops next to the game executable.
+ * Used by the diagnostics IPC to detect an antivirus quarantine (the
+ * patch DLLs disappearing is the classic cause of the "error 126"
+ * overlay failure).
+ */
+export const ONLINE_FIX_MARKER_DLLS = [
+  "onlinefix64.dll",
+  "onlinefix.dll",
+  "steamoverlay64.dll",
+] as const;
+
 const D3D_OVERRIDE_NAMES = new Set(
   ONLINE_FIX_D3D_OVERRIDES.map((override) => override.split("=")[0])
 );
@@ -45,6 +64,17 @@ const D3D_OVERRIDE_NAMES = new Set(
 /** API-set / driver shims must never be forced native. */
 export const isSkippableDllName = (name: string) =>
   name.startsWith("api-ms-win-") || name.startsWith("ext-ms-");
+
+export const normalizeDllOverrideName = (rawName: string): string | null => {
+  const name = rawName
+    .toLowerCase()
+    .trim()
+    .replace(/\.dll$/, "");
+  if (!name || D3D_OVERRIDE_NAMES.has(name) || isSkippableDllName(name)) {
+    return null;
+  }
+  return name;
+};
 
 /**
  * Builds the WINEDLLOVERRIDES value for an online session from the DLL
@@ -70,16 +100,41 @@ export const buildOnlineFixDllOverrides = (dllNames: string[]): string => {
   for (const rawName of dllNames) {
     if (scanned >= MAX_SCANNED_DLL_OVERRIDES) break;
 
-    const name = rawName
-      .toLowerCase()
-      .trim()
-      .replace(/\.dll$/, "");
-    if (!name || D3D_OVERRIDE_NAMES.has(name) || isSkippableDllName(name)) {
-      continue;
-    }
+    const name = normalizeDllOverrideName(rawName);
+    if (!name) continue;
 
     if (addOverride(name)) scanned += 1;
   }
 
   return Array.from(overrides).join(";");
+};
+
+/**
+ * Detects the presence of Online-Fix marker DLLs among a scanned file
+ * listing (diagnostics for the "antivirus ate the patch" failure mode).
+ */
+export const findOnlineFixMarkerDlls = (fileNames: string[]): string[] => {
+  const seen = new Set(
+    fileNames.map((name) => name.toLowerCase().trim()).filter(Boolean)
+  );
+  return ONLINE_FIX_MARKER_DLLS.filter((marker) => seen.has(marker));
+};
+
+/**
+ * Prepends the game directory to a Windows PATH so the patch loader and
+ * its payload DLLs resolve their dependencies by name no matter which
+ * working directory the game ends up with.
+ */
+export const buildWindowsOnlineFixPath = (
+  gameDirectory: string,
+  currentPath: string
+): string => {
+  const separator = ";";
+  const existingEntries = currentPath
+    .split(separator)
+    .map((entry) => entry.trim())
+    .filter(Boolean)
+    .filter((entry) => entry.toLowerCase() !== gameDirectory.toLowerCase());
+
+  return [gameDirectory, ...existingEntries].join(separator);
 };

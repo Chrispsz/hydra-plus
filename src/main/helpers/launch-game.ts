@@ -33,6 +33,7 @@ import { dispatchSteamProtocolLaunch } from "@main/services/steam-integration/st
 import {
   ensureSteamClientRunning,
   getOnlineFixLaunchEnv,
+  getWindowsOnlineFixLaunchEnv,
 } from "@main/services/online-fix";
 import { resolveSteamProtocolLaunch } from "@main/services/steam-integration/steam-protocol-launch";
 import { CommonRedistManager } from "@main/services/common-redist-manager";
@@ -77,7 +78,8 @@ const launchNatively = (
   executablePath: string,
   launchOptions?: string | null,
   useMangohud = false,
-  useGamemode = false
+  useGamemode = false,
+  extraEnv?: Record<string, string> | null
 ): number | null => {
   const workingDirectory = path.dirname(executablePath);
   const resolvedLaunchCommand = resolveLaunchCommand({
@@ -89,9 +91,12 @@ const launchNatively = (
     ],
   });
 
+  const hasExtraEnv = !!extraEnv && Object.keys(extraEnv).length > 0;
+
   if (process.platform === "linux") {
     ensureExecutablePermission(executablePath);
   } else if (
+    !hasExtraEnv &&
     resolvedLaunchCommand.command === executablePath &&
     resolvedLaunchCommand.args.length === 0 &&
     Object.keys(resolvedLaunchCommand.env).length === 0
@@ -116,6 +121,7 @@ const launchNatively = (
         cwd: workingDirectory,
         env: {
           ...process.env,
+          ...(extraEnv ?? {}),
           ...resolvedLaunchCommand.env,
         },
       }
@@ -140,6 +146,7 @@ const launchNatively = (
       cwd: workingDirectory,
       env: {
         ...process.env,
+        ...(extraEnv ?? {}),
         ...resolvedLaunchCommand.env,
       },
     }
@@ -633,7 +640,13 @@ const launchResolvedGame = async (
   onlineFixEnv: Record<string, string> | null
 ) => {
   if (process.platform !== "linux") {
-    return launchNatively(parsedPath, launchOptions, useMangohud, useGamemode);
+    return launchNatively(
+      parsedPath,
+      launchOptions,
+      useMangohud,
+      useGamemode,
+      onlineFixEnv
+    );
   }
 
   if (isWindowsExecutable(parsedPath)) {
@@ -721,12 +734,18 @@ const launchGameWithCloudSaveChecks = async (
     await ensureSteamClientRunning();
   }
 
-  // Pre-computed once for the Linux chain (umu → direct Proton → Wine all
-  // receive it) and the Steam protocol dispatch path.
-  const onlineFixEnv =
-    onlineFixEnabled && process.platform === "linux"
+  // Pre-computed once for the whole chain: Linux gets the Wine/Proton
+  // session env (DLL overrides + quiet logs + Steam overlay injection);
+  // Windows gets the game folder prepended to PATH. Both umu → direct
+  // Proton → Wine and the native Windows spawn receive it, and the
+  // Windows path spawns directly (never shell.openPath) so the game
+  // starts with the game folder as working directory — Online-Fix
+  // patches resolve their payload DLLs relative to it (error 126).
+  const onlineFixEnv = onlineFixEnabled
+    ? process.platform === "linux"
       ? getOnlineFixLaunchEnv(path.dirname(parsedPath))
-      : null;
+      : getWindowsOnlineFixLaunchEnv(path.dirname(parsedPath))
+    : null;
 
   const steamCompatibilityPrefixPath =
     process.platform === "linux" &&

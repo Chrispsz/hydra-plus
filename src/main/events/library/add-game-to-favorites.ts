@@ -1,6 +1,5 @@
 import { registerEvent } from "../register-event";
 import { gamesSublevel, levelKeys } from "@main/level";
-import { HydraApi } from "@main/services";
 import type { GameShop } from "@types";
 
 const addGameToFavorites = async (
@@ -12,10 +11,6 @@ const addGameToFavorites = async (
 
   const game = await gamesSublevel.get(gameKey);
   if (!game) return;
-
-  if (shop !== "custom") {
-    HydraApi.put(`/profile/games/${shop}/${objectId}/favorite`).catch(() => {});
-  }
 
   try {
     await gamesSublevel.put(gameKey, {

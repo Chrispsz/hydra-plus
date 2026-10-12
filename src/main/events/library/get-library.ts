@@ -11,31 +11,25 @@ import {
   gamesSublevel,
 } from "@main/level";
 import { composeAssetsWithArtwork } from "@shared";
-import { HydraApi } from "@main/services/hydra-api";
-import { belongsToLibraryCollection } from "@main/services/library-sync/game-visibility";
+import { belongsToLibraryCollection } from "@main/services";
+
+const CACHED_PLATFORM_LANGUAGES = ["en", "pt-BR"];
 
 export const lookupCachedPlatform = async (
   gameKey: string
 ): Promise<string | null> => {
-  const prefix = `${gameKey}:`;
-  try {
-    const entries = await gamesShopCacheSublevel.iterator().all();
-    for (const [key, value] of entries) {
-      if (
-        typeof key === "string" &&
-        key.startsWith(prefix) &&
-        value?.platform
-      ) {
-        return value.platform;
-      }
+  for (const language of CACHED_PLATFORM_LANGUAGES) {
+    try {
+      const value = await gamesShopCacheSublevel.get(`${gameKey}:${language}`);
+      if (value?.platform) return value.platform;
+    } catch {
+      // Missing or unreadable language entry — try the next one.
     }
-  } catch {
-    return null;
   }
   return null;
 };
 
-const getLibrary = async (
+export const getLibrary = async (
   collection: "visible" | "hidden" | "all" = "visible"
 ): Promise<LibraryGame[]> => {
   return gamesSublevel
@@ -67,7 +61,9 @@ const getLibrary = async (
 
               if (!fs.existsSync(installerPath)) {
                 installerSizeInBytes = null;
-                gamesSublevel.put(key, { ...game, installerSizeInBytes: null });
+                gamesSublevel
+                  .put(key, { ...game, installerSizeInBytes: null })
+                  .catch(() => {});
               }
             }
 
@@ -89,11 +85,13 @@ const getLibrary = async (
 
               if (!fs.existsSync(executableDir)) {
                 installedSizeInBytes = null;
-                gamesSublevel.put(key, {
-                  ...game,
-                  installerSizeInBytes,
-                  installedSizeInBytes: null,
-                });
+                gamesSublevel
+                  .put(key, {
+                    ...game,
+                    installerSizeInBytes,
+                    installedSizeInBytes: null,
+                  })
+                  .catch(() => {});
               }
             }
 
@@ -120,7 +118,4 @@ const getLibrary = async (
 
 registerEvent("getLibrary", (_event, includeConcealed = false) =>
   getLibrary(includeConcealed ? "all" : "visible")
-);
-registerEvent("getHiddenLibrary", () =>
-  HydraApi.isLoggedIn() ? getLibrary("hidden") : Promise.resolve([])
 );

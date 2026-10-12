@@ -35,7 +35,6 @@ import {
   useState,
 } from "react";
 import { useNavigate } from "react-router-dom";
-import { AnimatePresence, motion } from "framer-motion";
 import {
   DropdownMenu,
   DropdownMenuItem,
@@ -56,86 +55,6 @@ import {
   GraphIcon,
 } from "@primer/octicons-react";
 import { MoreVertical, Folder } from "lucide-react";
-import { average } from "color.js";
-
-function hexToRgb(hex: string): [number, number, number] {
-  let h = hex.replace("#", "");
-  if (h.length === 3) {
-    h = h[0] + h[0] + h[1] + h[1] + h[2] + h[2];
-  }
-  const r = Number.parseInt(h.substring(0, 2), 16) || 0;
-  const g = Number.parseInt(h.substring(2, 4), 16) || 0;
-  const b = Number.parseInt(h.substring(4, 6), 16) || 0;
-  return [r, g, b];
-}
-
-function isTooCloseRGB(a: string, b: string, threshold: number): boolean {
-  const [r1, g1, b1] = hexToRgb(a);
-  const [r2, g2, b2] = hexToRgb(b);
-  const distance = Math.sqrt(
-    Math.pow(r1 - r2, 2) + Math.pow(g1 - g2, 2) + Math.pow(b1 - b2, 2)
-  );
-  return distance < threshold;
-}
-
-const CHART_BACKGROUND_COLOR = "#1a1a1a";
-const COLOR_DISTANCE_THRESHOLD = 28;
-const FALLBACK_CHART_COLOR = "#fff";
-
-function pickChartColor(dominant?: string): string {
-  if (!dominant || typeof dominant !== "string" || !dominant.startsWith("#")) {
-    return FALLBACK_CHART_COLOR;
-  }
-
-  if (
-    isTooCloseRGB(dominant, CHART_BACKGROUND_COLOR, COLOR_DISTANCE_THRESHOLD)
-  ) {
-    return FALLBACK_CHART_COLOR;
-  }
-
-  return dominant;
-}
-
-interface AnimatedPercentageProps {
-  value: number;
-}
-
-function AnimatedPercentage({ value }: Readonly<AnimatedPercentageProps>) {
-  const percentageText = formatDownloadProgress(value);
-  const prevTextRef = useRef<string>(percentageText);
-  const chars = percentageText.split("");
-  const prevChars = prevTextRef.current.split("");
-
-  useEffect(() => {
-    prevTextRef.current = percentageText;
-  }, [percentageText]);
-
-  return (
-    <>
-      {chars.map((char, index) => {
-        const prevChar = prevChars[index];
-        const charChanged = prevChar !== char;
-
-        return (
-          <AnimatePresence key={`${index}`} mode="wait" initial={false}>
-            <motion.span
-              key={`${char}-${value}-${index}`}
-              initial={
-                charChanged ? { y: 10, opacity: 0 } : { y: 0, opacity: 1 }
-              }
-              animate={{ y: 0, opacity: 1 }}
-              exit={charChanged ? { y: -10, opacity: 0 } : undefined}
-              transition={{ duration: 0.3, ease: "easeOut" }}
-              style={{ display: "inline-block" }}
-            >
-              {char}
-            </motion.span>
-          </AnimatePresence>
-        );
-      })}
-    </>
-  );
-}
 
 interface SpeedChartProps {
   speeds: number[];
@@ -274,7 +193,6 @@ interface HeroDownloadViewProps {
   finalDownloadSize: string;
   peakSpeed: number;
   currentProgress: number;
-  dominantColor: string;
   lastPacket: ReturnType<typeof useDownload>["lastPacket"];
   speedHistory: number[];
   formatSpeed: (speed: number) => string;
@@ -340,7 +258,6 @@ function HeroDownloadView({
   finalDownloadSize,
   peakSpeed,
   currentProgress,
-  dominantColor,
   lastPacket,
   speedHistory,
   formatSpeed,
@@ -450,7 +367,7 @@ function HeroDownloadView({
                   />
                 )}
                 <span className="download-group__progress-percentage">
-                  <AnimatedPercentage value={currentProgress} />
+                  {formatDownloadProgress(currentProgress)}
                 </span>
               </div>
               <div className="download-group__progress-bar">
@@ -499,7 +416,7 @@ function HeroDownloadView({
         <div className="download-group__hero-stats">
           <div className="download-group__stats-column">
             <div className="download-group__stat-item">
-              <span style={{ color: dominantColor, display: "flex" }}>
+              <span style={{ color: "#fff", display: "flex" }}>
                 <DownloadIcon size={16} />
               </span>
               <div className="download-group__stat-content">
@@ -513,7 +430,7 @@ function HeroDownloadView({
             </div>
 
             <div className="download-group__stat-item">
-              <span style={{ color: dominantColor, display: "flex" }}>
+              <span style={{ color: "#fff", display: "flex" }}>
                 <GraphIcon size={16} />
               </span>
               <div className="download-group__stat-content">
@@ -547,7 +464,7 @@ function HeroDownloadView({
             {lastPacket?.batchFilesTotal != null &&
               lastPacket.batchFilesTotal > 1 && (
                 <div className="download-group__stat-item">
-                  <span style={{ color: dominantColor, display: "flex" }}>
+                  <span style={{ color: "#fff", display: "flex" }}>
                     <FileIcon size={16} />
                   </span>
                   <div className="download-group__stat-content">
@@ -574,11 +491,7 @@ function HeroDownloadView({
           </div>
 
           <div className="download-group__speed-chart">
-            <SpeedChart
-              speeds={speedHistory}
-              peakSpeed={peakSpeed}
-              color={dominantColor}
-            />
+            <SpeedChart speeds={speedHistory} peakSpeed={peakSpeed} />
           </div>
         </div>
       </div>
@@ -670,9 +583,6 @@ export function DownloadGroup({
   // Get speed history and peak speeds from Redux (centralized state)
   const speedHistory = useAppSelector((state) => state.download.speedHistory);
   const peakSpeeds = useAppSelector((state) => state.download.peakSpeeds);
-  const [dominantColors, setDominantColors] = useState<Record<string, string>>(
-    {}
-  );
   const [optimisticallyResumed, setOptimisticallyResumed] = useState<
     Record<string, boolean>
   >({});
@@ -686,22 +596,6 @@ export function DownloadGroup({
   const [gameActionTypes, setGameActionTypes] = useState<
     Record<string, "install" | "open-folder">
   >({});
-
-  const extractDominantColor = useCallback(
-    async (imageUrl: string, gameId: string) => {
-      if (dominantColors[gameId]) return;
-
-      try {
-        const color = await average(imageUrl, { amount: 1, format: "hex" });
-        const colorString =
-          typeof color === "string" ? color : color.toString();
-        setDominantColors((prev) => ({ ...prev, [gameId]: colorString }));
-      } catch (error) {
-        console.error("Failed to extract dominant color:", error);
-      }
-    },
-    [dominantColors]
-  );
 
   // Clear optimistic state when actual download starts or library updates
   useEffect(() => {
@@ -744,20 +638,6 @@ export function DownloadGroup({
 
   // Speed history and peak speeds are now tracked in Redux (in setLastPacket reducer)
   // No local effect needed - data is updated atomically when packets arrive
-
-  useEffect(() => {
-    if (library.length > 0 && title === t("download_in_progress")) {
-      const game = library[0];
-      const heroImageUrl =
-        game.customHeroImageUrl ||
-        game.libraryHeroImageUrl ||
-        game.libraryImageUrl ||
-        "";
-      if (heroImageUrl && game.id) {
-        extractDominantColor(heroImageUrl, game.id);
-      }
-    }
-  }, [library, title, t, extractDominantColor]);
 
   const isGameSeeding = (game: LibraryGame) => {
     const entry = seedingStatus.find((s) => s.gameId === game.id);
@@ -1060,8 +940,6 @@ export function DownloadGroup({
       currentProgress = lastPacket.progress;
     }
 
-    const dominantColor = pickChartColor(dominantColors[game.id]);
-
     return (
       <>
         <ConfirmationModal
@@ -1082,7 +960,6 @@ export function DownloadGroup({
           finalDownloadSize={finalDownloadSize}
           peakSpeed={peakSpeed}
           currentProgress={currentProgress}
-          dominantColor={dominantColor}
           lastPacket={lastPacket}
           speedHistory={gameSpeedHistory}
           formatSpeed={formatSpeed}

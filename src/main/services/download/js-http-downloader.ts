@@ -477,9 +477,17 @@ export class JsHttpDownloader {
     savePath: string,
     usedFallback: boolean
   ): Promise<void> {
+    // Cap the time the server has to answer with headers; without this a
+    // silent socket left the download "active" forever (the stall watchdog
+    // below only arms once body streaming starts).
     const response = await fetch(url, {
       headers: requestHeaders,
-      signal: this.abortController?.signal,
+      signal: this.abortController?.signal
+        ? AbortSignal.any([
+            this.abortController.signal,
+            AbortSignal.timeout(30_000),
+          ])
+        : AbortSignal.timeout(30_000),
     });
 
     const contentType = response.headers.get("content-type") ?? "unknown";

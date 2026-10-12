@@ -3,6 +3,8 @@ import { describe, it } from "node:test";
 
 import {
   buildOnlineFixDllOverrides,
+  buildWindowsOnlineFixPath,
+  findOnlineFixMarkerDlls,
   isSkippableDllName,
   MAX_SCANNED_DLL_OVERRIDES,
 } from "./online-fix-core.js";
@@ -34,6 +36,13 @@ describe("buildOnlineFixDllOverrides", () => {
     const overrides = buildOnlineFixDllOverrides([]);
     for (const proxy of ["winmm", "version", "dinput8", "winhttp"]) {
       assert.equal(findEntry(overrides, proxy), `${proxy}=n,b`);
+    }
+  });
+
+  it("forces the Online-Fix payload family as native,builtin even without a scan", () => {
+    const overrides = buildOnlineFixDllOverrides([]);
+    for (const payload of ["onlinefix64", "steamoverlay64", "dnet"]) {
+      assert.equal(findEntry(overrides, payload), `${payload}=n,b`);
     }
   });
 
@@ -101,5 +110,53 @@ describe("isSkippableDllName", () => {
     assert.ok(isSkippableDllName("api-ms-win-core-file-l1-1.dll"));
     assert.ok(isSkippableDllName("ext-ms-win-session-thing.dll"));
     assert.equal(isSkippableDllName("steam_api64"), false);
+  });
+});
+
+describe("findOnlineFixMarkerDlls", () => {
+  it("detects the patch payload among scanned files", () => {
+    assert.deepEqual(
+      findOnlineFixMarkerDlls([
+        "OnlineFix64.dll",
+        "steam_api64.dll",
+        "game.exe",
+      ]),
+      ["onlinefix64.dll"]
+    );
+  });
+
+  it("returns empty when the patch is missing (quarantine)", () => {
+    assert.deepEqual(
+      findOnlineFixMarkerDlls(["game.exe", "unityplayer.dll"]),
+      []
+    );
+  });
+});
+
+describe("buildWindowsOnlineFixPath", () => {
+  it("prepends the game directory to PATH", () => {
+    const result = buildWindowsOnlineFixPath(
+      "C:\\Games\\Some Game",
+      "C:\\Windows\\system32;C:\\Windows"
+    );
+    assert.equal(
+      result,
+      "C:\\Games\\Some Game;C:\\Windows\\system32;C:\\Windows"
+    );
+  });
+
+  it("does not duplicate an existing game directory entry", () => {
+    const result = buildWindowsOnlineFixPath(
+      "C:\\Games\\Game",
+      "c:\\games\\game;C:\\Windows"
+    );
+    assert.equal(result, "C:\\Games\\Game;C:\\Windows");
+  });
+
+  it("works with an empty current PATH", () => {
+    assert.equal(
+      buildWindowsOnlineFixPath("C:\\Games\\Game", ""),
+      "C:\\Games\\Game"
+    );
   });
 });

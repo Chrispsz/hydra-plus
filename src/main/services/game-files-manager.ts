@@ -143,7 +143,6 @@ export class GameFilesManager {
   }
 
   private readonly handleProgress = (progress: ExtractionProgress) => {
-    console.log(`handleProgress: ${progress.percent}% - ${progress.file}`);
     this.updateExtractionProgress(progress.percent / 100);
   };
 
@@ -411,6 +410,7 @@ export class GameFilesManager {
         );
         const response = await axios.get(iconUrl, {
           responseType: "arraybuffer",
+          timeout: 30_000,
         });
         const imageBuffer = Buffer.from(response.data);
 

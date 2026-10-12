@@ -33,11 +33,14 @@ export class DownloadSourcesChecker {
       logger.info(
         `Clearing stale newDownloadOptionsCount for ${previouslyFlaggedGames.length} games`
       );
+      await gamesSublevel.batch(
+        previouslyFlaggedGames.map((game) => ({
+          type: "put" as const,
+          key: levelKeys.game(game.shop, game.objectId),
+          value: { ...game, newDownloadOptionsCount: undefined },
+        }))
+      );
       for (const game of previouslyFlaggedGames) {
-        await gamesSublevel.put(`${game.shop}:${game.objectId}`, {
-          ...game,
-          newDownloadOptionsCount: undefined,
-        });
         clearedPayload.push({
           gameId: `${game.shop}:${game.objectId}`,
           count: 0,
@@ -58,6 +61,7 @@ export class DownloadSourcesChecker {
 
     const gamesWithNewOptions: { gameId: string; count: number }[] = [];
 
+    const updates: DownloadSourcesChangeResponse[] = [];
     for (const gameUpdate of response as DownloadSourcesChangeResponse[]) {
       if (gameUpdate.newDownloadOptionsCount > 0) {
         const game = nonCustomGames.find(
@@ -66,17 +70,32 @@ export class DownloadSourcesChecker {
         );
 
         if (game) {
-          await gamesSublevel.put(`${game.shop}:${game.objectId}`, {
-            ...game,
-            newDownloadOptionsCount: gameUpdate.newDownloadOptionsCount,
-          });
-
+          updates.push(gameUpdate);
           gamesWithNewOptions.push({
             gameId: `${game.shop}:${game.objectId}`,
             count: gameUpdate.newDownloadOptionsCount,
           });
         }
       }
+    }
+
+    if (updates.length > 0) {
+      await gamesSublevel.batch(
+        updates.map((gameUpdate) => {
+          const game = nonCustomGames.find(
+            (g) =>
+              g.shop === gameUpdate.shop && g.objectId === gameUpdate.objectId
+          )!;
+          return {
+            type: "put" as const,
+            key: levelKeys.game(game.shop, game.objectId),
+            value: {
+              ...game,
+              newDownloadOptionsCount: gameUpdate.newDownloadOptionsCount,
+            },
+          };
+        })
+      );
     }
 
     return gamesWithNewOptions;

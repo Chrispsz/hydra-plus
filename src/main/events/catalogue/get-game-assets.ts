@@ -42,11 +42,7 @@ export const getGameAssets = async (
   }
 
   return HydraApi.get<ShopAssets | null>(
-    `/games/${shop}/${objectId}/assets`,
-    null,
-    {
-      needsAuth: false,
-    }
+    `/games/${shop}/${objectId}/assets`
   ).then(async (assets) => {
     if (!assets) return null;
 

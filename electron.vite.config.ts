@@ -14,7 +14,7 @@ export default defineConfig(({ mode }) => {
   return {
     main: {
       build: {
-        sourcemap: true,
+        sourcemap: false,
       },
       resolve: {
         alias: {
@@ -22,6 +22,7 @@ export default defineConfig(({ mode }) => {
           "@locales": resolve("src/locales"),
           "@resources": resolve("resources"),
           "@shared": resolve("src/shared"),
+          "@shared/*": resolve("src/shared"),
         },
       },
       plugins: [externalizeDepsPlugin(), swcPlugin()],
@@ -31,7 +32,7 @@ export default defineConfig(({ mode }) => {
     },
     renderer: {
       build: {
-        sourcemap: true,
+        sourcemap: false,
       },
       esbuild: {
         keepNames: true,
@@ -48,6 +49,7 @@ export default defineConfig(({ mode }) => {
           "@renderer": resolve("src/renderer/src"),
           "@locales": resolve("src/locales"),
           "@shared": resolve("src/shared"),
+          "@shared/*": resolve("src/shared"),
         },
       },
       plugins: [svgr(), react()],

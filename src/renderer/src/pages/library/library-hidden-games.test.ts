@@ -26,22 +26,9 @@ const requireModule = createRequire(import.meta.url);
 const noop = () => {};
 const translate = (key: string) => key;
 
-function deferred<T>() {
-  let resolve!: (value: T) => void;
-  let reject!: (error: Error) => void;
-  const promise = new Promise<T>((resolvePromise, rejectPromise) => {
-    resolve = resolvePromise;
-    reject = rejectPromise;
-  });
-  return { promise, resolve, reject };
-}
-
 async function renderLibrary(
   t: TestContext,
-  options: {
-    readHidden?: () => Promise<TestGame[]>;
-    refreshRemote?: () => Promise<void>;
-  } = {}
+  options: { readHidden?: () => Promise<TestGame[]> } = {}
 ) {
   const dom = new JSDOM("<div id='root'></div>", {
     url: "https://hydra.test/library?collection=__hidden__",
@@ -87,19 +74,9 @@ async function renderLibrary(
     }
   });
 
-  let userDetails: { id: string } | null = { id: "account-a" };
   let readHidden = options.readHidden ?? (async () => [hiddenGame]);
-  let readVisible = async (): Promise<void> => {};
-  let visibleReadCount = 0;
-  let remoteRefreshCount = 0;
   let rowCount = 0;
-  const updateLibrary = async () => {
-    visibleReadCount++;
-    await readVisible();
-  };
-  const loadCollections = async () => [];
-  const collections: unknown[] = [];
-  const library: unknown[] = [];
+  const updateLibrary = async () => {};
   const searchParams = new URLSearchParams("collection=__hidden__");
   const virtualizer = {
     measure: noop,
@@ -114,13 +91,7 @@ async function renderLibrary(
   Object.defineProperty(dom.window, "electron", {
     value: {
       getHiddenLibrary: () => readHidden(),
-      refreshLibraryAssets: async () => {
-        remoteRefreshCount++;
-        await options.refreshRemote?.();
-      },
       onLibraryBatchComplete: () => noop,
-      onClassicsImportStatus: () => noop,
-      getClassicsImportStatus: async () => false,
     },
   });
 
@@ -134,17 +105,10 @@ async function renderLibrary(
       },
     },
     "@renderer/hooks": {
-      useLibrary: () => ({ library, updateLibrary }),
-      useUserDetails: () => ({ userDetails }),
+      useLibrary: () => ({ library: [], updateLibrary }),
       useAppDispatch: () => noop,
       useAppSelector: (select: (state: unknown) => unknown) =>
         select({ library: { searchQuery: "" } }),
-      useGameCollections: () => ({
-        collections,
-        loadCollections,
-        hasLoaded: true,
-        hasFailed: false,
-      }),
     },
     "@renderer/features": {
       selectIsLibraryLoading: () => false,
@@ -154,25 +118,19 @@ async function renderLibrary(
       [
         "HeartIcon",
         "TelescopeIcon",
-        "FileDirectoryIcon",
+        "EyeClosedIcon",
         "SearchIcon",
         "SyncIcon",
       ].map((name) => [name, () => null])
     ),
     "react-i18next": { useTranslation: () => ({ t: translate }) },
     "@shared": {
-      AuthPage: { SignIn: "sign-in" },
       removeDiacritics: (value: string) => value,
     },
     "@renderer/components": {
-      CreateCollectionModal: () => null,
       GameContextMenu: () => null,
     },
-    "@renderer/context": {
-      useCollectionContextMenu: () => ({ openCollectionContextMenu: noop }),
-    },
     "@renderer/helpers": {
-      getGameCollectionIds: () => [],
       isGameInstalled: () => false,
       sortLibraryGames: (games: TestGame[]) => games,
     },
@@ -187,7 +145,6 @@ async function renderLibrary(
     "./installed-filter": { InstalledFilter: () => null },
     "./platform-filter": { PlatformFilter: () => null },
     "./source-filter": { SourceFilter: () => null },
-    "./collections-filter": { CollectionsFilter: () => null },
     "./library-games-skeleton": { LibraryGamesSkeleton: () => null },
     "./library-category": {
       categoryShowsPlatforms: () => false,
@@ -221,6 +178,7 @@ async function renderLibrary(
   });
   const Library = exports.default!;
   await act(async () => root.render(React.createElement(Library)));
+  await act(async () => {});
 
   return {
     text: () => dom.window.document.body.textContent ?? "",
@@ -228,16 +186,8 @@ async function renderLibrary(
       Array.from(
         dom.window.document.querySelectorAll("[data-hidden-game]")
       ).map((element) => element.textContent),
-    counts: () => ({ visibleReadCount, remoteRefreshCount }),
     setHiddenRead: (nextRead: () => Promise<TestGame[]>) => {
       readHidden = nextRead;
-    },
-    setVisibleRead: (nextRead: () => Promise<void>) => {
-      readVisible = nextRead;
-    },
-    changeAccount: async (nextAccountId: string) => {
-      userDetails = { id: nextAccountId };
-      await act(async () => root.render(React.createElement(Library)));
     },
     notifyVisibilityChange: async () => {
       await act(async () => {
@@ -246,120 +196,28 @@ async function renderLibrary(
         );
       });
     },
-    retry: async () => {
-      const button = dom.window.document.querySelector("button");
-      assert.ok(button, "the local hidden-library error offers a retry");
-      await act(async () => button.click());
-    },
   };
 }
 
 describe("hidden library local reads", () => {
-  it("clears a prior local error after a successful visibility refresh", async (t) => {
-    const page = await renderLibrary(t, {
-      readHidden: async () => {
-        throw new Error("local read failed");
-      },
-    });
-    assert.match(page.text(), /hidden_games_load_failed/);
+  it("shows the locally concealed games on mount", async (t) => {
+    const page = await renderLibrary(t);
+    assert.deepEqual(page.games(), [hiddenGame.title]);
+  });
 
-    page.setHiddenRead(async () => [hiddenGame]);
+  it("refreshes the hidden list when a visibility change is notified", async (t) => {
+    const page = await renderLibrary(t);
+    page.setHiddenRead(async () => []);
     await page.notifyVisibilityChange();
-
-    assert.doesNotMatch(page.text(), /hidden_games_load_failed/);
-    assert.deepEqual(page.games(), [hiddenGame.title]);
-  });
-
-  it("shows cached hidden games when the remote refresh fails on mount", async (t) => {
-    const page = await renderLibrary(t, {
-      refreshRemote: async () => {
-        throw new Error("offline");
-      },
-    });
-
-    assert.equal(page.counts().remoteRefreshCount, 1);
-    assert.doesNotMatch(page.text(), /hidden_games_load_failed/);
-    assert.deepEqual(page.games(), [hiddenGame.title]);
-  });
-
-  it("retries local reads even when the remote refresh remains offline", async (t) => {
-    const page = await renderLibrary(t, {
-      readHidden: async () => {
-        throw new Error("local read failed");
-      },
-      refreshRemote: async () => {
-        throw new Error("offline");
-      },
-    });
-    assert.match(page.text(), /hidden_games_load_failed/);
-    const before = page.counts();
-
-    page.setHiddenRead(async () => [hiddenGame]);
-    await page.retry();
-
-    assert.equal(
-      page.counts().remoteRefreshCount,
-      before.remoteRefreshCount + 1
-    );
-    assert.equal(page.counts().visibleReadCount, before.visibleReadCount + 1);
-    assert.doesNotMatch(page.text(), /hidden_games_load_failed/);
-    assert.deepEqual(page.games(), [hiddenGame.title]);
-  });
-
-  it("keeps a genuine local error after a successful remote refresh and retry", async (t) => {
-    const page = await renderLibrary(t, {
-      readHidden: async () => {
-        throw new Error("local read failed");
-      },
-    });
-
-    assert.match(page.text(), /hidden_games_load_failed/);
-    await page.retry();
-    assert.match(page.text(), /hidden_games_load_failed/);
     assert.deepEqual(page.games(), []);
   });
 
-  it("does not turn a visible-library retry failure into a hidden-library error", async (t) => {
+  it("falls back to an empty list when the local read fails", async (t) => {
     const page = await renderLibrary(t, {
       readHidden: async () => {
         throw new Error("local read failed");
       },
     });
-    page.setHiddenRead(async () => [hiddenGame]);
-    page.setVisibleRead(async () => {
-      throw new Error("visible read failed");
-    });
-
-    await page.retry();
-
-    assert.doesNotMatch(page.text(), /hidden_games_load_failed/);
-    assert.deepEqual(page.games(), [hiddenGame.title]);
-  });
-
-  it("does not let an old account's successful read clear the current account's error", async (t) => {
-    const oldRead = deferred<TestGame[]>();
-    const page = await renderLibrary(t, { readHidden: () => oldRead.promise });
-    page.setHiddenRead(async () => {
-      throw new Error("current account local read failed");
-    });
-    await page.changeAccount("account-b");
-    assert.match(page.text(), /hidden_games_load_failed/);
-
-    await act(async () => oldRead.resolve([hiddenGame]));
-
-    assert.match(page.text(), /hidden_games_load_failed/);
     assert.deepEqual(page.games(), []);
-  });
-
-  it("does not let an old account's failed read replace the current account's games", async (t) => {
-    const oldRead = deferred<TestGame[]>();
-    const page = await renderLibrary(t, { readHidden: () => oldRead.promise });
-    page.setHiddenRead(async () => [hiddenGame]);
-    await page.changeAccount("account-b");
-
-    await act(async () => oldRead.reject(new Error("old account read failed")));
-
-    assert.doesNotMatch(page.text(), /hidden_games_load_failed/);
-    assert.deepEqual(page.games(), [hiddenGame.title]);
   });
 });

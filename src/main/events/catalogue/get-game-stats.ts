@@ -25,16 +25,16 @@ const getGameStats = async (
     return cachedStats;
   }
 
-  return HydraApi.get<GameStats>(`/games/${shop}/${objectId}/stats`, null, {
-    needsAuth: false,
-  }).then(async (data) => {
-    await gamesStatsCacheSublevel.put(levelKeys.game(shop, objectId), {
-      ...data,
-      updatedAt: Date.now(),
-    });
+  return HydraApi.get<GameStats>(`/games/${shop}/${objectId}/stats`).then(
+    async (data) => {
+      await gamesStatsCacheSublevel.put(levelKeys.game(shop, objectId), {
+        ...data,
+        updatedAt: Date.now(),
+      });
 
-    return data;
-  });
+      return data;
+    }
+  );
 };
 
 registerEvent("getGameStats", getGameStats);

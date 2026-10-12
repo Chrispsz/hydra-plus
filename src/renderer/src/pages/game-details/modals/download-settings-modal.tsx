@@ -23,9 +23,7 @@ import {
   useDownload,
   useFeature,
   useToast,
-  useUserDetails,
 } from "@renderer/hooks";
-import { useSubscription } from "@renderer/hooks/use-subscription";
 import {
   DownloadError,
   Downloader,
@@ -35,7 +33,6 @@ import {
   parseBytes,
 } from "@shared";
 import type { GameRepack, TorrentFile, TorrentFilesResponse } from "@types";
-import { motion } from "framer-motion";
 import {
   type ReactNode,
   useCallback,
@@ -293,8 +290,6 @@ export function DownloadSettingsModal({
   const startAbortControllerRef = useRef<AbortController | null>(null);
 
   const { isFeatureEnabled, Feature } = useFeature();
-  const { hasActiveSubscription } = useUserDetails();
-  const { showHydraCloudModal } = useSubscription();
 
   const selectedUri = useMemo(() => {
     if (!repack || selectedDownloader === null) return null;
@@ -411,8 +406,6 @@ export function DownloadSettingsModal({
           isConfigured = !!userPreferences?.allDebridApiToken;
         } else if (downloader === Downloader.TorBox) {
           isConfigured = !!userPreferences?.torBoxApiToken;
-        } else if (downloader === Downloader.VikingFile) {
-          isConfigured = hasActiveSubscription;
         }
         // } else if (downloader === Downloader.Hydra) {
         //   isConfigured = isFeatureEnabled(Feature.Nimbus);
@@ -435,7 +428,6 @@ export function DownloadSettingsModal({
     userPreferences?.premiumizeApiToken,
     userPreferences?.allDebridApiToken,
     userPreferences?.torBoxApiToken,
-    hasActiveSubscription,
     isFeatureEnabled,
     Feature,
   ]);
@@ -1253,25 +1245,14 @@ export function DownloadSettingsModal({
                 const tooltipId = `availability-indicator-${option.downloader}`;
                 const isLastItem = index === downloadOptions.length - 1;
 
-                const Indicator = option.isAvailable ? motion.span : "span";
-
                 const isDisabled =
                   !option.isAvailable && !option.isAvailableButNotConfigured;
 
                 const getAvailabilityIndicator = () => {
                   if (option.isAvailable) {
                     return (
-                      <Indicator
+                      <span
                         className={`download-settings-modal__availability-indicator download-settings-modal__availability-indicator--available download-settings-modal__availability-indicator--pulsating`}
-                        animate={{
-                          scale: [1, 1.1, 1],
-                          opacity: [1, 0.7, 1],
-                        }}
-                        transition={{
-                          duration: 2,
-                          repeat: Infinity,
-                          ease: "easeInOut",
-                        }}
                         data-tooltip-id={tooltipId}
                         data-tooltip-content={t("downloader_online")}
                       />
@@ -1283,11 +1264,7 @@ export function DownloadSettingsModal({
                       <span
                         className={`download-settings-modal__availability-indicator download-settings-modal__availability-indicator--warning`}
                         data-tooltip-id={tooltipId}
-                        data-tooltip-content={
-                          option.downloader === Downloader.VikingFile
-                            ? t("downloader_requires_hydra_cloud")
-                            : t("downloader_not_configured")
-                        }
+                        data-tooltip-content={t("downloader_not_configured")}
                       />
                     );
                   }
@@ -1304,21 +1281,12 @@ export function DownloadSettingsModal({
                 const getRightContent = () => {
                   if (isSelected) {
                     return (
-                      <motion.div
-                        className="download-settings-modal__check-icon-wrapper"
-                        initial={{ scale: 0 }}
-                        animate={{ scale: 1 }}
-                        transition={{
-                          type: "spring",
-                          stiffness: 300,
-                          damping: 20,
-                        }}
-                      >
+                      <div className="download-settings-modal__check-icon-wrapper">
                         <CheckCircleFillIcon
                           size={16}
                           className="download-settings-modal__check-icon"
                         />
-                      </motion.div>
+                      </div>
                     );
                   }
 
@@ -1326,19 +1294,6 @@ export function DownloadSettingsModal({
                     return (
                       <div className="download-settings-modal__recommendation-badge">
                         <Badge>{t("recommended")}</Badge>
-                      </div>
-                    );
-                  }
-
-                  if (
-                    option.downloader === Downloader.VikingFile &&
-                    option.isAvailableButNotConfigured
-                  ) {
-                    return (
-                      <div className="download-settings-modal__recommendation-badge">
-                        <span className="download-settings-modal__hydra-cloud-badge">
-                          Hydra Cloud
-                        </span>
                       </div>
                     );
                   }
@@ -1373,11 +1328,6 @@ export function DownloadSettingsModal({
                           option.isAvailableButNotConfigured
                         ) {
                           setShowRealDebridModal(true);
-                        } else if (
-                          option.downloader === Downloader.VikingFile &&
-                          option.isAvailableButNotConfigured
-                        ) {
-                          showHydraCloudModal("vikingfile");
                         } else {
                           setSelectedDownloader(option.downloader);
                         }

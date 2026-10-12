@@ -1,12 +1,8 @@
-import { useEffect, useState } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 
-import type { GameRepack, GameShop, Steam250Game } from "@types";
+import type { GameRepack, GameShop } from "@types";
 
-import { Button, ConfirmationModal } from "@renderer/components";
-import { buildGameDetailsPath } from "@renderer/helpers";
-
-import starsIconAnimated from "@renderer/assets/icons/stars-animated.gif";
+import { ConfirmationModal } from "@renderer/components";
 
 import { useTranslation } from "react-i18next";
 import { SkeletonTheme } from "react-loading-skeleton";
@@ -25,13 +21,9 @@ import "./game-details.scss";
 import "./hero.scss";
 
 export default function GameDetails() {
-  const [randomGame, setRandomGame] = useState<Steam250Game | null>(null);
-  const [randomizerLocked, setRandomizerLocked] = useState(false);
-
   const { objectId, shop } = useParams();
   const [searchParams] = useSearchParams();
 
-  const fromRandomizer = searchParams.get("fromRandomizer");
   const gameTitle = searchParams.get("title");
 
   const { startDownload, addGameToQueue } = useDownload();
@@ -39,42 +31,6 @@ export default function GameDetails() {
   const { t } = useTranslation("game_details");
 
   const navigate = useNavigate();
-
-  useEffect(() => {
-    if (shop !== "steam" || !objectId) return;
-
-    void window.electron.syncSteamGameOnGamePage(objectId).catch(() => {});
-  }, [objectId, shop]);
-
-  useEffect(() => {
-    setRandomGame(null);
-    window.electron.getRandomGame().then((randomGame) => {
-      setRandomGame(randomGame);
-    });
-  }, [objectId]);
-
-  const handleRandomizerClick = () => {
-    if (randomGame) {
-      navigate(
-        buildGameDetailsPath(
-          { ...randomGame, shop: "steam" },
-          { fromRandomizer: "1" }
-        )
-      );
-
-      setRandomizerLocked(true);
-
-      const zero = performance.now();
-
-      requestAnimationFrame(function animateLock(time) {
-        if (time - zero <= 1000) {
-          requestAnimationFrame(animateLock);
-        } else {
-          setRandomizerLocked(false);
-        }
-      });
-    }
-  };
 
   const selectRepackUri = (repack: GameRepack, downloader: Downloader) =>
     repack.uris.find((uri) => getDownloadersForUri(uri).includes(downloader))!;
@@ -180,24 +136,6 @@ export default function GameDetails() {
                     initialCategory={gameOptionsInitialCategory}
                     onNavigateHome={() => navigate("/")}
                   />
-                )}
-
-                {fromRandomizer && (
-                  <Button
-                    className="game-details__randomizer-button"
-                    onClick={handleRandomizerClick}
-                    theme="outline"
-                    disabled={!randomGame || randomizerLocked}
-                  >
-                    <div className="game-details__stars-icon-container">
-                      <img
-                        src={starsIconAnimated}
-                        alt=""
-                        className="game-details__stars-icon"
-                      />
-                    </div>
-                    {t("next_suggestion")}
-                  </Button>
                 )}
               </SkeletonTheme>
             </CloudSaveV2Provider>

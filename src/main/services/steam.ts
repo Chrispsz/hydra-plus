@@ -154,7 +154,8 @@ export const getSteamAppDetails = async (
 
   return axios
     .get<SteamAppDetailsResponse>(
-      `http://store.steampowered.com/api/appdetails?${searchParams.toString()}`
+      `http://store.steampowered.com/api/appdetails?${searchParams.toString()}`,
+      { timeout: 20_000 }
     )
     .then((response) => parseSteamAppDetailsResponse(response.data, objectId))
     .catch((err) => {

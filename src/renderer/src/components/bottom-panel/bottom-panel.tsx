@@ -6,7 +6,6 @@ import {
   useDownload,
   useLibrary,
   useToast,
-  useUserDetails,
 } from "@renderer/hooks";
 
 import "./bottom-panel.scss";
@@ -18,8 +17,6 @@ export function BottomPanel() {
 
   const navigate = useNavigate();
 
-  const { userDetails } = useUserDetails();
-
   const { downloadLibrary: library } = useLibrary();
 
   const { showSuccessToast } = useToast();
@@ -29,7 +26,6 @@ export function BottomPanel() {
   const extraction = useAppSelector((state) => state.download.extraction);
 
   const [version, setVersion] = useState("");
-  const [sessionHash, setSessionHash] = useState<null | string>("");
   const [commonRedistStatus, setCommonRedistStatus] = useState<string | null>(
     null
   );
@@ -60,10 +56,6 @@ export function BottomPanel() {
 
     return () => unlisten();
   }, [t, showSuccessToast]);
-
-  useEffect(() => {
-    window.electron.getSessionHash().then((result) => setSessionHash(result));
-  }, [userDetails?.id]);
 
   const status = useMemo(() => {
     if (commonRedistStatus) {
@@ -175,9 +167,7 @@ export function BottomPanel() {
 
       <div className="bottom-panel__right">
         <button type="button" className="bottom-panel__version-button">
-          <small>
-            {sessionHash ? `${sessionHash} -` : ""} v{version}
-          </small>
+          <small>v{version}</small>
         </button>
       </div>
     </footer>

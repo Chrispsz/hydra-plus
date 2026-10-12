@@ -12,7 +12,8 @@ const catalogStore = new GameExecutableCatalogStore(process.platform);
 const loadGameExecutables = async () => {
   try {
     const response = await axios.get<GameExecutableCatalogResponse>(
-      `${import.meta.env.MAIN_VITE_API_URL}/catalogue/steam/executables`
+      `${import.meta.env.MAIN_VITE_API_URL}/catalogue/steam/executables`,
+      { timeout: 30_000 }
     );
     return response.data;
   } catch (error) {

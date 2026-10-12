@@ -1,7 +1,3 @@
-import path from "node:path";
-import fs from "node:fs";
-import { logger } from "../logger";
-
 export const calculateETA = (
   totalLength: number,
   completedLength: number,
@@ -16,32 +12,7 @@ export const calculateETA = (
   return -1;
 };
 
-export const getDirSize = async (dir: string): Promise<number> => {
-  try {
-    const stat = await fs.promises.stat(dir);
-
-    // If it's a file, return its size directly
-    if (!stat.isDirectory()) {
-      return stat.size;
-    }
-
-    const getItemSize = async (filePath: string): Promise<number> => {
-      const stat = await fs.promises.stat(filePath);
-
-      if (stat.isDirectory()) {
-        return getDirSize(filePath);
-      }
-
-      return stat.size;
-    };
-
-    const files = await fs.promises.readdir(dir);
-    const filePaths = files.map((file) => path.join(dir, file));
-    const sizes = await Promise.all(filePaths.map(getItemSize));
-
-    return sizes.reduce((total, size) => total + size, 0);
-  } catch (error) {
-    logger.error(error);
-    return 0;
-  }
-};
+// Single directory-size implementation lives in
+// @main/events/helpers/get-directory-size; this alias keeps the download
+// service call sites stable.
+export { getDirectorySize as getDirSize } from "@main/events/helpers/get-directory-size";

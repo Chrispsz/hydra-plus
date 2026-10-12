@@ -5,9 +5,7 @@ directories:
 extraResources:
   - ludusavi
   - hydra-native
-  - seeds
   - from: node_modules/create-desktop-shortcuts/src/windows.vbs
-  - from: resources/achievement.wav
 files:
   - "!.cache/**"
   - "!native/torrent-bridge/**"
@@ -19,7 +17,13 @@ files:
   - "!{.eslintignore,.eslintrc.cjs,.prettierignore,.prettierrc.yaml,dev-app-update.yml,CHANGELOG.md,README.md}"
   - "!{.env,.env.*,.npmrc,pnpm-lock.yaml}"
   - "!{tsconfig.json,tsconfig.node.json,tsconfig.web.json,tsconfig.test.json}"
-  - "!scripts/register-ts-node.mjs"
+  - "!scripts/**"
+  - "!binaries/**"
+  - "!docs/**"
+  - "!native/**"
+  - "!.codex/**"
+  - "!ludusavi/config.yaml"
+  - "!{commitlint.config.js,skills-lock.json,SECURITY.md,CONTRIBUTING.md,.github}"
 asarUnpack:
   - resources/**
   - node_modules/sharp/**
@@ -56,10 +60,9 @@ linux:
     - x-scheme-handler/hydralauncher
 appImage:
   artifactName: ${name}-${version}.${ext}
+afterPack: ./scripts/after-pack.cjs
 npmRebuild: false
 publish:
   provider: github
   owner: Chrispsz
   repo: hydra-plus
-electronDownload:
-  mirror: https://npmmirror.com/mirrors/electron/

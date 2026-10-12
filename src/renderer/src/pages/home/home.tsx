@@ -7,11 +7,10 @@ import { useNavigate } from "react-router-dom";
 import Skeleton, { SkeletonTheme } from "react-loading-skeleton";
 
 import { Button, GameCard, Hero } from "@renderer/components";
-import type { DownloadSource, ShopAssets, Steam250Game } from "@types";
+import type { DownloadSource, ShopAssets } from "@types";
 
 import flameIconStatic from "@renderer/assets/icons/flame-static.png";
 import flameIconAnimated from "@renderer/assets/icons/flame-animated.gif";
-import starsIconAnimated from "@renderer/assets/icons/stars-animated.gif";
 
 import { buildGameDetailsPath, ensureArray } from "@renderer/helpers";
 import { CatalogueCategory } from "@shared";
@@ -23,7 +22,6 @@ export default function Home() {
 
   const [animateFlame, setAnimateFlame] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [randomGame, setRandomGame] = useState<Steam250Game | null>(null);
 
   const [currentCatalogueCategory, setCurrentCatalogueCategory] = useState(
     CatalogueCategory.Hot
@@ -72,25 +70,6 @@ export default function Home() {
     }
   }, []);
 
-  const getRandomGame = useCallback(() => {
-    window.electron.getRandomGame().then((game) => {
-      if (game) setRandomGame(game);
-    });
-  }, []);
-
-  const handleRandomizerClick = () => {
-    if (randomGame) {
-      navigate(
-        buildGameDetailsPath(
-          { ...randomGame, shop: "steam" },
-          {
-            fromRandomizer: "1",
-          }
-        )
-      );
-    }
-  };
-
   const handleCategoryClick = (category: CatalogueCategory) => {
     if (category !== currentCatalogueCategory) {
       getCatalogue(category);
@@ -100,9 +79,7 @@ export default function Home() {
   useEffect(() => {
     setIsLoading(true);
     getCatalogue(CatalogueCategory.Hot);
-
-    getRandomGame();
-  }, [getCatalogue, getRandomGame]);
+  }, [getCatalogue]);
 
   const categories = Object.values(CatalogueCategory);
 
@@ -159,21 +136,6 @@ export default function Home() {
               </li>
             ))}
           </ul>
-
-          <Button
-            onClick={handleRandomizerClick}
-            theme="outline"
-            disabled={!randomGame}
-          >
-            <div className="home__icon-wrapper">
-              <img
-                src={starsIconAnimated}
-                alt=""
-                className="home__stars-icon"
-              />
-            </div>
-            {t("surprise_me")}
-          </Button>
         </section>
 
         <h2 className="home__title">

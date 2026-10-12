@@ -1,24 +1,17 @@
 import { useTranslation } from "react-i18next";
 import { useEffect, useState } from "react";
-import { useSearchParams } from "react-router-dom";
-import { AuthPage } from "@shared";
+import { HeartIcon, HeartFillIcon } from "@primer/octicons-react";
 import {
   PlayIcon,
   DownloadIcon,
-  HeartIcon,
-  HeartFillIcon,
-  PlusIcon,
   GearIcon,
-  ImageIcon,
   PencilIcon,
   FileDirectoryIcon,
-  FileDirectoryFillIcon,
   LinkIcon,
   TrashIcon,
   XIcon,
   PinIcon,
   PinSlashIcon,
-  EyeClosedIcon,
   LockIcon,
 } from "@primer/octicons-react";
 import SteamLogo from "@renderer/assets/steam-logo.svg?react";
@@ -26,68 +19,38 @@ import {
   ContextMenu,
   ContextMenuItemData,
   ContextMenuProps,
-  CreateCollectionModal,
   useGameActions,
 } from "..";
-import { useGameCollections, useToast, useUserDetails } from "@renderer/hooks";
-import { useCollectionContextMenu } from "@renderer/context";
-import { getGameCollectionIds } from "@renderer/helpers";
+import { useToast } from "@renderer/hooks";
 import { RemoveGameFromLibraryModal } from "@renderer/pages/game-details/modals/remove-from-library-modal";
 import { DeleteGameModal } from "@renderer/pages/downloads/delete-game-modal";
-import type { GameCollection } from "@types";
 import type { GameContextMenuGame } from "./game-context-menu.types";
 
 interface GameContextMenuProps extends Omit<ContextMenuProps, "items"> {
   game: GameContextMenuGame;
   onPinToggle?: () => void;
   isPinned?: boolean;
-  onCollectionContextMenu?: (
-    event: React.MouseEvent<HTMLElement>,
-    collection: GameCollection
-  ) => void;
 }
-
-const FAVORITES_COLLECTION_ID = "__favorites__";
 
 export function GameContextMenu({
   game,
   onPinToggle,
   isPinned,
-  onCollectionContextMenu,
   visible,
   position,
   onClose,
 }: GameContextMenuProps) {
   const { t } = useTranslation("game_details");
   const { showSuccessToast, showErrorToast } = useToast();
-  const { userDetails } = useUserDetails();
-  const [searchParams] = useSearchParams();
   const [showConfirmRemoveLibrary, setShowConfirmRemoveLibrary] =
     useState(false);
   const [showConfirmRemoveFiles, setShowConfirmRemoveFiles] = useState(false);
-  const [showCreateCollectionModal, setShowCreateCollectionModal] =
-    useState(false);
-  const [localCollectionIds, setLocalCollectionIds] = useState<string[]>(() =>
-    getGameCollectionIds(game)
-  );
   const [isFavoriteSelected, setIsFavoriteSelected] = useState(
     Boolean(game.favorite)
   );
-  const [pendingCollectionId, setPendingCollectionId] = useState<string | null>(
-    null
-  );
   const [isFavoritePending, setIsFavoritePending] = useState(false);
   const [isVisibilityPending, setIsVisibilityPending] = useState(false);
-  const [visibility, setVisibility] = useState({
-    isHiddenFromOthers: Boolean(game.isHiddenFromOthers),
-    isConcealed: Boolean(game.isConcealed),
-  });
-  const {
-    collections,
-    isLoading: isCollectionsLoading,
-    loadCollections,
-    assignGameToCollection,
-  } = useGameCollections();
+  const [isConcealed, setIsConcealed] = useState(Boolean(game.isConcealed));
   const {
     canPlay,
     isDeleting,
@@ -109,42 +72,26 @@ export function GameContextMenu({
     handleRemoveFiles,
     handleOpenGameOptions,
   } = useGameActions(game);
-  const { isCollectionContextMenuOrModalOpen } = useCollectionContextMenu();
-  const selectedCollectionId = searchParams.get("collection");
-
-  useEffect(() => {
-    if (!visible || !userDetails) return;
-    void loadCollections();
-  }, [visible, loadCollections, userDetails]);
 
   useEffect(() => {
     if (!visible) return;
 
-    setLocalCollectionIds(getGameCollectionIds(game));
     setIsFavoriteSelected(Boolean(game.favorite));
-    setPendingCollectionId(null);
     setIsFavoritePending(false);
     setIsVisibilityPending(false);
-    setVisibility({
-      isHiddenFromOthers: Boolean(game.isHiddenFromOthers),
-      isConcealed: Boolean(game.isConcealed),
-    });
+    setIsConcealed(Boolean(game.isConcealed));
   }, [visible, game]);
 
-  const handleVisibilityChange = async (
-    field: "isHiddenFromOthers" | "isConcealed",
-    value: boolean
-  ) => {
+  const handleConcealChange = async (value: boolean) => {
     if (isVisibilityPending) return;
     setIsVisibilityPending(true);
     try {
       const saved = await window.electron.setGameVisibility(
         game.shop,
         game.objectId,
-        field,
         value
       );
-      setVisibility(saved);
+      setIsConcealed(Boolean(saved.isConcealed));
       window.dispatchEvent(new Event("hydra:game-visibility-updated"));
       showSuccessToast(t("game_visibility_updated"));
       onClose();
@@ -155,112 +102,20 @@ export function GameContextMenu({
     }
   };
 
-  const handleAssignGameCollection = async (collectionId: string) => {
-    if (pendingCollectionId || isFavoritePending) return;
-
-    const isCurrentlyAssigned = localCollectionIds.includes(collectionId);
-    const nextCollectionIds = isCurrentlyAssigned
-      ? localCollectionIds.filter((id) => id !== collectionId)
-      : [...localCollectionIds, collectionId];
-
-    setPendingCollectionId(collectionId);
-
-    try {
-      await assignGameToCollection(game, nextCollectionIds);
-
-      setLocalCollectionIds(nextCollectionIds);
-
-      showSuccessToast(t("game_collection_updated"));
-
-      if (isCurrentlyAssigned && selectedCollectionId === collectionId) {
-        onClose();
-      }
-    } catch (error) {
-      void error;
-      showErrorToast(t("failed_update_game_collection"));
-    } finally {
-      setPendingCollectionId(null);
-    }
-  };
-
   const handleToggleFavoriteStatus = async () => {
-    if (isFavoritePending || pendingCollectionId) return;
-
-    const isAddingToFavorites = !isFavoriteSelected;
+    if (isFavoritePending) return;
 
     setIsFavoritePending(true);
 
     try {
       await handleToggleFavorite(isFavoriteSelected);
-
       setIsFavoriteSelected((currentValue) => !currentValue);
-
-      if (
-        !isAddingToFavorites &&
-        selectedCollectionId === FAVORITES_COLLECTION_ID
-      ) {
-        onClose();
-      }
     } catch (error) {
       void error;
     } finally {
       setIsFavoritePending(false);
     }
   };
-
-  const collectionSubmenu: ContextMenuItemData[] = [
-    {
-      id: "favorite",
-      label: t("favorites", { ns: "sidebar" }),
-      icon: isFavoriteSelected ? (
-        <HeartFillIcon size={16} />
-      ) : (
-        <HeartIcon size={16} />
-      ),
-      onClick: () => {
-        void handleToggleFavoriteStatus();
-      },
-      closeOnClick: false,
-      disabled: isDeleting,
-    },
-    ...collections.map((collection) => ({
-      id: `collection-${collection.id}`,
-      label: collection.name,
-      icon: localCollectionIds.includes(collection.id) ? (
-        <FileDirectoryFillIcon size={16} />
-      ) : (
-        <FileDirectoryIcon size={16} />
-      ),
-      onClick: () => {
-        void handleAssignGameCollection(collection.id);
-      },
-      onContextMenu: onCollectionContextMenu
-        ? (event: React.MouseEvent<HTMLElement>) => {
-            event.preventDefault();
-            event.stopPropagation();
-            onCollectionContextMenu(event, collection);
-          }
-        : undefined,
-      closeOnClick: false,
-      disabled: isDeleting,
-    })),
-    {
-      id: "collection-create",
-      label: t("create_collection"),
-      icon: <PlusIcon size={16} />,
-      separator: collections.length > 0,
-      onClick: () => {
-        if (!userDetails) {
-          window.electron.openAuthWindow(AuthPage.SignIn);
-          return;
-        }
-
-        setShowCreateCollectionModal(true);
-      },
-      closeOnClick: false,
-      disabled: isDeleting || Boolean(pendingCollectionId),
-    },
-  ];
 
   const items: ContextMenuItemData[] = [
     {
@@ -285,22 +140,18 @@ export function GameContextMenu({
       disabled: isDeleting,
     },
     {
-      id: "collection",
-      label: t("collection"),
-      icon: <FileDirectoryIcon size={16} />,
+      id: "favorite",
+      label: t("favorites", { ns: "sidebar" }),
+      icon: isFavoriteSelected ? (
+        <HeartFillIcon size={16} />
+      ) : (
+        <HeartIcon size={16} />
+      ),
       onClick: () => {
-        void loadCollections();
+        void handleToggleFavoriteStatus();
       },
-      disabled: isDeleting || isFavoritePending || Boolean(pendingCollectionId),
-      submenu: isCollectionsLoading
-        ? [
-            {
-              id: "collection-loading",
-              label: t("loading"),
-              disabled: true,
-            },
-          ]
-        : collectionSubmenu,
+      closeOnClick: false,
+      disabled: isDeleting,
     },
     ...(game.executablePath
       ? [
@@ -336,35 +187,12 @@ export function GameContextMenu({
       disabled: isDeleting,
       submenu: [
         {
-          id: "hide-game",
-          label: visibility.isHiddenFromOthers
-            ? t("unhide_game")
-            : t("hide_game"),
-          icon: <EyeClosedIcon size={16} />,
-          onClick: () =>
-            void handleVisibilityChange(
-              "isHiddenFromOthers",
-              !visibility.isHiddenFromOthers
-            ),
-          closeOnClick: false,
-          disabled:
-            isDeleting ||
-            isVisibilityPending ||
-            !userDetails ||
-            game.shop === "custom",
-        },
-        {
           id: "conceal-game",
-          label: visibility.isConcealed ? t("reveal_game") : t("conceal_game"),
+          label: isConcealed ? t("reveal_game") : t("conceal_game"),
           icon: <LockIcon size={16} />,
-          onClick: () =>
-            void handleVisibilityChange("isConcealed", !visibility.isConcealed),
+          onClick: () => void handleConcealChange(!isConcealed),
           closeOnClick: false,
-          disabled:
-            isDeleting ||
-            isVisibilityPending ||
-            !userDetails ||
-            game.shop === "custom",
+          disabled: isDeleting || isVisibilityPending || game.shop === "custom",
         },
         {
           id: "pin-game",
@@ -379,13 +207,6 @@ export function GameContextMenu({
               <PinIcon size={16} />
             ),
           onClick: onPinToggle ?? handleTogglePin,
-          disabled: isDeleting,
-        },
-        {
-          id: "customize",
-          label: t("customize_game"),
-          icon: <ImageIcon size={16} />,
-          onClick: () => handleOpenGameOptions("assets"),
           disabled: isDeleting,
         },
         ...(game.executablePath
@@ -459,8 +280,6 @@ export function GameContextMenu({
   let forceOpenSubmenuId: string | undefined;
   if (showConfirmRemoveLibrary || showConfirmRemoveFiles) {
     forceOpenSubmenuId = "manage";
-  } else if (isCollectionContextMenuOrModalOpen || showCreateCollectionModal) {
-    forceOpenSubmenuId = "collection";
   }
 
   return (
@@ -474,31 +293,6 @@ export function GameContextMenu({
         className={
           !game.executablePath ? "context-menu--game-not-installed" : undefined
         }
-      />
-
-      <CreateCollectionModal
-        visible={showCreateCollectionModal}
-        onClose={() => setShowCreateCollectionModal(false)}
-        onCreated={(collection) => {
-          void (async () => {
-            const nextCollectionIds = Array.from(
-              new Set([...localCollectionIds, collection.id])
-            );
-
-            setPendingCollectionId(collection.id);
-
-            try {
-              await assignGameToCollection(game, nextCollectionIds);
-              setLocalCollectionIds(nextCollectionIds);
-              showSuccessToast(t("game_collection_updated"));
-            } catch (error) {
-              void error;
-              showErrorToast(t("failed_update_game_collection"));
-            } finally {
-              setPendingCollectionId(null);
-            }
-          })();
-        }}
       />
 
       <RemoveGameFromLibraryModal

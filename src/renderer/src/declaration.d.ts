@@ -1,9 +1,7 @@
-import type { AuthPage } from "@shared";
 import type {
   AppUpdaterEvent,
   GameShop,
   GoogleDriveCloudStatus,
-  Steam250Game,
   DownloadProgress,
   SeedingStatus,
   UserPreferences,
@@ -11,12 +9,7 @@ import type {
   RealDebridUser,
   PremiumizeUser,
   AllDebridUser,
-  UserProfile,
-  UpdateProfileRequest,
-  OpenCheckoutOptions,
   GameStats,
-  UserDetails,
-  NotificationSync,
   LibraryGame,
   GameRunning,
   TorBoxUser,
@@ -33,10 +26,6 @@ import type {
   TorrentFilesResponse,
   DownloadLayoutState,
   ArtworkAssetType,
-  ArtworkKind,
-  ArtworkPage,
-  GameArtworkSelection,
-  GameLauncherStatusPayload,
   CloudSaveAutomaticSyncModeChangedEvent,
   CloudSaveAutomaticSyncEvent,
   CloudSaveConflictResolution,
@@ -57,10 +46,6 @@ import type {
   SelectCloudSaveCustomPathApprovalResult,
   ConfirmCloudSaveCustomPathApprovalResult,
   ConfirmCloudSaveCustomPathRebindApprovalResult,
-  SteamSyncState,
-  SteamSyncFinishedPayload,
-  SteamSyncRunStatus,
-  SteamConnectErrorCode,
   ExtractionFailure,
 } from "@types";
 
@@ -275,7 +260,6 @@ declare global {
       shop: GameShop,
       language: string
     ) => Promise<ShopDetailsWithAssets | null>;
-    getRandomGame: () => Promise<Steam250Game>;
     getGameStats: (objectId: string, shop: GameShop) => Promise<GameStats>;
     getGameAssets: (
       objectId: string,
@@ -316,6 +300,10 @@ declare global {
     installGameOnSteam: (steamAppId: string) => Promise<void>;
     isMangohudAvailable: () => Promise<boolean>;
     getSteamClientStatus: () => Promise<{ running: boolean }>;
+    getOnlineFixStatus: (
+      shop: GameShop,
+      objectId: string
+    ) => Promise<{ steamRunning: boolean; onlineFixDetected: boolean | null }>;
     isWinetricksAvailable: () => Promise<boolean>;
     addGameToLibrary: (
       shop: GameShop,
@@ -367,25 +355,7 @@ declare global {
       customArtworkIds?: Partial<Record<ArtworkAssetType, number | null>>;
       clearArtworkTypes?: ArtworkAssetType[];
     }) => Promise<Game>;
-    getGameArtwork: (
-      shop: GameShop,
-      objectId: string,
-      kind: ArtworkKind,
-      page?: number
-    ) => Promise<ArtworkPage | null>;
     getCoverPoster: (url: string) => Promise<string | null>;
-    getGameArtworkSelection: (
-      shop: GameShop,
-      objectId: string
-    ) => Promise<GameArtworkSelection | null>;
-    setGameArtworkSelection: (params: {
-      shop: GameShop;
-      objectId: string;
-      type: ArtworkAssetType;
-      url?: string;
-      artworkId?: number;
-      clear?: boolean;
-    }) => Promise<GameArtworkSelection | null>;
     createGameShortcut: (
       shop: GameShop,
       objectId: string,
@@ -405,11 +375,6 @@ declare global {
     removeGameFromFavorites: (
       shop: GameShop,
       objectId: string
-    ) => Promise<void>;
-    assignGameToCollection: (
-      shop: GameShop,
-      objectId: string,
-      collectionIds: string[]
     ) => Promise<void>;
     clearNewDownloadOptions: (
       shop: GameShop,
@@ -446,11 +411,8 @@ declare global {
     setGameVisibility: (
       shop: GameShop,
       objectId: string,
-      field: "isHiddenFromOthers" | "isConcealed",
-      value: boolean
-    ) => Promise<{ isHiddenFromOthers: boolean; isConcealed: boolean }>;
-    refreshLibraryAssets: () => Promise<void>;
-    getRemoteLibrarySyncState: () => Promise<boolean>;
+      isConcealed: boolean
+    ) => Promise<{ isConcealed: boolean }>;
     openGameInstaller: (shop: GameShop, objectId: string) => Promise<boolean>;
     getGameInstallerActionType: (
       shop: GameShop,
@@ -491,9 +453,6 @@ declare global {
       ) => void
     ) => () => Electron.IpcRenderer;
     onLibraryBatchComplete: (cb: () => void) => () => Electron.IpcRenderer;
-    onRemoteLibrarySyncStateChange: (
-      cb: (syncing: boolean) => void
-    ) => () => Electron.IpcRenderer;
     onDownloadsUpdated: (cb: () => void) => () => Electron.IpcRenderer;
     changeGamePlayTime: (
       shop: GameShop,
@@ -607,8 +566,6 @@ declare global {
 
     /* Misc */
     openExternal: (src: string) => Promise<void>;
-    openCheckout: (options?: OpenCheckoutOptions) => Promise<void>;
-    getCloudIframeUrl: () => Promise<string>;
     getVersion: () => Promise<string>;
     getAppSessionId: () => Promise<string>;
     isStaging: () => Promise<boolean>;
@@ -702,9 +659,6 @@ declare global {
     onPreflightProgress: (
       cb: (value: { status: string; detail: string | null }) => void
     ) => () => Electron.IpcRenderer;
-    onGameLauncherStatus: (
-      cb: (value: GameLauncherStatusPayload) => void
-    ) => () => Electron.IpcRenderer;
     resetCommonRedistPreflight: () => Promise<void>;
     saveTempFile: (fileName: string, fileData: Uint8Array) => Promise<string>;
     deleteTempFile: (filePath: string) => Promise<void>;
@@ -720,67 +674,12 @@ declare global {
 
     /* Auth */
     signOut: () => Promise<void>;
-    openAuthWindow: (page: AuthPage) => Promise<void>;
     startGoogleAuth: () => Promise<{ linked: true }>;
     disconnectGoogleDrive: () => Promise<{ ok: boolean }>;
     getGoogleDriveStatus: () => Promise<GoogleDriveCloudStatus>;
     minimizeAuthWindow: () => Promise<void>;
     closeAuthWindow: () => Promise<void>;
-    getSessionHash: () => Promise<string | null>;
-    onSignIn: (cb: () => void) => () => Electron.IpcRenderer;
-    onAccountUpdated: (cb: () => void) => () => Electron.IpcRenderer;
-    onSteamConnected: (cb: () => void) => () => Electron.IpcRenderer;
-    onSteamConnectError: (
-      cb: (code: SteamConnectErrorCode) => void
-    ) => () => Electron.IpcRenderer;
-    onSignOut: (cb: () => void) => () => Electron.IpcRenderer;
 
-    startSteamOAuth: (lng: string) => Promise<void>;
-    disconnectSteam: (deleteImportedData: boolean) => Promise<void>;
-    startSteamSync: () => Promise<SteamSyncState>;
-    cancelSteamSync: () => Promise<void>;
-    getSteamSyncState: () => Promise<SteamSyncState>;
-    syncSteamGameOnGamePage: (steamAppId: string) => Promise<boolean>;
-    reconcileSteamSyncRun: (
-      latestSyncRunStatus: SteamSyncRunStatus | null
-    ) => Promise<void>;
-    onSteamSyncProgress: (
-      cb: (state: SteamSyncState) => void
-    ) => () => Electron.IpcRenderer;
-    onSteamSyncFinished: (
-      cb: (payload: SteamSyncFinishedPayload) => void
-    ) => () => Electron.IpcRenderer;
-
-    /* Profile */
-    getMe: () => Promise<UserDetails | null>;
-    updateProfile: (
-      updateProfile: UpdateProfileRequest
-    ) => Promise<UserProfile>;
-    updateProfile: (updateProfile: UpdateProfileProps) => Promise<UserProfile>;
-    getProfileImageMetadata: (
-      path: string
-    ) => Promise<{ mimeType: string | null; isAnimated: boolean }>;
-    processProfileImage: (
-      path: string
-    ) => Promise<{ imagePath: string; mimeType: string }>;
-    cropProfileImage: (
-      path: string,
-      params: {
-        left: number;
-        top: number;
-        width: number;
-        height: number;
-        outputWidth: number;
-        outputHeight: number;
-        rotation?: number;
-      }
-    ) => Promise<{ imagePath: string }>;
-    onSyncNotificationCount: (
-      cb: (notification: NotificationSync) => void
-    ) => () => Electron.IpcRenderer;
-
-    /* Notifications */
-    publishNewRepacksNotification: (newRepacksCount: number) => Promise<void>;
     getLocalNotifications: () => Promise<LocalNotification[]>;
     getLocalNotificationsCount: () => Promise<number>;
     markLocalNotificationRead: (id: string) => Promise<void>;

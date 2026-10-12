@@ -338,3 +338,33 @@
     gap: calc(globals.$spacing-unit);
   }
 }
+
+.library__collection-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: var(--background, rgba(255, 255, 255, 0.06));
+  border: 1px solid transparent;
+  color: var(--body-color, #c0c1c4);
+  font-size: 13px;
+  cursor: pointer;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.1);
+  }
+
+  small {
+    font-size: 11px;
+    opacity: 0.7;
+  }
+
+  &--active {
+    background: var(--button-hero-background, rgba(255, 255, 255, 0.16));
+    color: #fff;
+  }
+}

@@ -1,32 +1,16 @@
-import {
-  useContext,
-  useEffect,
-  useLayoutEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
-import { PencilIcon } from "@primer/octicons-react";
+import { useContext, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { useSearchParams } from "react-router-dom";
 
 import { HeroPanel } from "./hero";
 import { DescriptionHeader } from "./description-header/description-header";
-import { GallerySlider } from "./gallery-slider/gallery-slider";
 import { Sidebar } from "./sidebar/sidebar";
-import { GameReviews } from "./game-reviews";
-import { ReviewPromptBanner } from "./review-prompt-banner";
-import { useReviewPrompt } from "./use-review-prompt";
-import { useUserReviewStatus } from "./use-user-review-status";
 import { GameLogo } from "./game-logo";
 import { CloudSaveWidget } from "./cloud-save-v2";
 import { getCloudSaveVisibility } from "./cloud-save-visibility";
 import { SimilarGames } from "./similar-games/similar-games";
 
-import { getDisplayedPlayTimeInMilliseconds } from "@shared";
 import { gameDetailsContext } from "@renderer/context";
 
-import { useUserDetails, useLibrary } from "@renderer/hooks";
 import "./game-details.scss";
 import "./hero.scss";
 
@@ -66,21 +50,9 @@ const getImageWithCustomPriority = (
 
 export function GameDetailsContent() {
   const { t } = useTranslation("game_details");
-  const [searchParams] = useSearchParams();
-  const reviewsRef = useRef<HTMLDivElement>(null);
 
-  const {
-    objectId,
-    shopDetails,
-    game,
-    hasNSFWContentBlocked,
-    shop,
-    setShowGameOptionsModal,
-    setGameOptionsInitialCategory,
-  } = useContext(gameDetailsContext);
-
-  const { userDetails } = useUserDetails();
-  const { library } = useLibrary();
+  const { objectId, shopDetails, game, hasNSFWContentBlocked, shop } =
+    useContext(gameDetailsContext);
 
   const cloudSaveVisibility = game
     ? getCloudSaveVisibility(game.shop, game.platform)
@@ -106,52 +78,11 @@ export function GameDetailsContent() {
     return t("no_shop_details");
   }, [shopDetails, t, game?.shop]);
 
-  const [backdropOpacity, setBackdropOpacity] = useState(1);
+  const [backdropOpacity] = useState(1);
   const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
   const [isDescriptionOverflowing, setIsDescriptionOverflowing] =
     useState(false);
   const descriptionRef = useRef<HTMLDivElement>(null);
-
-  // Check if the current game is in the user's library
-  const isGameInLibrary = useMemo(() => {
-    if (!library || !shop || !objectId) return false;
-    return library.some(
-      (libItem) => libItem.shop === shop && libItem.objectId === objectId
-    );
-  }, [library, shop, objectId]);
-
-  const { hasUserReviewed, isCheckingUserReview, updateHasUserReviewed } =
-    useUserReviewStatus({
-      shop,
-      objectId,
-      userDetailsId: userDetails?.id,
-    });
-
-  const { showPrompt, dismissPrompt } = useReviewPrompt({
-    shop,
-    objectId,
-    playTimeInMilliseconds: getDisplayedPlayTimeInMilliseconds({
-      playTimeInMilliseconds: game?.playTimeInMilliseconds ?? 0,
-      steamPlayTimeInMilliseconds: game?.steamPlayTimeInMilliseconds,
-    }),
-    userDetailsId: userDetails?.id,
-    isGameInLibrary,
-    hasUserReviewed,
-    isCheckingUserReview,
-  });
-
-  const handleReviewPromptYes = () => {
-    dismissPrompt({ persist: false });
-    reviewsRef.current?.scrollIntoView({ behavior: "smooth" });
-  };
-
-  const handleReviewPromptLater = () => {
-    dismissPrompt({ persist: true });
-  };
-
-  useEffect(() => {
-    setBackdropOpacity(1);
-  }, [objectId]);
 
   useLayoutEffect(() => {
     const el = descriptionRef.current;
@@ -181,21 +112,6 @@ export function GameDetailsContent() {
       images.forEach((img) => img.removeEventListener("load", onMediaLoad));
     };
   }, [aboutTheGame]);
-
-  const handleEditGameClick = () => {
-    setGameOptionsInitialCategory("assets");
-    setShowGameOptionsModal(true);
-  };
-
-  // Scroll to reviews section if reviews=true in URL
-  useEffect(() => {
-    const shouldScrollToReviews = searchParams.get("reviews") === "true";
-    if (shouldScrollToReviews && reviewsRef.current) {
-      setTimeout(() => {
-        reviewsRef.current?.scrollIntoView({ behavior: "smooth" });
-      }, 500);
-    }
-  }, [searchParams, objectId]);
 
   const isCustomGame = game?.shop === "custom";
 
@@ -234,17 +150,6 @@ export function GameDetailsContent() {
               </div>
 
               <div className="game-details__hero-buttons game-details__hero-buttons--right">
-                {game && (
-                  <button
-                    type="button"
-                    className="game-details__edit-custom-game-button"
-                    onClick={handleEditGameClick}
-                    title={t("edit_game_modal_button")}
-                  >
-                    <PencilIcon size={16} />
-                  </button>
-                )}
-
                 {game && objectId && cloudSaveVisibility?.hero === "v2" && (
                   <CloudSaveWidget />
                 )}
@@ -260,15 +165,6 @@ export function GameDetailsContent() {
         <div className="game-details__description-container">
           <div className="game-details__description-content">
             <DescriptionHeader />
-
-            {showPrompt && (
-              <ReviewPromptBanner
-                onYesClick={handleReviewPromptYes}
-                onLaterClick={handleReviewPromptLater}
-              />
-            )}
-
-            <GallerySlider />
 
             {shopDetails?.about_the_game && (
               <h2 className="game-details__description-title">
@@ -302,20 +198,6 @@ export function GameDetailsContent() {
 
             {shop && objectId && (
               <SimilarGames objectId={objectId} shop={shop} />
-            )}
-
-            {shop !== "custom" && shop && objectId && (
-              <div ref={reviewsRef}>
-                <GameReviews
-                  shop={shop}
-                  objectId={objectId}
-                  game={game}
-                  userDetailsId={userDetails?.id}
-                  hasUserReviewed={hasUserReviewed}
-                  isCheckingUserReview={isCheckingUserReview}
-                  onUserReviewedChange={updateHasUserReviewed}
-                />
-              </div>
             )}
           </div>
 

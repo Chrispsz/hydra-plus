@@ -10,8 +10,7 @@ const syncDownloadSources = async (_event: Electron.IpcMainInvokeEvent) => {
     "/download-sources/sync",
     {
       ids: downloadSources.map((downloadSource) => downloadSource.id),
-    },
-    { needsAuth: false }
+    }
   );
 
   for (const downloadSource of response) {

@@ -72,7 +72,6 @@ export interface Game {
   shop: GameShop;
   remoteId: string | null;
   source?: "hydra" | "steam";
-  collectionIds?: string[];
   isDeleted: boolean;
   winePrefixPath?: string | null;
   protonPath?: string | null;
@@ -84,7 +83,6 @@ export interface Game {
   autoRunMangohud?: boolean | null;
   autoRunGamemode?: boolean | null;
   favorite?: boolean;
-  isHiddenFromOthers?: boolean;
   isConcealed?: boolean;
   isPinned?: boolean;
   pinnedDate?: Date | null;

@@ -61,19 +61,6 @@ export function GameDetailsSkeleton() {
               </section>
             </div>
 
-            <div className="gallery-slider__container">
-              <div
-                className="gallery-slider__viewport"
-                style={{ height: "250px" }}
-              >
-                <Skeleton
-                  height="100%"
-                  width="100%"
-                  className="gallery-slider__media"
-                />
-              </div>
-            </div>
-
             <div className="game-details__description">
               <Skeleton count={8} height={22} style={{ marginBottom: "8px" }} />
               <Skeleton height={22} width="60%" />

@@ -5,14 +5,13 @@ import { initReactI18next } from "react-i18next";
 import { Provider } from "react-redux";
 import { HashRouter, Route, Routes } from "react-router-dom";
 
-import "@fontsource/noto-sans/400.css";
-import "@fontsource/noto-sans/500.css";
-import "@fontsource/noto-sans/700.css";
+import "@fontsource/noto-sans/latin-400.css";
+import "@fontsource/noto-sans/latin-500.css";
+import "@fontsource/noto-sans/latin-700.css";
 
 import "react-loading-skeleton/dist/skeleton.css";
 import "react-tooltip/dist/react-tooltip.css";
 
-import { CollectionContextMenuProvider } from "@renderer/context";
 import { GameOptionsModalProvider } from "@renderer/context/game-options-modal/game-options-modal.context";
 
 import { App } from "./app";
@@ -31,11 +30,9 @@ import Home from "./pages/home/home";
 import Downloads from "./pages/downloads/downloads";
 import GameDetails from "./pages/game-details/game-details";
 import Settings from "./pages/settings/settings";
-import Profile from "./pages/profile/profile";
 import Library from "./pages/library/library";
 import Notifications from "./pages/notifications/notifications";
 import GameLauncher from "./pages/game-launcher/game-launcher";
-import AuthWindow from "./pages/auth-window/auth-window";
 
 console.log = logger.log;
 
@@ -104,28 +101,21 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
     <Provider store={store}>
       <ErrorBoundary>
         <HashRouter>
-          <CollectionContextMenuProvider>
-            <GameOptionsModalProvider>
-              <Routes>
-                <Route element={<App />}>
-                  <Route path="/" element={<Home />} />
-                  <Route path="/catalogue" element={<Catalogue />} />
-                  <Route path="/library" element={<Library />} />
-                  <Route path="/downloads" element={<Downloads />} />
-                  <Route
-                    path="/game/:shop/:objectId"
-                    element={<GameDetails />}
-                  />
-                  <Route path="/settings" element={<Settings />} />
-                  <Route path="/profile/:userId" element={<Profile />} />
-                  <Route path="/notifications" element={<Notifications />} />
-                </Route>
+          <GameOptionsModalProvider>
+            <Routes>
+              <Route element={<App />}>
+                <Route path="/" element={<Home />} />
+                <Route path="/catalogue" element={<Catalogue />} />
+                <Route path="/library" element={<Library />} />
+                <Route path="/downloads" element={<Downloads />} />
+                <Route path="/game/:shop/:objectId" element={<GameDetails />} />
+                <Route path="/settings" element={<Settings />} />
+                <Route path="/notifications" element={<Notifications />} />
+              </Route>
 
-                <Route path="/game-launcher" element={<GameLauncher />} />
-                <Route path="/auth-window" element={<AuthWindow />} />
-              </Routes>
-            </GameOptionsModalProvider>
-          </CollectionContextMenuProvider>
+              <Route path="/game-launcher" element={<GameLauncher />} />
+            </Routes>
+          </GameOptionsModalProvider>
         </HashRouter>
       </ErrorBoundary>
     </Provider>

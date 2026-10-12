@@ -2,7 +2,9 @@ name: Release
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  # A re-pushed release tag must never have its build/publish killed
+  # mid-way by itself.
+  cancel-in-progress: false
 
 on:
   push:

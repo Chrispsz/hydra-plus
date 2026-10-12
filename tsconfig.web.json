@@ -21,9 +21,18 @@
       "@renderer/*": [
         "src/renderer/src/*"
       ],
-      "@types": ["src/types/index.ts"],
-      "@locales": ["src/locales/index.ts"],
-      "@shared": ["src/shared/index.ts"]
+      "@types": [
+        "src/types/index.ts"
+      ],
+      "@locales": [
+        "src/locales/index.ts"
+      ],
+      "@shared": [
+        "src/shared/index.ts"
+      ],
+      "@shared/*": [
+        "src/shared/*"
+      ]
     }
   }
 }

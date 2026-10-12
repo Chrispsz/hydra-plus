@@ -3,8 +3,6 @@ import type { GameShop } from "@types";
 export const levelKeys = {
   games: "games",
   game: (shop: GameShop, objectId: string) => `${shop}:${objectId}`,
-  user: "user",
-  auth: "auth",
   googleDriveOAuth: "google-drive-oauth",
   gameShopAssets: "gameShopAssets",
   artworkSelection: "artworkSelection",
@@ -29,9 +27,7 @@ export const levelKeys = {
   cloudSaveSyncAnchors: "cloud-save-sync-anchors",
   cloudSaveAutomaticSyncSettings: "cloud-save-automatic-sync-settings",
   cloudSaveV2DefaultMigration: "cloud-save-v2-default-migration",
-  gameVisibilityRenameMigration: "game-visibility-rename-migration",
   cloudSaveCustomPaths: "cloud-save-custom-paths",
   cloudSavePendingDeletions: "cloud-save-pending-deletions",
-  steamSyncRun: "steamSyncRun",
   lastVersionSeen: "lastVersionSeen", // Version that last ran post-update maintenance
 };

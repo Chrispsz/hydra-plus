@@ -1,17 +1,10 @@
-import { enUS, ptBR } from "date-fns/locale";
-
 import { isArchiveOrgFileUri } from "./archive-org";
 import { charMap } from "./char-map";
 import { Downloader } from "./constants";
-import { format } from "date-fns";
 import { GameRepack } from "@types";
 
 export * from "./archive-org";
 export * from "./constants";
-export {
-  shouldAutoStartSteamSync,
-  type SteamAutoStartRunStatus,
-} from "./should-auto-start-steam-sync";
 export * from "./steam-session";
 export * from "./window-layout";
 export {
@@ -24,23 +17,7 @@ export * from "./cloud-save-v2-eligibility";
 export * from "./controller-support";
 export * from "./artwork-resolver";
 export * from "./download-directories";
-export * from "./html-sanitizer";
-export * from "./use-hls-video";
 export * from "./tracker-list";
-
-export class UserNotLoggedInError extends Error {
-  constructor() {
-    super("user not logged in");
-    this.name = "UserNotLoggedInError";
-  }
-}
-
-export class SubscriptionRequiredError extends Error {
-  constructor() {
-    super("user does not have hydra cloud subscription");
-    this.name = "SubscriptionRequiredError";
-  }
-}
 
 const FORMAT = ["B", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB"];
 
@@ -149,12 +126,6 @@ export const getDownloadersForUri = (uri: string) => {
   if (uri.startsWith("https://fuckingfast.co")) {
     return [Downloader.FuckingFast];
   }
-  if (
-    uri.startsWith("https://vikingfile.com") ||
-    uri.startsWith("https://vik1ngfile.site")
-  ) {
-    return [Downloader.VikingFile];
-  }
   if (uri.startsWith("https://www.rootz.so")) {
     return [Downloader.Rootz];
   }
@@ -198,96 +169,3 @@ export const filterDownloadableRepacks = <T extends Pick<GameRepack, "uris">>(
       Array.isArray(repack.uris) &&
       getDownloadersForUris(repack.uris).length > 0
   );
-
-const AVAILABILITY_CHECK_DOWNLOADERS = new Set<Downloader>([
-  Downloader.VikingFile,
-]);
-
-export const HOSTER_AVAILABILITY_MAX_URLS = 50;
-
-export interface HosterAvailabilityResult {
-  url: string;
-  available: boolean;
-}
-
-export const supportsHosterAvailabilityCheck = (uri: string) =>
-  getDownloadersForUri(uri).some((downloader) =>
-    AVAILABILITY_CHECK_DOWNLOADERS.has(downloader)
-  );
-
-export const collectHosterAvailabilityUris = (
-  repacks: Pick<GameRepack, "uris">[]
-) => {
-  const uris = new Set<string>();
-
-  for (const repack of repacks) {
-    for (const uri of repack.uris) {
-      if (supportsHosterAvailabilityCheck(uri)) uris.add(uri);
-    }
-  }
-
-  return Array.from(uris).slice(0, HOSTER_AVAILABILITY_MAX_URLS);
-};
-
-export const fetchHosterAvailability = async (
-  repacks: Pick<GameRepack, "uris">[],
-  post: <T>(url: string, data: unknown) => Promise<T>
-): Promise<HosterAvailabilityResult[]> => {
-  const urls = collectHosterAvailabilityUris(repacks);
-
-  if (urls.length === 0) return [];
-
-  try {
-    const response = await post<{ results?: HosterAvailabilityResult[] }>(
-      "/hosters/availability",
-      { urls }
-    );
-
-    return Array.isArray(response?.results) ? response.results : [];
-  } catch {
-    return [];
-  }
-};
-
-export const applyHosterAvailability = <
-  T extends Pick<GameRepack, "uris" | "unavailableUris">,
->(
-  repacks: T[],
-  results: HosterAvailabilityResult[]
-): T[] => {
-  const unavailable = new Set(
-    results.filter((result) => !result.available).map((result) => result.url)
-  );
-
-  if (unavailable.size === 0) return repacks;
-
-  return repacks.map((repack) => {
-    const extra = repack.uris.filter(
-      (uri) => unavailable.has(uri) && !repack.unavailableUris?.includes(uri)
-    );
-
-    if (extra.length === 0) return repack;
-
-    return {
-      ...repack,
-      unavailableUris: [...(repack.unavailableUris ?? []), ...extra],
-    };
-  });
-};
-
-export const getDateLocale = (language: string) => {
-  if (language.startsWith("pt")) return ptBR;
-
-  return enUS;
-};
-
-export const getReviewTranslationLanguage = (language: string) =>
-  language.split("-")[0].toLowerCase();
-
-export const formatDate = (
-  date: number | Date | string,
-  language: string
-): string => {
-  if (isNaN(new Date(date).getDate())) return "N/A";
-  return format(date, language == "en" ? "MM-dd-yyyy" : "dd/MM/yyyy");
-};

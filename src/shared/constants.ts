@@ -8,7 +8,6 @@ export enum Downloader {
   TorBox = 6,
   Hydra = 7,
   FuckingFast = 9,
-  VikingFile = 10,
   Rootz = 11,
   Premiumize = 12,
   AllDebrid = 13,
@@ -54,12 +53,6 @@ export enum Cracker {
   ali213 = "ALI213",
 }
 
-export enum AuthPage {
-  SignIn = "/",
-  UpdateEmail = "/update-email",
-  UpdatePassword = "/update-password",
-}
-
 export enum DownloadError {
   NotCachedOnRealDebrid = "download_error_not_cached_on_real_debrid",
   NotCachedOnTorBox = "download_error_not_cached_on_torbox",
@@ -75,8 +68,6 @@ export enum DownloadError {
   AllDebridRateLimitExceeded = "download_error_alldebrid_rate_limit_exceeded",
   PremiumizeUnavailable = "download_error_premiumize_unavailable",
   AllDebridUnavailable = "download_error_alldebrid_unavailable",
-  VikingFileQuotaExceeded = "download_error_vikingfile_quota_exceeded",
-  VikingFileSubscriptionRequired = "download_error_vikingfile_subscription_required",
   HosterUnlockLoginRequired = "download_error_hoster_unlock_login_required",
   HosterUnlockFileNotFound = "download_error_hoster_unlock_file_not_found",
   HosterUnlockUnavailable = "download_error_hoster_unlock_unavailable",

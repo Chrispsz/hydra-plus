@@ -144,17 +144,17 @@ const getLaunchboxShopDetails = async (
   }
 
   const [basic, detailsResponse] = await Promise.all([
-    HydraApi.get<LaunchboxBasic | null>(`/games/${shop}/${objectId}`, null, {
-      needsAuth: false,
+    HydraApi.get<LaunchboxBasic | null>(`/games/${shop}/${objectId}`).catch(
+      (err) => {
+        logger.error("Failed to fetch launchbox basic game info", err);
+        return null;
+      }
+    ),
+    HydraApi.post<LaunchboxShopDetailsEntry[]>(`/games/shop-details`, {
+      shop,
+      objectIds: [objectId],
+      language,
     }).catch((err) => {
-      logger.error("Failed to fetch launchbox basic game info", err);
-      return null;
-    }),
-    HydraApi.post<LaunchboxShopDetailsEntry[]>(
-      `/games/shop-details`,
-      { shop, objectIds: [objectId], language },
-      { needsAuth: false }
-    ).catch((err) => {
       logger.error("Failed to fetch launchbox shop details", err);
       return [] as LaunchboxShopDetailsEntry[];
     }),

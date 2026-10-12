@@ -11,7 +11,6 @@ import { useTranslation } from "react-i18next";
 import { useSearchParams } from "react-router-dom";
 
 import {
-  AuthPage,
   getCloudSaveAccessAction,
   hasCloudSaveExecutableSelection,
   isCloudSaveV2Eligible,
@@ -19,7 +18,7 @@ import {
 } from "@shared";
 import { ConfirmationModal } from "@renderer/components";
 import { gameDetailsContext } from "@renderer/context";
-import { useGoogleDriveCloud, useToast, useUserDetails } from "@renderer/hooks";
+import { useGoogleDriveCloud, useToast } from "@renderer/hooks";
 import type {
   CloudSaveConflictResolution,
   CloudSaveCustomPathApproval,
@@ -52,7 +51,6 @@ interface CloudSaveV2ContextValue {
     | null;
   reconnectDrive: () => Promise<void>;
   connectDrive: () => Promise<void>;
-  openSignIn: () => void;
   progress: CloudSaveSyncProgressPayload | null;
   hasExecutablePath: boolean;
   canUseCloudSaves: boolean;
@@ -156,7 +154,6 @@ export function CloudSaveV2Provider({
 }: Readonly<CloudSaveV2ProviderProps>) {
   const { t } = useTranslation("game_details");
   const [searchParams, setSearchParams] = useSearchParams();
-  const { userDetails } = useUserDetails();
   const { isDriveCloudActive, connect } = useGoogleDriveCloud();
   const { showErrorToast, showSuccessToast, showWarningToast } = useToast();
   const {
@@ -165,10 +162,7 @@ export function CloudSaveV2Provider({
     setShowGameOptionsModal,
     setGameOptionsInitialCategory,
   } = useContext(gameDetailsContext);
-  const cloudSaveAccessAction = getCloudSaveAccessAction(
-    Boolean(userDetails),
-    isDriveCloudActive
-  );
+  const cloudSaveAccessAction = getCloudSaveAccessAction(isDriveCloudActive);
   const canUseCloudSaves = cloudSaveAccessAction === "open";
   const isV2Eligible = isCloudSaveV2Eligible(shop, game?.platform);
   const hasExecutablePath = game
@@ -292,10 +286,6 @@ export function CloudSaveV2Provider({
     nextSearchParams.delete("openCloudSaveConflict");
     setSearchParams(nextSearchParams, { replace: true });
 
-    if (cloudSaveAccessAction === "sign-in") {
-      window.electron.openAuthWindow(AuthPage.SignIn);
-      return;
-    }
     if (cloudSaveAccessAction === "connect-drive") {
       void connect();
       return;
@@ -323,10 +313,6 @@ export function CloudSaveV2Provider({
     const nextSearchParams = new URLSearchParams(searchParams);
     nextSearchParams.delete("openCloudSaveProfileBinding");
     setSearchParams(nextSearchParams, { replace: true });
-    if (cloudSaveAccessAction === "sign-in") {
-      window.electron.openAuthWindow(AuthPage.SignIn);
-      return;
-    }
     if (cloudSaveAccessAction === "connect-drive") {
       void connect();
       return;
@@ -498,9 +484,9 @@ export function CloudSaveV2Provider({
   ]);
 
   const openManager = useCallback(() => {
-    // Always open the manager modal: it now offers inline sign-in and
-    // Google Drive connection cards instead of surprising the user with
-    // OAuth windows popping up out of nowhere.
+    // Always open the manager modal: it offers the Google Drive
+    // connection card instead of surprising the user with OAuth
+    // windows popping up out of nowhere.
     setWasOpenedFromLaunchConflict(false);
     setIsModalVisible(true);
   }, []);
@@ -643,11 +629,7 @@ export function CloudSaveV2Provider({
   const setAutomaticSyncEnabled = useCallback(
     async (enabled: boolean) => {
       if (cloudSaveAccessAction !== "open") {
-        if (cloudSaveAccessAction === "sign-in") {
-          window.electron.openAuthWindow(AuthPage.SignIn);
-        } else {
-          void connect();
-        }
+        void connect();
         throw new Error("Cloud Saves require a linked cloud provider");
       }
       try {
@@ -904,8 +886,6 @@ export function CloudSaveV2Provider({
   const openFileBrowser = useCallback(() => {
     if (cloudSaveAccessAction === "open") {
       setIsFileBrowserVisible(true);
-    } else if (cloudSaveAccessAction === "sign-in") {
-      window.electron.openAuthWindow(AuthPage.SignIn);
     } else {
       void connect();
     }
@@ -930,7 +910,6 @@ export function CloudSaveV2Provider({
       setAutomaticSyncEnabled,
       requestConflictResolution: setPendingResolution,
       connectDrive: () => connect(),
-      openSignIn: () => window.electron.openAuthWindow(AuthPage.SignIn),
     }),
     [
       canUseCloudSaves,
@@ -990,7 +969,6 @@ export function CloudSaveV2Provider({
         errorMessageKey={errorMessageKey}
         onReconnectDrive={() => void reconnectDrive()}
         onConnectDrive={() => void connect()}
-        onSignIn={() => window.electron.openAuthWindow(AuthPage.SignIn)}
         progress={progress}
         onSync={() => void runCloudSaveOperation()}
         onOpenFileBrowser={() => setIsFileBrowserVisible(true)}

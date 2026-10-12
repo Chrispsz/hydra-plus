@@ -12,7 +12,6 @@ import {
   useDownload,
   useLibrary,
   useToast,
-  useUserDetails,
 } from "@renderer/hooks";
 import { useDownloadOptionsListener } from "@renderer/hooks/use-download-options-listener";
 import i18n from "i18next";
@@ -23,17 +22,12 @@ import {
   closeToast,
   setExtractionProgress,
   setGameRunning,
-  setLibrarySyncingRemote,
-  setProfileBackground,
-  setUserDetails,
   setUserPreferences,
   toggleDraggingDisabled,
 } from "@renderer/features";
 import { useTranslation } from "react-i18next";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
-import { useSubscription } from "./hooks/use-subscription";
 import { ArchiveDeletionModal } from "./pages/downloads/archive-deletion-error-modal";
-import { CloudSubscriptionModal } from "./pages/shared-modals/hydra-cloud/cloud-subscription-modal";
 
 import type { UserPreferences } from "@types";
 import "./app.scss";
@@ -53,24 +47,14 @@ export function App() {
 
   const { clearDownload, setLastPacket, lastPacket } = useDownload();
 
-  const { fetchUserDetails, updateUserDetails, clearUserDetails } =
-    useUserDetails();
-
-  const { hideHydraCloudModal, isHydraCloudModalVisible, hydraCloudFeature } =
-    useSubscription();
-
   const dispatch = useAppDispatch();
 
   const navigate = useNavigate();
   const location = useLocation();
 
-  const draggingDisabled = useAppSelector(
-    (state) => state.window.draggingDisabled
-  );
-
   const toast = useAppSelector((state) => state.toast);
 
-  const { showSuccessToast, showErrorToast } = useToast();
+  const { showErrorToast } = useToast();
 
   const [showArchiveDeletionModal, setShowArchiveDeletionModal] =
     useState(false);
@@ -148,37 +132,6 @@ export function App() {
     }
   }, [clearDownload, lastPacket?.gameId, downloadLibrary]);
 
-  const bootstrapUserDetails = useCallback(async () => {
-    const cachedUserDetails = window.localStorage.getItem("userDetails");
-
-    if (cachedUserDetails) {
-      const { profileBackground, ...userDetails } =
-        JSON.parse(cachedUserDetails);
-
-      dispatch(setUserDetails(userDetails));
-      dispatch(setProfileBackground(profileBackground));
-    }
-
-    const userDetails = await fetchUserDetails().catch(() => null);
-
-    if (userDetails) {
-      updateUserDetails(userDetails);
-    }
-  }, [fetchUserDetails, updateUserDetails, dispatch]);
-
-  useEffect(() => {
-    bootstrapUserDetails();
-  }, [bootstrapUserDetails]);
-
-  const onSignIn = useCallback(() => {
-    fetchUserDetails().then((response) => {
-      if (response) {
-        updateUserDetails(response);
-        showSuccessToast(t("successfully_signed_in"));
-      }
-    });
-  }, [fetchUserDetails, t, showSuccessToast, updateUserDetails]);
-
   useEffect(() => {
     const unsubscribe = window.electron.onGamesRunning((gamesRunning) => {
       if (gamesRunning.length) {
@@ -207,36 +160,13 @@ export function App() {
   }, [dispatch, library]);
 
   useEffect(() => {
-    let hasReceivedSyncState = false;
-
-    void window.electron.getRemoteLibrarySyncState().then((syncing) => {
-      if (!hasReceivedSyncState) dispatch(setLibrarySyncingRemote(syncing));
-    });
-
-    return window.electron.onRemoteLibrarySyncStateChange((syncing) => {
-      hasReceivedSyncState = true;
-
-      if (syncing) {
-        dispatch(setLibrarySyncingRemote(true));
-        return;
-      }
-
-      void updateLibrary().finally(() =>
-        dispatch(setLibrarySyncingRemote(false))
-      );
-    });
-  }, [dispatch, updateLibrary]);
-
-  useEffect(() => {
     const listeners = [
-      window.electron.onSignIn(onSignIn),
       window.electron.onLibraryBatchComplete(() => {
         updateLibrary();
       }),
       window.electron.onDownloadsUpdated(() => {
         updateLibrary();
       }),
-      window.electron.onSignOut(() => clearUserDetails()),
       window.electron.onExtractionProgress((shop, objectId, progress) => {
         dispatch(setExtractionProgress({ shop, objectId, progress }));
       }),
@@ -297,7 +227,7 @@ export function App() {
     return () => {
       listeners.forEach((unsubscribe) => unsubscribe());
     };
-  }, [onSignIn, updateLibrary, clearUserDetails, dispatch, showErrorToast, t]);
+  }, [updateLibrary, dispatch, showErrorToast, t]);
 
   useEffect(() => {
     const asyncScrollAndNotify = async () => {
@@ -307,15 +237,19 @@ export function App() {
   }, [location.pathname, location.search]);
 
   useEffect(() => {
-    new MutationObserver(() => {
+    const observer = new MutationObserver(() => {
       const modal = document.body.querySelector("[data-hydra-dialog]");
 
       dispatch(toggleDraggingDisabled(Boolean(modal)));
-    }).observe(document.body, {
+    });
+
+    observer.observe(document.body, {
       attributes: false,
       childList: true,
     });
-  }, [dispatch, draggingDisabled]);
+
+    return () => observer.disconnect();
+  }, [dispatch]);
 
   useEffect(() => {
     const unsubscribe = globalThis.electron.onNavigate((path) => {
@@ -418,12 +352,6 @@ export function App() {
         type={toast.type}
         onClose={handleToastClose}
         duration={toast.duration}
-      />
-
-      <CloudSubscriptionModal
-        visible={isHydraCloudModalVisible}
-        onClose={hideHydraCloudModal}
-        feature={hydraCloudFeature || undefined}
       />
 
       <ArchiveDeletionModal

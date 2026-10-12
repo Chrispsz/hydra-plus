@@ -4,7 +4,11 @@ import fs from "node:fs";
 import path from "node:path";
 
 import { logger } from "./logger";
-import { buildOnlineFixDllOverrides } from "./online-fix-core";
+import {
+  buildOnlineFixDllOverrides,
+  buildWindowsOnlineFixPath,
+  findOnlineFixMarkerDlls,
+} from "./online-fix-core";
 
 const execFileAsync = promisify(execFile);
 
@@ -21,40 +25,148 @@ const execFileAsync = promisify(execFile);
  *    (Windows: resolved from the registry / standard install paths;
  *    Linux: `steam` on the PATH);
  * 2. on Wine/Proton sessions, load the game's OWN DLLs natively — the
- *    folder is scanned and every shipped DLL gets a "native,builtin"
- *    override, so the fix's proxy DLLs (winmm, dinput8, version, ...)
- *    shadow Wine's built-ins exactly as on Windows, alongside the
- *    community D3D override recipe (native Direct3D path, no wined3d);
- * 3. keep Wine quiet (WINEDEBUG=-all) like the community launchers do.
- *
- * The game itself is still launched through the universal umu/Proton
- * pipeline on Linux — this only prepares the environment around it.
+ *    executable folder AND the game root are scanned and every shipped
+ *    DLL gets a "native,builtin" override, so the fix's payload DLLs
+ *    (OnlineFix64, SteamOverlay64, dnet, steam_api64, proxy DLLs like
+ *    winmm/dinput8) shadow Wine's built-ins exactly as on Windows,
+ *    alongside the community D3D override recipe;
+ * 3. on Wine/Proton sessions the Steam overlay is injected the way OFLL
+ *    does it: LD_PRELOAD the native gameoverlayrenderer.so (32+64) from
+ *    the Steam client install plus SteamOverlayGameId=480, so the fix
+ *    finds an overlay to hook instead of failing with "error 126";
+ * 4. keep Wine quiet (WINEDEBUG=-all) like the community launchers do.
+ * 5. on Windows the game folder is prepended to PATH and the game is
+ *    always spawned directly with the game folder as working directory —
+ *    the patch loader resolves its payload relative to it.
  */
 
 const STEAM_WAIT_TIMEOUT_MS = 45_000;
 const STEAM_POLL_INTERVAL_MS = 1_000;
 
-/** Wine env for online sessions (native D3D path + game DLLs, quiet logs). */
-export const getOnlineFixLaunchEnv = (
-  gameDir: string
-): Record<string, string> => {
-  let dllNames: string[] = [];
-
+const listDllNames = (directory: string): string[] => {
   try {
-    dllNames = fs
-      .readdirSync(gameDir, { withFileTypes: true })
+    return fs
+      .readdirSync(directory, { withFileTypes: true })
       .filter((entry) => entry.isFile())
       .map((entry) => entry.name)
       .filter((name) => path.extname(name).toLowerCase() === ".dll");
-  } catch (error) {
-    logger.warn("[Online Fix] Failed to scan game folder for DLLs", error);
+  } catch {
+    return [];
+  }
+};
+
+/**
+ * Collects the DLL file names an Online-Fix patch may rely on: the
+ * executable's folder first, then the game root above it (repacks ship
+ * the fix payload at the root while executables often live in
+ * Binaries/Win64-style subfolders).
+ */
+export const collectOnlineFixDllNames = (
+  executableDirectory: string
+): string[] => {
+  const names = new Set<string>();
+
+  listDllNames(executableDirectory).forEach((name) => names.add(name));
+
+  const parentDirectory = path.dirname(executableDirectory);
+  if (parentDirectory && parentDirectory !== executableDirectory) {
+    listDllNames(parentDirectory).forEach((name) => {
+      if (!names.has(name)) names.add(name);
+    });
   }
 
-  return {
-    WINEDLLOVERRIDES: buildOnlineFixDllOverrides(dllNames),
+  return Array.from(names);
+};
+
+/**
+ * Wine env for online sessions (native D3D path + game DLLs + Steam
+ * overlay injection, quiet logs). Linux only.
+ */
+export const getOnlineFixLaunchEnv = (
+  gameDir: string
+): Record<string, string> => {
+  const env: Record<string, string> = {
+    WINEDLLOVERRIDES: buildOnlineFixDllOverrides(
+      collectOnlineFixDllNames(gameDir)
+    ),
     WINEDEBUG: "-all",
   };
+
+  const overlayPreload = buildSteamOverlayPreload();
+  if (overlayPreload) {
+    env.LD_PRELOAD = overlayPreload;
+    env.SteamOverlayGameId = STEAM_OVERLAY_GAME_ID;
+  }
+
+  return env;
 };
+
+/**
+ * Windows env for online sessions: the game folder must be on PATH so
+ * the patch's payload DLLs resolve by name regardless of the working
+ * directory the game is spawned with.
+ */
+export const getWindowsOnlineFixLaunchEnv = (
+  gameDir: string
+): Record<string, string> => ({
+  PATH: buildWindowsOnlineFixPath(gameDir, process.env.PATH ?? ""),
+});
+
+// ---------------------------------------------------------------------------
+// Steam overlay injection (Linux, OFLL recipe)
+// ---------------------------------------------------------------------------
+
+export const STEAM_OVERLAY_GAME_ID = "480";
+
+const STEAM_BASE_DIRECTORIES = [
+  path.join(process.env.HOME ?? "", ".steam", "steam"),
+  path.join(process.env.HOME ?? "", ".local", "share", "Steam"),
+];
+
+const OVERLAY_LIB_RELATIVE_PATHS = [
+  path.join("ubuntu12_32", "gameoverlayrenderer.so"),
+  path.join("ubuntu12_64", "gameoverlayrenderer.so"),
+];
+
+/**
+ * Builds the LD_PRELOAD value pointing at the native Steam overlay
+ * renderer (32+64 bit) when the Steam client install provides one.
+ * Returns null (and leaves the env untouched) when no overlay library
+ * exists on this machine, so non-Steam setups launch exactly as before.
+ */
+export const buildSteamOverlayPreload = (): string | null => {
+  const overlayPaths: string[] = [];
+
+  for (const steamBase of STEAM_BASE_DIRECTORIES) {
+    if (!steamBase) continue;
+
+    for (const relativePath of OVERLAY_LIB_RELATIVE_PATHS) {
+      const overlayPath = path.join(steamBase, relativePath);
+      try {
+        if (fs.existsSync(overlayPath)) overlayPaths.push(overlayPath);
+      } catch {
+        // Unreadable location — skip this candidate.
+      }
+    }
+  }
+
+  if (overlayPaths.length === 0) return null;
+
+  const existingPreload = process.env.LD_PRELOAD ?? "";
+  const parts = [existingPreload, ...overlayPaths]
+    .map((part) => part.trim())
+    .filter(Boolean);
+
+  return parts.join(":");
+};
+
+/**
+ * Scans the game folder for the Online-Fix patch DLLs — used by the
+ * diagnostics IPC to warn when an antivirus quarantined the fix (the
+ * classic "failed to load steam overlay dll, error 126" cause).
+ */
+export const findOnlineFixMarkers = (gameDir: string): string[] =>
+  findOnlineFixMarkerDlls(collectOnlineFixDllNames(gameDir));
 
 // ---------------------------------------------------------------------------
 // Steam client management (Windows + Linux)

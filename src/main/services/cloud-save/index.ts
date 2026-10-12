@@ -6,6 +6,7 @@ export * from "./automatic-sync-default-migration";
 export * from "./build-local-game-snapshot";
 export * from "./cloud-save-access";
 export * from "./cloud-save-environment";
+export * from "./cloud-save-user-id";
 export * from "./cloud-save-game-context";
 export * from "./cloud-save-modal-sync-flow";
 export * from "./custom-path";

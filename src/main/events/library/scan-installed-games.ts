@@ -1,4 +1,6 @@
 import path from "node:path";
+
+import { isWithin } from "@main/helpers/is-within";
 import fs from "node:fs";
 import { t } from "i18next";
 import { chunk } from "lodash-es";
@@ -13,7 +15,7 @@ import {
 } from "@main/helpers/game-executable-ranking";
 import { updateGameExecutablePath } from "@main/helpers/update-executable-path";
 import { gamesSublevel, levelKeys } from "@main/level";
-import { createGame } from "@main/services/library-sync";
+import { createGame } from "@main/services";
 import {
   GameExecutables,
   LocalNotificationManager,
@@ -159,14 +161,6 @@ const scanDirectory = async (
   }
 
   return { directory, relativeFilePaths, pathsByFileName };
-};
-
-const isWithin = (child: string, parent: string) => {
-  const relative = path.relative(parent, child);
-
-  return (
-    relative !== "" && !relative.startsWith("..") && !path.isAbsolute(relative)
-  );
 };
 
 const getDefaultScanDirectories = async (

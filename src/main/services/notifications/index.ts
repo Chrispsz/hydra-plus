@@ -66,6 +66,7 @@ async function downloadImage(url: string | null, signal?: AbortSignal) {
   const response = await axios.get(url, {
     responseType: "stream",
     signal,
+    timeout: 30_000,
   });
 
   return new Promise<string | undefined>((resolve) => {

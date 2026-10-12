@@ -9,10 +9,7 @@ export const migrateDownloadSources = async () => {
     if (!value.isRemote) {
       const downloadSource = await HydraApi.post<DownloadSource>(
         "/download-sources",
-        {
-          url: value.url,
-        },
-        { needsAuth: false }
+        { url: value.url }
       );
 
       await downloadSourcesSublevel.put(downloadSource.id, {

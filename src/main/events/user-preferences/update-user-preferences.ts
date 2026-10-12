@@ -5,7 +5,6 @@ import type { Game, UserPreferences } from "@types";
 import i18next from "i18next";
 import { defaultDownloadsPath } from "@main/constants";
 import { db, gamesSublevel, levelKeys } from "@main/level";
-import { patchUserProfile } from "../profile/update-profile";
 import { DownloadManager, Wine } from "@main/services";
 import { invalidateRemoteStoreCache } from "@main/services/cloud-save/remote-store/provider-resolver";
 import { WindowManager } from "@main/services/window-manager";
@@ -19,7 +18,6 @@ const updateLanguagePreference = async (language: string | undefined) => {
   });
 
   i18next.changeLanguage(language);
-  patchUserProfile({ language }).catch(() => {});
 };
 
 const pinGameWinePrefix = async (game: Game) => {

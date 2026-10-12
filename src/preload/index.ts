@@ -10,19 +10,13 @@ import type {
   AppUpdaterEvent,
   StartGameDownloadPayload,
   GameRunning,
-  UpdateProfileRequest,
   SeedingStatus,
-  NotificationSync,
+  ArtworkAssetType,
   ShortcutLocation,
   CreateSteamShortcutOptions,
   ProtonVersion,
   TorrentFilesResponse,
   DownloadLayoutState,
-  ArtworkAssetType,
-  ArtworkKind,
-  ArtworkPage,
-  GameArtworkSelection,
-  GameLauncherStatusPayload,
   CloudSaveAutomaticSyncModeChangedEvent,
   CloudSaveAutomaticSyncEvent,
   CloudSaveConflictResolution,
@@ -44,14 +38,8 @@ import type {
   SelectCloudSaveCustomPathApprovalResult,
   ConfirmCloudSaveCustomPathApprovalResult,
   ConfirmCloudSaveCustomPathRebindApprovalResult,
-  OpenCheckoutOptions,
-  SteamSyncState,
-  SteamSyncFinishedPayload,
-  SteamSyncRunStatus,
-  SteamConnectErrorCode,
   ExtractionFailure,
 } from "@types";
-import type { AuthPage } from "@shared";
 
 const fileExplorerApi = {
   readDirectory: (path: string) => ipcRenderer.invoke("readDirectory", path),
@@ -442,7 +430,6 @@ contextBridge.exposeInMainWorld("electron", {
   /* Catalogue */
   getGameShopDetails: (objectId: string, shop: GameShop, language: string) =>
     ipcRenderer.invoke("getGameShopDetails", objectId, shop, language),
-  getRandomGame: () => ipcRenderer.invoke("getRandomGame"),
   getGameStats: (objectId: string, shop: GameShop) =>
     ipcRenderer.invoke("getGameStats", objectId, shop),
   getGameAssets: (
@@ -529,6 +516,8 @@ contextBridge.exposeInMainWorld("electron", {
     ipcRenderer.invoke("installGameOnSteam", steamAppId),
   isMangohudAvailable: () => ipcRenderer.invoke("isMangohudAvailable"),
   getSteamClientStatus: () => ipcRenderer.invoke("getSteamClientStatus"),
+  getOnlineFixStatus: (shop: GameShop, objectId: string) =>
+    ipcRenderer.invoke("getOnlineFixStatus", shop, objectId),
   isWinetricksAvailable: () => ipcRenderer.invoke("isWinetricksAvailable"),
   addGameToLibrary: (
     shop: GameShop,
@@ -590,29 +579,8 @@ contextBridge.exposeInMainWorld("electron", {
     customArtworkIds?: Partial<Record<ArtworkAssetType, number | null>>;
     clearArtworkTypes?: ArtworkAssetType[];
   }) => ipcRenderer.invoke("updateGameCustomAssets", params),
-  getGameArtwork: (
-    shop: GameShop,
-    objectId: string,
-    kind: ArtworkKind,
-    page?: number
-  ): Promise<ArtworkPage | null> =>
-    ipcRenderer.invoke("getGameArtwork", shop, objectId, kind, page),
   getCoverPoster: (url: string): Promise<string | null> =>
     ipcRenderer.invoke("getCoverPoster", url),
-  getGameArtworkSelection: (
-    shop: GameShop,
-    objectId: string
-  ): Promise<GameArtworkSelection | null> =>
-    ipcRenderer.invoke("getGameArtworkSelection", shop, objectId),
-  setGameArtworkSelection: (params: {
-    shop: GameShop;
-    objectId: string;
-    type: ArtworkAssetType;
-    url?: string;
-    artworkId?: number;
-    clear?: boolean;
-  }): Promise<GameArtworkSelection | null> =>
-    ipcRenderer.invoke("setGameArtworkSelection", params),
   createGameShortcut: (
     shop: GameShop,
     objectId: string,
@@ -639,19 +607,8 @@ contextBridge.exposeInMainWorld("electron", {
     ipcRenderer.invoke("addGameToFavorites", shop, objectId),
   removeGameFromFavorites: (shop: GameShop, objectId: string) =>
     ipcRenderer.invoke("removeGameFromFavorites", shop, objectId),
-  assignGameToCollection: (
-    shop: GameShop,
-    objectId: string,
-    collectionIds: string[]
-  ) =>
-    ipcRenderer.invoke("assignGameToCollection", shop, objectId, collectionIds),
-  setGameVisibility: (
-    shop: GameShop,
-    objectId: string,
-    field: "isHiddenFromOthers" | "isConcealed",
-    value: boolean
-  ): Promise<{ isHiddenFromOthers: boolean; isConcealed: boolean }> =>
-    ipcRenderer.invoke("setGameVisibility", shop, objectId, field, value),
+  setGameVisibility: (shop: GameShop, objectId: string, isConcealed: boolean) =>
+    ipcRenderer.invoke("setGameVisibility", shop, objectId, isConcealed),
   clearNewDownloadOptions: (shop: GameShop, objectId: string) =>
     ipcRenderer.invoke("clearNewDownloadOptions", shop, objectId),
   toggleGamePin: (shop: GameShop, objectId: string, pinned: boolean) =>
@@ -684,9 +641,6 @@ contextBridge.exposeInMainWorld("electron", {
   getLibrary: (includeConcealed = false) =>
     ipcRenderer.invoke("getLibrary", includeConcealed),
   getHiddenLibrary: () => ipcRenderer.invoke("getHiddenLibrary"),
-  refreshLibraryAssets: () => ipcRenderer.invoke("refreshLibraryAssets"),
-  getRemoteLibrarySyncState: () =>
-    ipcRenderer.invoke("getRemoteLibrarySyncState"),
   openGameInstaller: (shop: GameShop, objectId: string) =>
     ipcRenderer.invoke("openGameInstaller", shop, objectId),
   getGameInstallerActionType: (shop: GameShop, objectId: string) =>
@@ -777,13 +731,6 @@ contextBridge.exposeInMainWorld("electron", {
     ipcRenderer.on("on-library-batch-complete", listener);
     return () =>
       ipcRenderer.removeListener("on-library-batch-complete", listener);
-  },
-  onRemoteLibrarySyncStateChange: (cb: (syncing: boolean) => void) => {
-    const listener = (_event: Electron.IpcRendererEvent, syncing: boolean) =>
-      cb(syncing);
-    ipcRenderer.on("on-remote-library-sync-state", listener);
-    return () =>
-      ipcRenderer.removeListener("on-remote-library-sync-state", listener);
   },
   onDownloadsUpdated: (cb: () => void) => {
     const listener = (_event: Electron.IpcRendererEvent) => cb();
@@ -883,9 +830,6 @@ contextBridge.exposeInMainWorld("electron", {
   isStaging: () => ipcRenderer.invoke("isStaging"),
   isPortableVersion: Boolean(process.env.PORTABLE_EXECUTABLE_FILE),
   openExternal: (src: string) => ipcRenderer.invoke("openExternal", src),
-  openCheckout: (options?: OpenCheckoutOptions) =>
-    ipcRenderer.invoke("openCheckout", options),
-  getCloudIframeUrl: () => ipcRenderer.invoke("getCloudIframeUrl"),
   showOpenDialog: (options: Electron.OpenDialogOptions) =>
     ipcRenderer.invoke("showOpenDialog", options),
   ...fileExplorerApi,
@@ -1048,114 +992,17 @@ contextBridge.exposeInMainWorld("electron", {
     ipcRenderer.on("preflight-progress", listener);
     return () => ipcRenderer.removeListener("preflight-progress", listener);
   },
-  onGameLauncherStatus: (cb: (value: GameLauncherStatusPayload) => void) => {
-    const listener = (
-      _event: Electron.IpcRendererEvent,
-      value: GameLauncherStatusPayload
-    ) => cb(value);
-    ipcRenderer.on("game-launcher-status", listener);
-    return () => ipcRenderer.removeListener("game-launcher-status", listener);
-  },
   resetCommonRedistPreflight: () =>
     ipcRenderer.invoke("resetCommonRedistPreflight"),
   checkForUpdates: () => ipcRenderer.invoke("checkForUpdates"),
   restartAndInstallUpdate: () => ipcRenderer.invoke("restartAndInstallUpdate"),
 
-  /* Profile */
-  getMe: () => ipcRenderer.invoke("getMe"),
-  updateProfile: (updateProfile: UpdateProfileRequest) =>
-    ipcRenderer.invoke("updateProfile", updateProfile),
-  getProfileImageMetadata: (imagePath: string) =>
-    ipcRenderer.invoke("getProfileImageMetadata", imagePath),
-  processProfileImage: (imagePath: string) =>
-    ipcRenderer.invoke("processProfileImage", imagePath),
-  cropProfileImage: (
-    imagePath: string,
-    params: {
-      left: number;
-      top: number;
-      width: number;
-      height: number;
-      outputWidth: number;
-      outputHeight: number;
-      rotation?: number;
-    }
-  ) => ipcRenderer.invoke("cropProfileImage", imagePath, params),
-  onSyncNotificationCount: (cb: (notification: NotificationSync) => void) => {
-    const listener = (
-      _event: Electron.IpcRendererEvent,
-      notification: NotificationSync
-    ) => cb(notification);
-    ipcRenderer.on("on-sync-notification-count", listener);
-    return () =>
-      ipcRenderer.removeListener("on-sync-notification-count", listener);
-  },
-
-  startSteamOAuth: (lng: string) => ipcRenderer.invoke("startSteamOAuth", lng),
-  disconnectSteam: (deleteImportedData: boolean) =>
-    ipcRenderer.invoke("disconnectSteam", deleteImportedData),
-  startSteamSync: () => ipcRenderer.invoke("startSteamSync"),
-  cancelSteamSync: () => ipcRenderer.invoke("cancelSteamSync"),
-  getSteamSyncState: () => ipcRenderer.invoke("getSteamSyncState"),
-  syncSteamGameOnGamePage: (steamAppId: string) =>
-    ipcRenderer.invoke("syncSteamGameOnGamePage", steamAppId),
-  reconcileSteamSyncRun: (latestSyncRunStatus: SteamSyncRunStatus | null) =>
-    ipcRenderer.invoke("reconcileSteamSyncRun", latestSyncRunStatus),
-  onSteamSyncProgress: (cb: (state: SteamSyncState) => void) => {
-    const listener = (
-      _event: Electron.IpcRendererEvent,
-      state: SteamSyncState
-    ) => cb(state);
-    ipcRenderer.on("on-steam-sync-progress", listener);
-    return () => ipcRenderer.removeListener("on-steam-sync-progress", listener);
-  },
-  onSteamSyncFinished: (cb: (payload: SteamSyncFinishedPayload) => void) => {
-    const listener = (
-      _event: Electron.IpcRendererEvent,
-      payload: SteamSyncFinishedPayload
-    ) => cb(payload);
-    ipcRenderer.on("on-steam-sync-finished", listener);
-    return () => ipcRenderer.removeListener("on-steam-sync-finished", listener);
-  },
-
   /* Auth */
-  signOut: () => ipcRenderer.invoke("signOut"),
-  openAuthWindow: (page: AuthPage) =>
-    ipcRenderer.invoke("openAuthWindow", page),
   startGoogleAuth: () => ipcRenderer.invoke("startGoogleAuth"),
   disconnectGoogleDrive: () => ipcRenderer.invoke("disconnectGoogleDrive"),
   getGoogleDriveStatus: () => ipcRenderer.invoke("getGoogleDriveStatus"),
   minimizeAuthWindow: () => ipcRenderer.invoke("minimizeAuthWindow"),
   closeAuthWindow: () => ipcRenderer.invoke("closeAuthWindow"),
-  getSessionHash: () => ipcRenderer.invoke("getSessionHash"),
-  onSignIn: (cb: () => void) => {
-    const listener = (_event: Electron.IpcRendererEvent) => cb();
-    ipcRenderer.on("on-signin", listener);
-    return () => ipcRenderer.removeListener("on-signin", listener);
-  },
-  onAccountUpdated: (cb: () => void) => {
-    const listener = (_event: Electron.IpcRendererEvent) => cb();
-    ipcRenderer.on("on-account-updated", listener);
-    return () => ipcRenderer.removeListener("on-account-updated", listener);
-  },
-  onSteamConnected: (cb: () => void) => {
-    const listener = (_event: Electron.IpcRendererEvent) => cb();
-    ipcRenderer.on("on-steam-connected", listener);
-    return () => ipcRenderer.removeListener("on-steam-connected", listener);
-  },
-  onSteamConnectError: (cb: (code: SteamConnectErrorCode) => void) => {
-    const listener = (
-      _event: Electron.IpcRendererEvent,
-      code: SteamConnectErrorCode
-    ) => cb(code);
-    ipcRenderer.on("on-steam-connect-error", listener);
-    return () => ipcRenderer.removeListener("on-steam-connect-error", listener);
-  },
-  onSignOut: (cb: () => void) => {
-    const listener = (_event: Electron.IpcRendererEvent) => cb();
-    ipcRenderer.on("on-signout", listener);
-    return () => ipcRenderer.removeListener("on-signout", listener);
-  },
 
   /* Notifications */
   publishNewRepacksNotification: (newRepacksCount: number) =>

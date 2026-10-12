@@ -15,14 +15,11 @@ import {
   AllDebridClient,
   DownloadManager,
   HydraApi,
-  uploadGamesBatch,
   startMainLoop,
   Ludusavi,
   Lock,
-  DeckyPlugin,
   DownloadSourcesChecker,
   DownloadOrchestrator,
-  SSEClient,
   Wine,
   WindowManager,
   logger,
@@ -31,9 +28,7 @@ import {
 import { migrateDownloadSources } from "./helpers/migrate-download-sources";
 import { getDirSize } from "./services/download/helpers";
 import { GofileApi } from "./services/hosters";
-import { startSteamSyncOnStartup } from "./services/steam-integration/steam-startup-sync";
 import { watchSteamLibraries } from "./services/steam-integration/steam-install-watcher";
-import { migrateGameVisibilityFields } from "./services/library-sync/game-visibility-migration";
 import { seedDefaultDownloadSources } from "./helpers/seed-default-download-sources";
 import { defaultDownloadsPath } from "@main/constants";
 
@@ -62,7 +57,6 @@ const hasMissingSeedFiles = async (download: Download): Promise<boolean> => {
 export const loadState = async () => {
   await Lock.acquireLock();
   await migrateCloudSaveAutomaticSyncDefaults();
-  await migrateGameVisibilityFields();
 
   const userPreferences = await db.get<string, UserPreferences | null>(
     levelKeys.userPreferences,
@@ -113,32 +107,18 @@ export const loadState = async () => {
   Ludusavi.copyConfigFileToUserData();
   Ludusavi.copyBinaryToUserData();
 
-  if (process.platform === "linux") {
-    DeckyPlugin.checkAndUpdateIfOutdated();
-  }
-
   void watchSteamLibraries();
 
-  await HydraApi.setupApi().then(async () => {
-    uploadGamesBatch();
-    void migrateDownloadSources();
+  // Anonymous public API client (catalogue/download sources); no auth.
+  await HydraApi.setupApi();
 
-    // First-run: curated download sources so search works out of the box.
-    void seedDefaultDownloadSources();
+  void migrateDownloadSources();
 
-    const { syncDownloadSourcesFromApi } = await import("./services/user");
-    void syncDownloadSourcesFromApi();
+  // First-run: curated download sources so search works out of the box.
+  void seedDefaultDownloadSources();
 
-    // Check for new download options on startup (if enabled)
-    (async () => {
-      await DownloadSourcesChecker.checkForChanges();
-    })();
-
-    if (HydraApi.isLoggedIn()) {
-      SSEClient.connect();
-      void startSteamSyncOnStartup();
-    }
-  });
+  // Check for new download options on startup (if enabled)
+  void DownloadSourcesChecker.checkForChanges();
 
   const downloadToResume =
     await DownloadOrchestrator.bootstrapDownloadsOnStartup();
@@ -215,7 +195,11 @@ export const loadState = async () => {
   startMainLoop();
 
   if (process.platform === "win32") {
-    CommonRedistManager.downloadCommonRedist();
+    // Fire-and-forget, but never let a network hiccup become an unhandled
+    // rejection on every startup.
+    CommonRedistManager.downloadCommonRedist().catch((error) =>
+      logger.warn("Common redist download failed", error)
+    );
   }
 
   SystemPath.checkIfPathsAreAvailable();

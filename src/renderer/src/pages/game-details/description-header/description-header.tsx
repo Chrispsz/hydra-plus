@@ -1,7 +1,8 @@
 import { useTranslation } from "react-i18next";
 import { useContext } from "react";
 import { format } from "date-fns";
-import { getDateLocale } from "@shared";
+import { getDateLocale } from "@shared/date-format";
+import {} from "@shared";
 import { gameDetailsContext } from "@renderer/context";
 import "./description-header.scss";
 
