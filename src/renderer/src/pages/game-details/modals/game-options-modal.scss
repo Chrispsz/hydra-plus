@@ -179,13 +179,6 @@ $disc-menu-transition-duration: 0.15s;
     gap: calc(globals.$spacing-unit / 2);
   }
 
-  &__online-mode-label {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    font-weight: 500;
-  }
-
   &__online-status {
     display: inline-flex;
     align-items: center;
@@ -218,17 +211,6 @@ $disc-menu-transition-duration: 0.15s;
 
   &__online-status--unknown &__online-status-dot {
     background-color: globals.$muted-color;
-  }
-
-  &__online-notes {
-    margin: 0;
-    padding-left: 16px;
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-    color: globals.$muted-color;
-    font-size: globals.$small-font-size;
-    line-height: 1.45;
   }
 
   &__online-diagnostic {

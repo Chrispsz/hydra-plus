@@ -68,11 +68,7 @@ export function OnlineModeSettingsSection({
 
       <div className="game-options-modal__online-mode-toggle">
         <CheckboxField
-          label={
-            <span className="game-options-modal__online-mode-label">
-              <span>{t("online_mode_enable")}</span>
-            </span>
-          }
+          label={t("online_mode_enable")}
           checked={onlineFixEnabled}
           onChange={(event) => onChangeOnlineFixState(event.target.checked)}
         />
@@ -123,12 +119,6 @@ export function OnlineModeSettingsSection({
           {t("online_mode_last_error", { error: lastLaunchError })}
         </p>
       )}
-
-      <ul className="game-options-modal__online-notes">
-        <li>{t("online_mode_note_steam")}</li>
-        <li>{t("online_mode_note_dlls")}</li>
-        <li>{t("online_mode_note_version")}</li>
-      </ul>
     </div>
   );
 }
