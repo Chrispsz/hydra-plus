@@ -6,11 +6,18 @@ import trayIconDark from "@resources/tray-icon-dark.png?asset";
 import trayIcon from "@resources/tray-icon.png?asset";
 import type { ScreenState, UserPreferences } from "@types";
 import {
+  AUTH_WINDOW_CONTENT_HEIGHT,
+  AUTH_WINDOW_CONTENT_WIDTH,
+  CUSTOM_WINDOW_BORDER_WIDTH,
+  CUSTOM_WINDOW_TITLE_BAR_HEIGHT,
+} from "@shared";
+import {
   BrowserWindow,
   Menu,
   MenuItem,
   MenuItemConstructorOptions,
   Tray,
+  WebContentsView,
   app,
   nativeImage,
   nativeTheme,
@@ -22,6 +29,8 @@ import { orderBy } from "lodash-es";
 import path from "node:path";
 import UserAgent from "user-agents";
 import { logger } from "./logger";
+import { HydraApi } from "./hydra-api";
+import type { AuthPage } from "@shared";
 
 const isLinuxWayland =
   process.platform === "linux" &&
@@ -32,6 +41,7 @@ export class WindowManager {
   private static mainWindowInstance: Electron.BrowserWindow | null = null;
   private static gameLauncherWindowInstance: Electron.BrowserWindow | null =
     null;
+  private static authWindow: Electron.BrowserWindow | null = null;
 
   private static isArtworkRendererRequest(
     webContentsId: number | undefined
@@ -621,6 +631,159 @@ export class WindowManager {
     } else {
       tray.addListener("click", showContextMenu);
       tray.addListener("right-click", showContextMenu);
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // Auth window (Hydra sign in)
+  // ---------------------------------------------------------------------------
+
+  private static bindAuthNavigation(
+    contents: Electron.WebContents,
+    closeWindow: () => void
+  ) {
+    contents.on("will-navigate", (_event, url) => {
+      if (url.startsWith("hydralauncher://auth")) {
+        closeWindow();
+
+        void HydraApi.handleExternalAuth(url).catch((error) => {
+          logger.error("Failed to handle external auth", error);
+        });
+      }
+    });
+
+    contents.setWindowOpenHandler(({ url }) => {
+      void shell.openExternal(url);
+      return { action: "deny" };
+    });
+  }
+
+  public static openAuthWindow(page: AuthPage, searchParams: URLSearchParams) {
+    const parentWindow = this.mainWindow;
+
+    if (!parentWindow || parentWindow.isDestroyed()) return;
+
+    if (this.authWindow && !this.authWindow.isDestroyed()) {
+      this.authWindow.focus();
+      return;
+    }
+
+    const authUrl = `${import.meta.env.MAIN_VITE_AUTH_URL}${page}?${searchParams.toString()}`;
+
+    if (process.platform === "linux") {
+      this.openLinuxAuthWindow(parentWindow, authUrl);
+      return;
+    }
+
+    const authWindow = new BrowserWindow({
+      width: AUTH_WINDOW_CONTENT_WIDTH,
+      height: AUTH_WINDOW_CONTENT_HEIGHT,
+      backgroundColor: "#1c1c1c",
+      parent: parentWindow,
+      modal: true,
+      show: false,
+      maximizable: false,
+      resizable: false,
+      minimizable: false,
+      webPreferences: {
+        sandbox: false,
+        nodeIntegrationInSubFrames: true,
+      },
+    });
+
+    authWindow.removeMenu();
+    authWindow.loadURL(authUrl);
+
+    authWindow.once("ready-to-show", () => {
+      authWindow.show();
+    });
+
+    authWindow.once("closed", () => {
+      this.authWindow = null;
+      if (!parentWindow.isDestroyed()) {
+        parentWindow.focus();
+      }
+    });
+
+    this.bindAuthNavigation(authWindow.webContents, () => authWindow.close());
+  }
+
+  /**
+   * Linux does not reliably frameless-load external login pages inside a
+   * modal window, so the window hosts the local titlebar page and the
+   * external login lives in a WebContentsView beneath it.
+   */
+  private static openLinuxAuthWindow(
+    parentWindow: Electron.BrowserWindow,
+    authUrl: string
+  ) {
+    const authWindow = new BrowserWindow({
+      width: AUTH_WINDOW_CONTENT_WIDTH + CUSTOM_WINDOW_BORDER_WIDTH * 2,
+      height:
+        AUTH_WINDOW_CONTENT_HEIGHT +
+        CUSTOM_WINDOW_TITLE_BAR_HEIGHT +
+        CUSTOM_WINDOW_BORDER_WIDTH * 2,
+      parent: parentWindow,
+      modal: true,
+      show: false,
+      maximizable: false,
+      resizable: false,
+      frame: false,
+      icon,
+      backgroundColor: "#1c1c1c",
+      webPreferences: {
+        preload: path.join(__dirname, "../preload/index.mjs"),
+        sandbox: false,
+      },
+    });
+
+    this.authWindow = authWindow;
+
+    authWindow.removeMenu();
+
+    const authView = new WebContentsView({
+      webPreferences: {
+        sandbox: false,
+        nodeIntegrationInSubFrames: true,
+      },
+    });
+
+    authWindow.contentView.addChildView(authView);
+    authView.setBounds({
+      x: CUSTOM_WINDOW_BORDER_WIDTH,
+      y: CUSTOM_WINDOW_BORDER_WIDTH + CUSTOM_WINDOW_TITLE_BAR_HEIGHT,
+      width: AUTH_WINDOW_CONTENT_WIDTH,
+      height: AUTH_WINDOW_CONTENT_HEIGHT,
+    });
+
+    void this.loadWindowURL(authWindow, "auth-window");
+    void authView.webContents.loadURL(authUrl);
+
+    authWindow.once("ready-to-show", () => {
+      authWindow.show();
+    });
+
+    authWindow.once("closed", () => {
+      this.authWindow = null;
+      if (!parentWindow.isDestroyed()) {
+        parentWindow.focus();
+      }
+    });
+
+    this.bindAuthNavigation(authView.webContents, () => {
+      if (!authWindow.isDestroyed()) authWindow.close();
+    });
+  }
+
+  public static minimizeAuthWindow() {
+    if (this.authWindow && !this.authWindow.isDestroyed()) {
+      this.authWindow.minimize();
+    }
+  }
+
+  public static closeAuthWindow() {
+    if (this.authWindow && !this.authWindow.isDestroyed()) {
+      this.authWindow.close();
     }
   }
 }

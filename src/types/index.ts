@@ -1,6 +1,6 @@
 import type { DownloadSourceStatus, Downloader } from "@shared";
 import type { SteamAppDetails } from "./steam.types";
-import type { Download, Game } from "./level.types";
+import type { Download, Game, Subscription } from "./level.types";
 import type { GameShop } from "./game.types";
 import type { ArtworkAssetType } from "./artwork.types";
 
@@ -52,6 +52,18 @@ export interface ShopAssets {
   coverImageUrl: string | null;
   downloadSources: string[];
   selectedArtworkTypes?: ArtworkAssetType[];
+}
+
+/**
+ * Lean Hydra account profile (sign in restores catalogue/source sync;
+ * there is no social layer anymore).
+ */
+export interface UserDetails {
+  id: string;
+  displayName: string;
+  profileImageUrl: string | null;
+  backgroundImageUrl?: string | null;
+  subscription?: Subscription | null;
 }
 
 export type ShopDetails = SteamAppDetails & {
@@ -248,64 +260,6 @@ export interface LegacySaveExportProgress {
 
 export interface LegacySaveExportIpcProgress extends LegacySaveExportProgress {
   operationId: string;
-}
-
-export type NotificationType =
-  | "BADGE_RECEIVED"
-  | "REVIEW_UPVOTE"
-  | "REVIEW_ANSWER"
-  | "REVIEW_ANSWER_UPVOTE"
-  | "CLOUD_GIFT_RECEIVED";
-
-export type LocalNotificationType =
-  | "EXTRACTION_COMPLETE"
-  | "DOWNLOAD_COMPLETE"
-  | "UPDATE_AVAILABLE"
-  | "SCAN_GAMES_COMPLETE";
-
-export interface Notification {
-  id: string;
-  type: NotificationType;
-  variables: Record<string, string>;
-  pictureUrl: string | null;
-  url: string | null;
-  isRead: boolean;
-  priority: number;
-  createdAt: string;
-}
-
-export interface LocalNotification {
-  id: string;
-  type: LocalNotificationType;
-  title: string;
-  description: string;
-  pictureUrl: string | null;
-  url: string | null;
-  isRead: boolean;
-  createdAt: string;
-}
-
-export type MergedNotification =
-  | (Notification & { source: "api" })
-  | (LocalNotification & { source: "local" });
-
-export interface NotificationsResponse {
-  notifications: Notification[];
-  pagination: {
-    total: number;
-    take: number;
-    skip: number;
-    hasMore: boolean;
-  };
-}
-
-export interface NotificationCountResponse {
-  count: number;
-}
-
-export interface NotificationsChangedDetail {
-  apiUnreadDelta?: number;
-  resetApiUnread?: boolean;
 }
 
 export interface CatalogueSearchPayload {

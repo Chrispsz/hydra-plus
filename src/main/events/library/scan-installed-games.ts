@@ -2,7 +2,6 @@ import path from "node:path";
 
 import { isWithin } from "@main/helpers/is-within";
 import fs from "node:fs";
-import { t } from "i18next";
 import { chunk } from "lodash-es";
 import { registerEvent } from "../register-event";
 import { getGameAssets } from "../catalogue/get-game-assets";
@@ -16,12 +15,7 @@ import {
 import { updateGameExecutablePath } from "@main/helpers/update-executable-path";
 import { gamesSublevel, levelKeys } from "@main/level";
 import { createGame } from "@main/services";
-import {
-  GameExecutables,
-  LocalNotificationManager,
-  logger,
-  WindowManager,
-} from "@main/services";
+import { GameExecutables, logger, WindowManager } from "@main/services";
 import { runAutomaticCloudSaveSync } from "@main/services/cloud-save";
 import { clearMissingExecutables } from "@main/services/clear-missing-executables";
 import { resolveSteamLaunchExecutables } from "@main/services/steam-integration/steam-app-info-core";
@@ -863,64 +857,6 @@ const addGamesOutsideLibrary = async (
   return addedGames;
 };
 
-const getScanNotificationDescriptionKey = (
-  addedCount: number,
-  linkedCount: number
-) => {
-  if (addedCount > 0 && linkedCount > 0) {
-    return "scan_games_complete_added_and_linked_description";
-  }
-
-  if (addedCount > 0) return "scan_games_complete_added_description";
-
-  return "scan_games_complete_linked_description";
-};
-
-const getScanNotificationKeys = (
-  addedCount: number,
-  linkedCount: number,
-  pendingCount: number
-) => {
-  if (addedCount + linkedCount > 0) {
-    return {
-      title: "scan_games_complete_title",
-      description: getScanNotificationDescriptionKey(addedCount, linkedCount),
-    };
-  }
-
-  if (pendingCount > 0) {
-    return {
-      title: "scan_games_complete_title",
-      description: "scan_games_complete_pending_description",
-    };
-  }
-
-  return {
-    title: "scan_games_no_results_title",
-    description: "scan_games_no_results_description",
-  };
-};
-
-async function publishScanNotification(
-  addedCount: number,
-  linkedCount: number,
-  pendingCount: number
-): Promise<void> {
-  const keys = getScanNotificationKeys(addedCount, linkedCount, pendingCount);
-
-  await LocalNotificationManager.createNotification(
-    "SCAN_GAMES_COMPLETE",
-    t(keys.title, { ns: "notifications" }),
-    t(keys.description, {
-      ns: "notifications",
-      added: addedCount,
-      linked: linkedCount,
-      pending: pendingCount,
-    }),
-    { url: "/library?openScanModal=true" }
-  );
-}
-
 const scanInstalledGames = async (
   _event: Electron.IpcMainInvokeEvent,
   additionalDirectories: string[] = [],
@@ -1158,14 +1094,6 @@ const runScan = async (
   );
 
   WindowManager.sendToAppWindows("on-library-batch-complete");
-
-  if (!signal.cancelled) {
-    await publishScanNotification(
-      addedGames.length,
-      linkedGames.length,
-      outsideLibrary.ambiguousMatches.length
-    );
-  }
 
   return {
     linkedGames,

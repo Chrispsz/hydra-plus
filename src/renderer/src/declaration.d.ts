@@ -5,6 +5,7 @@ import type {
   DownloadProgress,
   SeedingStatus,
   UserPreferences,
+  UserDetails,
   StartGameDownloadPayload,
   RealDebridUser,
   PremiumizeUser,
@@ -20,7 +21,6 @@ import type {
   DiskUsage,
   NetworkInterface,
   DownloadSource,
-  LocalNotification,
   ProtonVersion,
   CreateSteamShortcutOptions,
   TorrentFilesResponse,
@@ -303,7 +303,12 @@ declare global {
     getOnlineFixStatus: (
       shop: GameShop,
       objectId: string
-    ) => Promise<{ steamRunning: boolean; onlineFixDetected: boolean | null }>;
+    ) => Promise<{
+      steamRunning: boolean;
+      onlineFixDetected: boolean | null;
+      steamInstallKind: "native" | "flatpak" | "snap" | "unknown";
+      lastLaunchError: string | null;
+    }>;
     isWinetricksAvailable: () => Promise<boolean>;
     addGameToLibrary: (
       shop: GameShop,
@@ -673,23 +678,19 @@ declare global {
     restartAndInstallUpdate: () => Promise<void>;
 
     /* Auth */
-    signOut: () => Promise<void>;
     startGoogleAuth: () => Promise<{ linked: true }>;
     disconnectGoogleDrive: () => Promise<{ ok: boolean }>;
     getGoogleDriveStatus: () => Promise<GoogleDriveCloudStatus>;
+
+    /* Hydra account (sign in restores the profile's download sources) */
+    openAuthWindow: () => Promise<void>;
+    signOut: () => Promise<void>;
+    getMe: () => Promise<UserDetails | null>;
     minimizeAuthWindow: () => Promise<void>;
     closeAuthWindow: () => Promise<void>;
+    onSignIn: (cb: () => void) => () => void;
+    onSignOut: (cb: () => void) => () => void;
 
-    getLocalNotifications: () => Promise<LocalNotification[]>;
-    getLocalNotificationsCount: () => Promise<number>;
-    markLocalNotificationRead: (id: string) => Promise<void>;
-    markLocalNotificationUnread: (id: string) => Promise<void>;
-    markAllLocalNotificationsRead: () => Promise<void>;
-    deleteLocalNotification: (id: string) => Promise<void>;
-    clearAllLocalNotifications: () => Promise<void>;
-    onLocalNotificationCreated: (
-      cb: (notification: LocalNotification) => void
-    ) => () => Electron.IpcRenderer;
     /* Game Launcher Window */
     showGameLauncherWindow: () => Promise<void>;
     closeGameLauncherWindow: () => Promise<void>;

@@ -15,3 +15,4 @@ export * from "./use-similar-games";
 export * from "./use-cover-poster";
 export * from "./use-processed-image";
 export * from "./use-google-drive-cloud";
+export * from "./use-user-details";

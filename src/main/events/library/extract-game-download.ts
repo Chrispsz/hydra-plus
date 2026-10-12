@@ -71,7 +71,7 @@ const extractGameDownload = async (
       .extractFilesInDirectory(targetPath)
       .then((success) => {
         if (success) {
-          return gameFilesManager.setExtractionComplete(false).catch(() => {
+          return gameFilesManager.setExtractionComplete().catch(() => {
             // Extraction completion failures are already logged downstream
           });
         }

@@ -25,7 +25,6 @@
     "home": "Início",
     "queued": "{{title}} (Na fila)",
     "game_has_no_executable_hint": "Este jogo não tem nenhum executável selecionado. Selecione na aba {{options}} > {{locations}}",
-    "notifications": "Notificações",
     "favorites": "Favoritos",
     "playable_button_title": "Mostrar apenas jogos que você pode jogar agora",
     "add_custom_game_tooltip": "Adicionar jogo personalizado",
@@ -59,7 +58,10 @@
     "collapse_collections": "Recolher coleções",
     "expand_games": "Expandir jogos",
     "collapse_games": "Recolher jogos",
-    "game_running": "Jogo em execução"
+    "game_running": "Jogo em execução",
+    "sign_in": "Entrar",
+    "sign_out": "Sair",
+    "sign_in_hint": "Entre na sua conta para sincronizar seu catálogo"
   },
   "header": {
     "minimize": "Minimizar",
@@ -102,7 +104,7 @@
     "scan_games_in_progress": "Escaneando seus discos por jogos instalados...",
     "scan_games_close": "Fechar",
     "scan_games_scan_again": "Escanear Novamente",
-    "scan_games_in_progress_hint": "Você pode fechar este modal, receberá uma notificação quando terminar.",
+    "scan_games_in_progress_hint": "Os jogos serão verificados em segundo plano.",
     "scan_games_hide": "Ocultar",
     "scan_games_mode_automatic": "Automaticamente",
     "scan_games_mode_manual": "Manualmente",
@@ -666,6 +668,8 @@
     "online_mode_note_steam": "O Steam precisa estar conectado na sua conta para os lobbies aparecerem pros seus amigos.",
     "online_mode_note_dlls": "A pasta do jogo é escaneada a cada partida: todas as DLLs embutidas (steam_api, winmm, dinput8 e qualquer proxy do fix) carregam de forma nativa.",
     "online_mode_note_version": "Todos que entrarem na sessão precisam usar a mesma versão corrigida do jogo.",
+    "online_mode_flatpak_warning": "Seu Steam é Flatpak/Snap — jogos Online-Fix podem falhar (erro 126). Prefira o Steam nativo da sua distribuição.",
+    "online_mode_last_error": "Último erro de módulo registrado: {{error}}",
     "no_similar_games": "Nenhum jogo similar encontrado"
   },
   "activation": {
@@ -735,9 +739,6 @@
     "integration_sync": "Sincronizar",
     "downloads_path": "Diretório dos downloads",
     "change": "Alterar…",
-    "notifications": "Notificações",
-    "enable_download_notifications": "Quando um download for concluído",
-    "enable_repack_list_notifications": "Quando a lista de repacks for atualizada",
     "quit_app_instead_hiding": "Encerrar o Hydra em vez de apenas minimizá-lo ao fechar",
     "launch_with_system": "Iniciar o Hydra junto com o sistema",
     "general": "Geral",
@@ -752,7 +753,6 @@
     "network_interface_default": "Padrão (todos os adaptadores)",
     "network_interface_hint": "Força os torrents por um adaptador específico, como uma VPN. Se ele cair, os downloads param em vez de vazar.",
     "network_interface_unavailable": "indisponível",
-    "library_notifications": "Notificações da biblioteca",
     "content_preferences": "Preferências de conteúdo",
     "debrid_services": "Serviços Debrid",
     "download_sources": "Fontes de download",
@@ -920,26 +920,6 @@
     "download_sources_sync_error": "Não foi possível sincronizar as fontes",
     "download_source_remove_error": "Não foi possível remover a fonte"
   },
-  "notifications": {
-    "download_complete": "Download concluído",
-    "game_ready_to_install": "{{title}} está pronto para ser instalado",
-    "repack_list_updated": "Lista de repacks atualizada",
-    "repack_count_one": "{{count}} novo repack",
-    "repack_count_other": "{{count}} novos repacks",
-    "new_update_available": "Versão {{version}} disponível",
-    "restart_to_install_update": "Reinicie o Hydra para instalar a nova versão",
-    "extraction_complete": "Extração concluída",
-    "game_extracted": "{{title}} extraído com sucesso",
-    "scan_games_complete_title": "Escaneamento de jogos finalizado com sucesso",
-    "scan_games_complete_added_and_linked_description": "{{added}} jogos novos foram adicionados à sua biblioteca e encontramos o executável de {{linked}} jogos que já estavam nela",
-    "scan_games_complete_added_description": "{{added}} jogos novos foram adicionados à sua biblioteca",
-    "scan_games_complete_linked_description": "Encontramos o executável de {{linked}} jogos da sua biblioteca",
-    "scan_games_complete_pending_description": "Encontramos {{pending}} executáveis para os quais você precisa escolher a qual jogo pertencem",
-    "scan_games_no_results_title": "Escaneamento de jogos finalizado",
-    "scan_games_no_results_description": "Nenhum jogo instalado foi encontrado",
-    "download_halted": "Download interrompido",
-    "download_halted_no_disk_space": "{{title}} foi interrompido porque você ficou sem espaço de armazenamento"
-  },
   "system_tray": {
     "open": "Abrir Hydra",
     "quit": "Fechar"
@@ -1071,15 +1051,6 @@
     "all_libraries": "Todas as Bibliotecas",
     "library_hydra": "Hydra",
     "library_steam": "Steam"
-  },
-  "notifications_page": {
-    "title": "Notificações",
-    "clear_all": "Limpar todas",
-    "loading": "Carregando...",
-    "filter_all": "Todas",
-    "filter_unread": "Não lidas",
-    "dismiss": "Descartar",
-    "notification": "Notificação"
   },
   "game_launcher": {
     "launching_base": "Iniciando",

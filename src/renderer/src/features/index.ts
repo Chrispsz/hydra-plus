@@ -5,3 +5,4 @@ export * from "./window-slice";
 export * from "./toast-slice";
 export * from "./game-running.slice";
 export * from "./catalogue-search";
+export * from "./user-details-slice";

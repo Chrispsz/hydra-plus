@@ -5,10 +5,6 @@ import {
   resolveArchiveOrgFile,
 } from "@shared";
 import { WindowManager } from "../window-manager";
-import {
-  publishDownloadCompleteNotification,
-  publishDownloadHaltedNotification,
-} from "../notifications";
 import type { Download, DownloadProgress, Game, UserPreferences } from "@types";
 import {
   GofileApi,
@@ -748,13 +744,6 @@ export class DownloadManager {
     WindowManager.sendDownloadsUpdated();
     WindowManager.sendToAppWindows("on-download-halted", game.title);
 
-    await publishDownloadHaltedNotification(game).catch((error) => {
-      logger.error(
-        "[DownloadManager] Failed to publish download halted notification",
-        error
-      );
-    });
-
     await this.processNextQueuedDownload();
 
     return true;
@@ -780,8 +769,6 @@ export class DownloadManager {
     game: Game,
     gameId: string
   ) {
-    publishDownloadCompleteNotification(game);
-
     const userPreferences = await db.get<string, UserPreferences | null>(
       levelKeys.userPreferences,
       { valueEncoding: "json" }

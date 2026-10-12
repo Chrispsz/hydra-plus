@@ -231,6 +231,19 @@ $disc-menu-transition-duration: 0.15s;
     line-height: 1.45;
   }
 
+  &__online-diagnostic {
+    margin: 0;
+    padding: 8px 10px;
+    border-radius: 4px;
+    background-color: rgba(255, 255, 255, 0.04);
+    border-left: 2px solid globals.$warning-color;
+    color: globals.$muted-color;
+    font-family: monospace;
+    font-size: globals.$small-font-size;
+    line-height: 1.4;
+    word-break: break-word;
+  }
+
   &__gamemode-toggle {
     display: flex;
     align-items: center;

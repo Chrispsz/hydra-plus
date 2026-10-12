@@ -15,6 +15,7 @@ import {
   logger,
   clearGamesPlaytime,
   WindowManager,
+  HydraApi,
   Lock,
   SevenZip,
   PowerSaveBlockerManager,
@@ -275,6 +276,14 @@ const handleDeepLinkPath = (uri?: string) => {
 
   try {
     const url = new URL(uri);
+
+    if (url.host === "auth") {
+      void HydraApi.handleExternalAuth(uri).catch((error) => {
+        logger.error("Failed to handle external auth", error);
+      });
+
+      return;
+    }
 
     if (url.host === "run") {
       const shop = url.searchParams.get("shop") as GameShop | null;

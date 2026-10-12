@@ -7,6 +7,7 @@ import {
   findOnlineFixMarkerDlls,
   isSkippableDllName,
   MAX_SCANNED_DLL_OVERRIDES,
+  sanitizeOnlineFixIni,
 } from "./online-fix-core.js";
 
 const findEntry = (overrides: string, name: string) =>
@@ -39,23 +40,33 @@ describe("buildOnlineFixDllOverrides", () => {
     }
   });
 
-  it("forces the Online-Fix payload family as native,builtin even without a scan", () => {
+  it("forces the Online-Fix payload family as strict native even without a scan", () => {
     const overrides = buildOnlineFixDllOverrides([]);
-    for (const payload of ["onlinefix64", "steamoverlay64", "dnet"]) {
-      assert.equal(findEntry(overrides, payload), `${payload}=n,b`);
+    for (const payload of [
+      "onlinefix64",
+      "steamoverlay64",
+      "dnet",
+      "steam_api64",
+      "steamclient64",
+    ]) {
+      assert.equal(findEntry(overrides, payload), `${payload}=n`);
     }
   });
 
-  it("maps every game-shipped DLL to native,builtin", () => {
+  it("maps scanned DLLs to native,builtin and fix payload names to strict native", () => {
     const overrides = buildOnlineFixDllOverrides([
       "OnlineFix64.dll",
       "Steam_API64.DLL",
       "SOME-GAME_HOOK.dll",
+      "eos_sdk.dll",
+      "winmm.dll",
     ]);
 
-    assert.equal(findEntry(overrides, "onlinefix64"), "onlinefix64=n,b");
-    assert.equal(findEntry(overrides, "steam_api64"), "steam_api64=n,b");
+    assert.equal(findEntry(overrides, "onlinefix64"), "onlinefix64=n");
+    assert.equal(findEntry(overrides, "steam_api64"), "steam_api64=n");
+    assert.equal(findEntry(overrides, "eos_sdk"), "eos_sdk=n");
     assert.equal(findEntry(overrides, "some-game_hook"), "some-game_hook=n,b");
+    assert.equal(findEntry(overrides, "winmm"), "winmm=n,b");
   });
 
   it("never duplicates the D3D family from the folder scan", () => {
@@ -110,6 +121,26 @@ describe("isSkippableDllName", () => {
     assert.ok(isSkippableDllName("api-ms-win-core-file-l1-1.dll"));
     assert.ok(isSkippableDllName("ext-ms-win-session-thing.dll"));
     assert.equal(isSkippableDllName("steam_api64"), false);
+  });
+});
+
+describe("sanitizeOnlineFixIni", () => {
+  it("disables ExtraProtection and captures FakeAppId", () => {
+    const result = sanitizeOnlineFixIni(
+      "[Misc]\nExtraProtection = true\n[Fake]\nFakeAppId = 1234567\n"
+    );
+    assert.ok(result.changed);
+    assert.ok(!/ExtraProtection\s*=\s*true/i.test(result.content));
+    assert.ok(/ExtraProtection\s*=\s*false/i.test(result.content));
+    assert.equal(result.fakeAppId, "1234567");
+  });
+
+  it("leaves a clean ini untouched and reports no fake app id", () => {
+    const content = "[Misc]\nExtraProtection = false\n";
+    const result = sanitizeOnlineFixIni(content);
+    assert.ok(!result.changed);
+    assert.equal(result.content, content);
+    assert.equal(result.fakeAppId, null);
   });
 });
 

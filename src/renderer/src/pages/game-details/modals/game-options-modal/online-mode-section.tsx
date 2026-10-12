@@ -23,6 +23,10 @@ export function OnlineModeSettingsSection({
   const [onlineFixDetected, setOnlineFixDetected] = useState<boolean | null>(
     null
   );
+  const [steamInstallKind, setSteamInstallKind] = useState<
+    "native" | "flatpak" | "snap" | "unknown"
+  >("native");
+  const [lastLaunchError, setLastLaunchError] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -33,6 +37,8 @@ export function OnlineModeSettingsSection({
         if (cancelled) return;
         setSteamRunning(status.steamRunning);
         setOnlineFixDetected(status.onlineFixDetected);
+        setSteamInstallKind(status.steamInstallKind ?? "native");
+        setLastLaunchError(status.lastLaunchError ?? null);
       })
       .catch(() => {
         if (!cancelled) setSteamRunning(null);
@@ -98,6 +104,24 @@ export function OnlineModeSettingsSection({
                 : t("online_mode_fix_missing")}
           </span>
         </div>
+      )}
+
+      {onlineFixEnabled &&
+        (steamInstallKind === "flatpak" || steamInstallKind === "snap") && (
+          <div
+            className={
+              "game-options-modal__online-status game-options-modal__online-status--stopped"
+            }
+          >
+            <span className="game-options-modal__online-status-dot" />
+            <span>{t("online_mode_flatpak_warning")}</span>
+          </div>
+        )}
+
+      {onlineFixEnabled && lastLaunchError && (
+        <p className="game-options-modal__online-diagnostic">
+          {t("online_mode_last_error", { error: lastLaunchError })}
+        </p>
       )}
 
       <ul className="game-options-modal__online-notes">

@@ -177,8 +177,6 @@ export interface UserPreferences {
   enableAutoInstall?: boolean;
   seedAfterDownloadComplete?: boolean;
   showDownloadSpeedInMegabits?: boolean;
-  downloadNotificationsEnabled?: boolean;
-  repackUpdatesNotificationsEnabled?: boolean;
   showDownloadSpeedInMegabytes?: boolean;
   extractFilesByDefault?: boolean;
   deleteArchiveFilesAfterExtractionByDefault?: boolean;

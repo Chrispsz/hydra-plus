@@ -23,18 +23,33 @@ export const ONLINE_FIX_D3D_OVERRIDES = [
 ] as const;
 
 /**
- * DLLs shipped by Online-Fix patches and classic proxy loaders. Forced as
- * "native,builtin": when the patch ships one, the native copy wins;
- * when it does not, Wine falls back to the built-in harmlessly.
- *
- * `onlinefix64`/`steamoverlay64`/`dnet` are the fix's own payload and
- * overlay modules (mirroring SOFL's default override list) — they MUST
- * win over any built-in or they fail to hook the game.
+ * The fix's OWN payload modules (patch loader, overlay, networking, the
+ * patched steam_api and known fix loaders shipped by online-fix.me
+ * packages). Forced as STRICT native (`=n`): if Wine answered with a
+ * built-in here, the fix could not hook the game and the session dies
+ * with "error 126". Mirrors OFLL's FixParser and slsdeck's fix policy.
+ */
+export const ONLINE_FIX_PAYLOAD_DLLS = [
+  "onlinefix64",
+  "onlinefix",
+  "steamoverlay64",
+  "steamoverlay",
+  "steam_api64",
+  "steam_api",
+  "dnet",
+  "dnet64",
+  "steamclient64",
+  "emp",
+  "custom",
+  "epicfix",
+] as const;
+
+/**
+ * Classic loader proxy DLLs. Forced as "native,builtin" (`=n,b`): when
+ * the patch ships one, the native copy wins; when it does not, Wine
+ * falls back to the built-in harmlessly.
  */
 export const ONLINE_FIX_PROXY_DLLS = [
-  "onlinefix64",
-  "steamoverlay64",
-  "dnet",
   "winmm",
   "version",
   "dinput8",
@@ -44,6 +59,39 @@ export const ONLINE_FIX_PROXY_DLLS = [
   "xinput1_4",
   "xinput9_1_0",
 ] as const;
+
+/**
+ * Files an Online-Fix package drops (usually at the game root) that the
+ * patch loader MUST find next to the game executable. Unreal-style
+ * layouts (Binaries/Win64/*-Shipping.exe) leave them out of the loader's
+ * DLL search path — the #1 cause of "error 126" on both platforms.
+ */
+export const ONLINE_FIX_PAYLOAD_FILES = [
+  "onlinefix64.dll",
+  "onlinefix.dll",
+  "steamoverlay64.dll",
+  "steamoverlay.dll",
+  "steam_api64.dll",
+  "steam_api.dll",
+  "dnet.dll",
+  "dnet64.dll",
+  "onlinefix.ini",
+  "dlllist.txt",
+  "winmm.txt",
+  "steam_appid.txt",
+  "onlinefix.json",
+  "launch_data.of",
+  "newtonsoft.json.dll",
+] as const;
+
+/**
+ * Payload directories mirrored alongside the files (fix-side Steam
+ * settings replacing steam_api's default ones).
+ */
+export const ONLINE_FIX_PAYLOAD_DIRECTORIES = ["steam_settings"] as const;
+
+/** Files bigger than this are never mirrored (only small patch payload). */
+export const ONLINE_FIX_MIRROR_MAX_FILE_BYTES = 15 * 1024 * 1024;
 
 /**
  * The files an Online-Fix patch drops next to the game executable.
@@ -79,23 +127,35 @@ export const normalizeDllOverrideName = (rawName: string): string | null => {
 /**
  * Builds the WINEDLLOVERRIDES value for an online session from the DLL
  * file names found next to the game's executable: the community D3D
- * recipe + every shipped DLL as "native,builtin" (fix proxy DLLs win
- * over Wine's built-ins) + the well-known proxy DLLs defensively.
+ * recipe + the fix payload family as strict native (`=n`) + loader
+ * proxy DLLs and every other shipped DLL as "native,builtin".
  */
+const PAYLOAD_OVERRIDE_NAMES = new Set(
+  ONLINE_FIX_PAYLOAD_DLLS.map((name) => name.toLowerCase())
+);
+
+/** Fix loader families detected by name prefix (EOS SDK shims etc.). */
+const isStrictPayloadName = (name: string) =>
+  PAYLOAD_OVERRIDE_NAMES.has(name) ||
+  name.startsWith("eos_") ||
+  name.startsWith("onlinefix") ||
+  name.startsWith("steamoverlay");
+
 export const buildOnlineFixDllOverrides = (dllNames: string[]): string => {
   const overrides = new Set<string>(ONLINE_FIX_D3D_OVERRIDES);
   let scanned = 0;
 
-  const addOverride = (name: string) => {
+  const addOverride = (name: string, strict: boolean) => {
     if (!name || isSkippableDllName(name)) return false;
     if (overrides.has(`${name}=n`) || overrides.has(`${name}=n,b`)) {
       return false;
     }
-    overrides.add(`${name}=n,b`);
+    overrides.add(`${name}=${strict ? "n" : "n,b"}`);
     return true;
   };
 
-  ONLINE_FIX_PROXY_DLLS.forEach((name) => addOverride(name));
+  ONLINE_FIX_PAYLOAD_DLLS.forEach((name) => addOverride(name, true));
+  ONLINE_FIX_PROXY_DLLS.forEach((name) => addOverride(name, false));
 
   for (const rawName of dllNames) {
     if (scanned >= MAX_SCANNED_DLL_OVERRIDES) break;
@@ -103,10 +163,37 @@ export const buildOnlineFixDllOverrides = (dllNames: string[]): string => {
     const name = normalizeDllOverrideName(rawName);
     if (!name) continue;
 
-    if (addOverride(name)) scanned += 1;
+    if (addOverride(name, isStrictPayloadName(name))) scanned += 1;
   }
 
   return Array.from(overrides).join(";");
+};
+
+export interface OnlineFixIniSanitizeResult {
+  content: string;
+  changed: boolean;
+  /** RealAppId/FakeAppId read from the ini (overlay session id). */
+  fakeAppId: string | null;
+}
+
+/**
+ * Patches an onlinefix.ini in memory, mirroring OFLL's recipe:
+ * `[Misc] ExtraProtection` is an anti-tamper that reliably kills Wine
+ * sessions (OFLL #53), so it is forced to false; FakeAppId is captured
+ * so the Steam overlay joins the session the fix actually uses.
+ */
+export const sanitizeOnlineFixIni = (
+  content: string
+): OnlineFixIniSanitizeResult => {
+  const fakeAppIdMatch = content.match(/FakeAppId\s*=\s*(\d+)/i);
+  const fakeAppId = fakeAppIdMatch?.[1] ?? null;
+
+  const patched = content.replace(
+    /(ExtraProtection\s*=\s*)true(\s*)$/im,
+    "$1false$2"
+  );
+
+  return { content: patched, changed: patched !== content, fakeAppId };
 };
 
 /**

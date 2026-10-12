@@ -31,9 +31,11 @@ import {
 import { updateGameRecord } from "@main/services/game-record-updater";
 import { dispatchSteamProtocolLaunch } from "@main/services/steam-integration/steam-protocol-launch-dispatch";
 import {
+  ensureOnlineFixRuntimeReady,
   ensureSteamClientRunning,
   getOnlineFixLaunchEnv,
   getWindowsOnlineFixLaunchEnv,
+  prepareOnlineFixGameFolder,
 } from "@main/services/online-fix";
 import { resolveSteamProtocolLaunch } from "@main/services/steam-integration/steam-protocol-launch";
 import { CommonRedistManager } from "@main/services/common-redist-manager";
@@ -440,6 +442,18 @@ const launchWindowsBinaryOnLinux = async (
 ): Promise<boolean> => {
   const { protonPath, winePrefixPath } = compatibilityContext;
 
+  // Online-Fix payloads need the Microsoft VC++ runtime — Wine prefixes
+  // only ship built-ins, and the fix loader dies with error 126 without
+  // it. Seeded once per prefix via umu-run winetricks (never blocks on
+  // failure).
+  if (onlineFixEnv && winePrefixPath) {
+    await ensureOnlineFixRuntimeReady({
+      winePrefixPath,
+      protonPath,
+      gameId: objectId,
+    });
+  }
+
   // umu-run is the universal Proton runner: it provisions the Steam Linux
   // Runtime container that every modern Proton (Valve, GE, CachyOS, UMU)
   // requires, and honors PROTONPATH so ANY installed Proton build works.
@@ -741,11 +755,19 @@ const launchGameWithCloudSaveChecks = async (
   // Windows path spawns directly (never shell.openPath) so the game
   // starts with the game folder as working directory — Online-Fix
   // patches resolve their payload DLLs relative to it (error 126).
-  const onlineFixEnv = onlineFixEnabled
-    ? process.platform === "linux"
-      ? getOnlineFixLaunchEnv(path.dirname(parsedPath))
-      : getWindowsOnlineFixLaunchEnv(path.dirname(parsedPath))
-    : null;
+  // Before that, the patch payload is mirrored next to the executable
+  // (packages ship it at the game root; Unreal-style exes in Binaries/
+  // Win64 cannot see it — THE classic error 126) and onlinefix.ini gets
+  // its ExtraProtection hygiene; FakeAppId drives the overlay session.
+  let onlineFixEnv: Record<string, string> | null = null;
+  if (onlineFixEnabled) {
+    const executableDirectory = path.dirname(parsedPath);
+    const preparation = await prepareOnlineFixGameFolder(executableDirectory);
+    onlineFixEnv =
+      process.platform === "linux"
+        ? getOnlineFixLaunchEnv(executableDirectory, preparation.fakeAppId)
+        : getWindowsOnlineFixLaunchEnv(executableDirectory);
+  }
 
   const steamCompatibilityPrefixPath =
     process.platform === "linux" &&

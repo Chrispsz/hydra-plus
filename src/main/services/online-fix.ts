@@ -4,10 +4,15 @@ import fs from "node:fs";
 import path from "node:path";
 
 import { logger } from "./logger";
+import { logsPath } from "@main/constants";
 import {
+  ONLINE_FIX_MIRROR_MAX_FILE_BYTES,
+  ONLINE_FIX_PAYLOAD_DIRECTORIES,
+  ONLINE_FIX_PAYLOAD_FILES,
   buildOnlineFixDllOverrides,
   buildWindowsOnlineFixPath,
   findOnlineFixMarkerDlls,
+  sanitizeOnlineFixIni,
 } from "./online-fix-core";
 
 const execFileAsync = promisify(execFile);
@@ -32,10 +37,21 @@ const execFileAsync = promisify(execFile);
  *    alongside the community D3D override recipe;
  * 3. on Wine/Proton sessions the Steam overlay is injected the way OFLL
  *    does it: LD_PRELOAD the native gameoverlayrenderer.so (32+64) from
- *    the Steam client install plus SteamOverlayGameId=480, so the fix
+ *    the Steam client install plus SteamOverlayGameId (from the fix's
+ *    onlinefix.ini FakeAppId when present, otherwise 480), so the fix
  *    finds an overlay to hook instead of failing with "error 126";
- * 4. keep Wine quiet (WINEDEBUG=-all) like the community launchers do.
- * 5. on Windows the game folder is prepended to PATH and the game is
+ * 4. the patch payload is MIRRORED next to the game executable (fix
+ *    packages ship it at the game root while Unreal-style exes live in
+ *    Binaries/Win64 — the loader then cannot find its payload and dies
+ *    with error 126), and onlinefix.ini gets OFLL's ExtraProtection
+ *    hygiene; on first online launch per prefix the VC++ 2015-2022
+ *    runtime is seeded via `umu-run winetricks vcrun2022` — the classic
+ *    missing dependency behind 126 when the prefix only has Wine's
+ *    built-in runtimes;
+ * 5. keep Wine quiet but NOT blind: WINEDEBUG=+err so the actual
+ *    failing import (`err:module`) lands in umu.log and the Online tab
+ *    can name the missing DLL instead of a bare "error 126";
+ * 6. on Windows the game folder is prepended to PATH and the game is
  *    always spawned directly with the game folder as working directory —
  *    the patch loader resolves its payload relative to it.
  */
@@ -80,22 +96,23 @@ export const collectOnlineFixDllNames = (
 
 /**
  * Wine env for online sessions (native D3D path + game DLLs + Steam
- * overlay injection, quiet logs). Linux only.
+ * overlay injection, quiet-but-diagnosable logs). Linux only.
  */
 export const getOnlineFixLaunchEnv = (
-  gameDir: string
+  gameDir: string,
+  overlayGameId?: string | null
 ): Record<string, string> => {
   const env: Record<string, string> = {
     WINEDLLOVERRIDES: buildOnlineFixDllOverrides(
       collectOnlineFixDllNames(gameDir)
     ),
-    WINEDEBUG: "-all",
+    WINEDEBUG: "+err",
   };
 
   const overlayPreload = buildSteamOverlayPreload();
   if (overlayPreload) {
     env.LD_PRELOAD = overlayPreload;
-    env.SteamOverlayGameId = STEAM_OVERLAY_GAME_ID;
+    env.SteamOverlayGameId = overlayGameId || STEAM_OVERLAY_GAME_ID;
   }
 
   return env;
@@ -118,10 +135,16 @@ export const getWindowsOnlineFixLaunchEnv = (
 
 export const STEAM_OVERLAY_GAME_ID = "480";
 
-const STEAM_BASE_DIRECTORIES = [
-  path.join(process.env.HOME ?? "", ".steam", "steam"),
-  path.join(process.env.HOME ?? "", ".local", "share", "Steam"),
-];
+const STEAM_BASE_DIRECTORIES = (
+  [
+    [".steam", "steam"],
+    [".steam", "root"],
+    [".local", "share", "Steam"],
+    [".var", "app", "com.valvesoftware.Steam", "data", "Steam"],
+    [".var", "app", "com.valvesoftware.Steam", ".local", "share", "Steam"],
+    ["snap", "steam", "common", ".local", "share", "Steam"],
+  ] as const
+).map((segments) => path.join(process.env.HOME ?? "", ...segments));
 
 const OVERLAY_LIB_RELATIVE_PATHS = [
   path.join("ubuntu12_32", "gameoverlayrenderer.so"),
@@ -167,6 +190,269 @@ export const buildSteamOverlayPreload = (): string | null => {
  */
 export const findOnlineFixMarkers = (gameDir: string): string[] =>
   findOnlineFixMarkerDlls(collectOnlineFixDllNames(gameDir));
+
+// ---------------------------------------------------------------------------
+// Patch payload preparation (mirroring + onlinefix.ini hygiene)
+// ---------------------------------------------------------------------------
+
+export interface OnlineFixGameFolderPreparation {
+  mirrored: string[];
+  fakeAppId: string | null;
+}
+
+const listDirectoryEntries = (directory: string) => {
+  try {
+    return fs.readdirSync(directory, { withFileTypes: true });
+  } catch {
+    return [];
+  }
+};
+
+const copyIfMissing = (sourcePath: string, targetPath: string) => {
+  try {
+    if (fs.existsSync(targetPath)) return false;
+    const stats = fs.statSync(sourcePath);
+    if (!stats.isFile() || stats.size > ONLINE_FIX_MIRROR_MAX_FILE_BYTES) {
+      return false;
+    }
+    fs.copyFileSync(sourcePath, targetPath);
+    return true;
+  } catch {
+    return false;
+  }
+};
+
+const copyDirectoryIfMissing = (sourcePath: string, targetPath: string) => {
+  try {
+    if (fs.existsSync(targetPath)) return false;
+    fs.cpSync(sourcePath, targetPath, { recursive: true, force: false });
+    return true;
+  } catch {
+    return false;
+  }
+};
+
+/**
+ * Mirrors the Online-Fix payload between the game root and the folder
+ * holding the executable (slsdeck-proven fix for Unreal-style layouts:
+ * packages ship the fix at the root while the loader resolves its
+ * dependencies next to the running exe), then sanitizes onlinefix.ini
+ * (ExtraProtection=false, OFLL #53) and captures FakeAppId for the
+ * overlay session. Never throws — a failed preparation still launches.
+ */
+export const prepareOnlineFixGameFolder = async (
+  executableDirectory: string
+): Promise<OnlineFixGameFolderPreparation> => {
+  const preparation: OnlineFixGameFolderPreparation = {
+    mirrored: [],
+    fakeAppId: null,
+  };
+
+  try {
+    const gameRoot = path.dirname(executableDirectory);
+
+    if (gameRoot !== executableDirectory) {
+      const exeEntries = listDirectoryEntries(executableDirectory);
+      const rootEntries = listDirectoryEntries(gameRoot);
+      const exeNames = new Set(exeEntries.map((entry) => entry.name));
+      const rootNames = new Set(rootEntries.map((entry) => entry.name));
+
+      const lowerCasePayloadFiles = new Set(
+        ONLINE_FIX_PAYLOAD_FILES.map((file) => file.toLowerCase())
+      );
+
+      for (const entry of rootEntries) {
+        const isPayloadFile =
+          entry.isFile() && lowerCasePayloadFiles.has(entry.name.toLowerCase());
+        const isPayloadDirectory =
+          entry.isDirectory() &&
+          (ONLINE_FIX_PAYLOAD_DIRECTORIES as readonly string[]).includes(
+            entry.name.toLowerCase()
+          );
+
+        if (!isPayloadFile && !isPayloadDirectory) continue;
+        if (exeNames.has(entry.name)) continue;
+
+        const sourcePath = path.join(gameRoot, entry.name);
+        const targetPath = path.join(executableDirectory, entry.name);
+        const copied = isPayloadDirectory
+          ? copyDirectoryIfMissing(sourcePath, targetPath)
+          : copyIfMissing(sourcePath, targetPath);
+        if (copied) preparation.mirrored.push(entry.name);
+      }
+
+      // Mirror the other way too: sibling executables at the root need
+      // the payload next to themselves when the package shipped it in
+      // the exe's subfolder.
+      for (const entry of exeEntries) {
+        const isPayloadFile =
+          entry.isFile() && lowerCasePayloadFiles.has(entry.name.toLowerCase());
+        if (!isPayloadFile) continue;
+        if (rootNames.has(entry.name)) continue;
+
+        const copied = copyIfMissing(
+          path.join(executableDirectory, entry.name),
+          path.join(gameRoot, entry.name)
+        );
+        if (copied) preparation.mirrored.push(entry.name);
+      }
+    }
+
+    const iniPath = path.join(executableDirectory, "onlinefix.ini");
+    try {
+      if (fs.existsSync(iniPath)) {
+        const content = await fs.promises.readFile(iniPath, "utf8");
+        const sanitized = sanitizeOnlineFixIni(content);
+        preparation.fakeAppId = sanitized.fakeAppId;
+        if (sanitized.changed) {
+          await fs.promises.writeFile(iniPath, sanitized.content, "utf8");
+          logger.info(
+            "[Online Fix] onlinefix.ini sanitized (ExtraProtection=false)"
+          );
+        }
+      }
+    } catch {
+      // Ini hygiene is best-effort.
+    }
+
+    if (preparation.mirrored.length > 0) {
+      logger.info("[Online Fix] payload mirrored next to the executable", {
+        mirrored: preparation.mirrored,
+      });
+    }
+  } catch (error) {
+    logger.warn("[Online Fix] payload preparation failed — launching anyway", {
+      error,
+    });
+  }
+
+  return preparation;
+};
+
+// ---------------------------------------------------------------------------
+// Prefix runtime seeding (VC++ 2015-2022 via umu-run winetricks)
+// ---------------------------------------------------------------------------
+
+const ONLINE_FIX_RUNTIME_STAMP = "hydra-onlinefix-runtime.json";
+const ONLINE_FIX_RUNTIME_MAX_ATTEMPTS = 2;
+
+type OnlineFixRuntimeStamp = {
+  status: "ok" | "failed";
+  attempts: number;
+  updatedAt: string;
+};
+
+const readRuntimeStamp = (
+  winePrefixPath: string
+): OnlineFixRuntimeStamp | null => {
+  try {
+    const raw = fs.readFileSync(
+      path.join(winePrefixPath, ONLINE_FIX_RUNTIME_STAMP),
+      "utf8"
+    );
+    return JSON.parse(raw) as OnlineFixRuntimeStamp;
+  } catch {
+    return null;
+  }
+};
+
+const writeRuntimeStamp = (
+  winePrefixPath: string,
+  stamp: Omit<OnlineFixRuntimeStamp, "updatedAt">
+) => {
+  try {
+    fs.writeFileSync(
+      path.join(winePrefixPath, ONLINE_FIX_RUNTIME_STAMP),
+      JSON.stringify({ ...stamp, updatedAt: new Date().toISOString() })
+    );
+  } catch {
+    // Stamp persistence is best-effort.
+  }
+};
+
+/**
+ * Seeds the VC++ 2015-2022 runtime into the Wine prefix ONCE via
+ * `umu-run winetricks vcrun2022` — umu runs it inside the Steam Runtime
+ * container and skips already-installed verbs. The classic "error 126"
+ * on Linux is a missing VC dependency of the fix payload; Wine prefixes
+ * only ship built-in runtimes, and online-fix packages expect the
+ * Microsoft ones (community launchers treat vcrun2022 as the default
+ * cure). Never blocks the launch on failure and gives up after two
+ * attempts so offline machines keep launching instantly.
+ */
+export const ensureOnlineFixRuntimeReady = async (options: {
+  winePrefixPath: string;
+  protonPath?: string | null;
+  gameId?: string | null;
+}): Promise<boolean> => {
+  const { winePrefixPath } = options;
+
+  const stamp = readRuntimeStamp(winePrefixPath);
+  if (stamp?.status === "ok") return true;
+  if (
+    stamp &&
+    stamp.status === "failed" &&
+    stamp.attempts >= ONLINE_FIX_RUNTIME_MAX_ATTEMPTS
+  ) {
+    return false;
+  }
+
+  const { Umu } = await import("./umu");
+  const seeded = await Umu.runWinetricksVerb({
+    winePrefixPath,
+    protonPath: options.protonPath,
+    gameId: options.gameId,
+    verb: "vcrun2022",
+  }).catch(() => false);
+
+  const attempts = (stamp?.attempts ?? 0) + 1;
+  writeRuntimeStamp(winePrefixPath, {
+    status: seeded ? "ok" : "failed",
+    attempts,
+  });
+
+  if (seeded) {
+    logger.info("[Online Fix] VC++ runtime seeded into the Wine prefix");
+  } else {
+    logger.warn(
+      `[Online Fix] winetricks vcrun2022 failed (attempt ${attempts}) — continuing without it`
+    );
+  }
+
+  return seeded;
+};
+
+// ---------------------------------------------------------------------------
+// Launch diagnostics (umu.log err:module tail)
+// ---------------------------------------------------------------------------
+
+/**
+ * Extracts the last Wine module error from umu.log (games launched with
+ * WINEDEBUG=+err log `err:module:import_dll ...` naming the missing
+ * dependency) so the Online tab can show WHY a launch died with error
+ * 126 instead of a bare code.
+ */
+export const readLastWineModuleError = (): string | null => {
+  try {
+    const umuLogPath = path.join(logsPath, "umu.log");
+    const stats = fs.statSync(umuLogPath);
+    if (!stats.isFile()) return null;
+
+    const readBytes = Math.min(stats.size, 64 * 1024);
+    const handle = fs.openSync(umuLogPath, "r");
+    try {
+      const buffer = Buffer.alloc(readBytes);
+      fs.readSync(handle, buffer, 0, readBytes, stats.size - readBytes);
+      const tail = buffer.toString("utf8");
+      const matches = tail.match(/err:module[^\n]*/g);
+      return matches?.length ? matches[matches.length - 1].trim() : null;
+    } finally {
+      fs.closeSync(handle);
+    }
+  } catch {
+    return null;
+  }
+};
 
 // ---------------------------------------------------------------------------
 // Steam client management (Windows + Linux)
@@ -253,16 +539,57 @@ const spawnSteamClient = async (): Promise<boolean> => {
       return true;
     }
 
-    const child = spawn("steam", [], {
-      detached: true,
-      stdio: "ignore",
-    });
-    child.unref();
-    return true;
+    // Native Steam first; Flatpak/Snap installs have no `steam` binary
+    // on PATH (OFLL #65) — launch them through their runtimes.
+    try {
+      const child = spawn("steam", ["-silent"], {
+        detached: true,
+        stdio: "ignore",
+      });
+      child.unref();
+      return true;
+    } catch {
+      try {
+        const child = spawn(
+          "flatpak",
+          ["run", "com.valvesoftware.Steam", "-silent"],
+          { detached: true, stdio: "ignore" }
+        );
+        child.unref();
+        return true;
+      } catch {
+        return false;
+      }
+    }
   } catch (error) {
     logger.warn("[Online Fix] Failed to spawn the Steam client", error);
     return false;
   }
+};
+
+export type SteamInstallKind = "native" | "flatpak" | "snap" | "unknown";
+
+/**
+ * Detects how the Steam client is installed (native, Flatpak, Snap) —
+ * Flatpak/Snap setups are the recurring "126 with Steam installed"
+ * report (OFLL #65): the overlay libraries and the client binary live
+ * outside the usual paths and must be handled explicitly.
+ */
+export const detectSteamInstallKind = (): SteamInstallKind => {
+  const home = process.env.HOME ?? "";
+  try {
+    if (
+      fs.existsSync(path.join(home, ".var", "app", "com.valvesoftware.Steam"))
+    ) {
+      return "flatpak";
+    }
+    if (fs.existsSync(path.join(home, "snap", "steam"))) {
+      return "snap";
+    }
+  } catch {
+    return "unknown";
+  }
+  return "native";
 };
 
 const waitForSteamClient = async (timeoutMs: number): Promise<boolean> => {

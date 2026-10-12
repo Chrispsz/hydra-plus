@@ -31,8 +31,8 @@ import Downloads from "./pages/downloads/downloads";
 import GameDetails from "./pages/game-details/game-details";
 import Settings from "./pages/settings/settings";
 import Library from "./pages/library/library";
-import Notifications from "./pages/notifications/notifications";
 import GameLauncher from "./pages/game-launcher/game-launcher";
+import AuthWindow from "./pages/auth-window/auth-window";
 
 console.log = logger.log;
 
@@ -110,10 +110,10 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
                 <Route path="/downloads" element={<Downloads />} />
                 <Route path="/game/:shop/:objectId" element={<GameDetails />} />
                 <Route path="/settings" element={<Settings />} />
-                <Route path="/notifications" element={<Notifications />} />
               </Route>
 
               <Route path="/game-launcher" element={<GameLauncher />} />
+              <Route path="/auth-window" element={<AuthWindow />} />
             </Routes>
           </GameOptionsModalProvider>
         </HashRouter>

@@ -1,89 +1,89 @@
-import { useNavigate } from "react-router-dom";
-import { BellIcon } from "@primer/octicons-react";
 import { useAppSelector } from "@renderer/hooks";
-import { useCallback, useEffect, useState } from "react";
+import { useUserDetails } from "@renderer/hooks";
 import { useTranslation } from "react-i18next";
 import SteamLogo from "@renderer/assets/steam-logo.svg?react";
-import { logger } from "@renderer/logger";
+import { PersonIcon, SignOutIcon } from "@primer/octicons-react";
 import "./sidebar-profile.scss";
 
 export function SidebarProfile() {
-  const navigate = useNavigate();
-
   const { t } = useTranslation("sidebar");
 
   const { gameRunning } = useAppSelector((state) => state.gameRunning);
+  const { userDetails, signOut } = useUserDetails();
 
-  const [notificationCount, setNotificationCount] = useState(0);
+  if (gameRunning) {
+    return (
+      <div className="sidebar-profile">
+        <div className="sidebar-profile__game-running">
+          <div className="sidebar-profile__game-running-information">
+            <p className="sidebar-profile__game-running-title">
+              {gameRunning.title}
+            </p>
 
-  const fetchNotificationCount = useCallback(async () => {
-    try {
-      const localCount = await window.electron.getLocalNotificationsCount();
-      setNotificationCount(localCount);
-    } catch (error) {
-      logger.error("Failed to fetch local notification count", error);
-    }
-  }, []);
+            <div className="sidebar-profile__game-running-label">
+              <small>{t("game_running")}</small>
+            </div>
+          </div>
 
-  useEffect(() => {
-    fetchNotificationCount();
+          {gameRunning.iconUrl ? (
+            <img
+              className="sidebar-profile__game-running-icon"
+              alt={gameRunning.title}
+              width={24}
+              src={gameRunning.iconUrl}
+            />
+          ) : (
+            <SteamLogo />
+          )}
+        </div>
+      </div>
+    );
+  }
 
-    const unsubscribe = window.electron.onLocalNotificationCreated(() => {
-      fetchNotificationCount();
-    });
-
-    return () => unsubscribe();
-  }, [fetchNotificationCount]);
-
-  const gameRunningDetails = () => {
-    if (!gameRunning) return null;
-
-    if (gameRunning.iconUrl) {
-      return (
-        <img
-          className="sidebar-profile__game-running-icon"
-          alt={gameRunning.title}
-          width={24}
-          src={gameRunning.iconUrl}
-        />
-      );
-    }
-
-    return <SteamLogo />;
-  };
+  if (!userDetails) {
+    return (
+      <div className="sidebar-profile">
+        <button
+          type="button"
+          className="sidebar-profile__sign-in"
+          onClick={() => window.electron.openAuthWindow()}
+          title={t("sign_in_hint")}
+        >
+          <PersonIcon size={16} />
+          <span>{t("sign_in")}</span>
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="sidebar-profile">
-      <button
-        type="button"
-        className="sidebar-profile__button"
-        onClick={() => navigate("/notifications")}
-      >
-        <div className="sidebar-profile__button-content">
-          <div className="sidebar-profile__button-information">
-            <p className="sidebar-profile__button-title">
-              {gameRunning ? gameRunning.title : t("notifications")}
-            </p>
+      <div className="sidebar-profile__account" title={t("sign_out")}>
+        {userDetails.profileImageUrl ? (
+          <img
+            className="sidebar-profile__account-avatar"
+            alt={userDetails.displayName}
+            width={24}
+            height={24}
+            src={userDetails.profileImageUrl}
+          />
+        ) : (
+          <PersonIcon size={16} />
+        )}
 
-            {gameRunning && (
-              <div className="sidebar-profile__button-game-running-title">
-                <small>{t("game_running")}</small>
-              </div>
-            )}
-          </div>
+        <span className="sidebar-profile__account-name">
+          {userDetails.displayName}
+        </span>
 
-          {gameRunningDetails()}
-
-          <div className="sidebar-profile__notification-badge">
-            <BellIcon size={16} />
-            {notificationCount > 0 && (
-              <small className="sidebar-profile__dropdown-badge">
-                {notificationCount > 99 ? "99+" : notificationCount}
-              </small>
-            )}
-          </div>
-        </div>
-      </button>
+        <button
+          type="button"
+          className="sidebar-profile__account-sign-out"
+          onClick={() => void signOut()}
+          aria-label={t("sign_out")}
+        >
+          <SignOutIcon size={14} />
+        </button>
+      </div>
     </div>
   );
 }

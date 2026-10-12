@@ -2,6 +2,7 @@ import { appVersion, defaultDownloadsPath, isStaging } from "@main/constants";
 import { ipcMain } from "electron";
 
 import "./autoupdater";
+import "./auth";
 import "./catalogue";
 import "./cloud-save";
 import "./connectivity";
@@ -11,7 +12,7 @@ import "./library";
 import "./leveldb";
 import "./main-window-controls";
 import "./misc";
-import "./notifications";
+import "./profile";
 import "./torrenting";
 import "./user";
 import "./user-preferences";

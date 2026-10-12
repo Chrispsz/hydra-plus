@@ -8,7 +8,6 @@ export * from "./game-stats-cache";
 export * from "./keys";
 export * from "./download-sources";
 export * from "./download-sources-check-timestamp";
-export * from "./local-notifications";
 export * from "./cloud-save-local-hash-cache";
 export * from "./cloud-save-prefix-generations";
 export * from "./cloud-save-sync-anchors";

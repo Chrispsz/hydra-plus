@@ -15,6 +15,7 @@ import {
   AllDebridClient,
   DownloadManager,
   HydraApi,
+  syncDownloadSourcesFromApi,
   startMainLoop,
   Ludusavi,
   Lock,
@@ -109,13 +110,17 @@ export const loadState = async () => {
 
   void watchSteamLibraries();
 
-  // Anonymous public API client (catalogue/download sources); no auth.
+  // Anonymous public API client (catalogue/download sources) + optional
+  // Hydra account session (login restores the profile's download sources).
   await HydraApi.setupApi();
 
   void migrateDownloadSources();
 
   // First-run: curated download sources so search works out of the box.
   void seedDefaultDownloadSources();
+
+  // Signed-in users get their account's sources synced over on boot.
+  void syncDownloadSourcesFromApi();
 
   // Check for new download options on startup (if enabled)
   void DownloadSourcesChecker.checkForChanges();

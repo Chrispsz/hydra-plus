@@ -123,6 +123,14 @@ export const runPostUpdateMaintenance = async (): Promise<void> => {
   await cleanupPortableUpdateCache();
   freedBytes += await pruneOldLogs().catch(() => 0);
 
+  // The local notifications feature was removed; older installs may still
+  // carry its sublevel. Best-effort one-time-per-version wipe.
+  try {
+    await db.sublevel("localNotifications", { valueEncoding: "json" }).clear();
+  } catch (error) {
+    logger.warn("Failed to clear local notifications data", error);
+  }
+
   try {
     await db.compactRange("\u0000", "\uffff");
   } catch (error) {

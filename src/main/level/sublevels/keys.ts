@@ -18,8 +18,9 @@ export const levelKeys = {
   downloadSources: "downloadSources",
   downloadSourcesCheckBaseline: "downloadSourcesCheckBaseline", // When we last started the app
   downloadSourcesSinceValue: "downloadSourcesSinceValue", // The 'since' value API used (for modal comparison)
-  defaultDownloadSourcesSeeded: "defaultDownloadSourcesSeeded", // Whether the curated first-run sources were handled
-  localNotifications: "localNotifications",
+  defaultDownloadSourcesSeededV2: "defaultDownloadSourcesSeededV2", // Whether the curated per-URL sources were handled
+  auth: "auth", // Hydra account session (accessToken + refreshToken)
+  user: "user", // Hydra account profile
   commonRedistPassed: "commonRedistPassed", // Whether common redistributables preflight has passed
   globalTrackersUrlCache: "globalTrackersUrlCache",
   cloudSaveLocalHashCache: "cloud-save-local-hash-cache",

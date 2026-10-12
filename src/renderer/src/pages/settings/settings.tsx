@@ -6,7 +6,6 @@ import {
 import { useMemo } from "react";
 import "./settings.scss";
 import {
-  BellIcon,
   CloudIcon,
   DownloadIcon,
   GearIcon,
@@ -19,7 +18,6 @@ import { SettingsContextGeneral } from "./settings-context-general";
 import { SettingsContextCloud } from "./settings-context-cloud";
 import { SettingsContextDownloads } from "./settings-context-downloads";
 import { SettingsContextDownloadSources } from "./settings-context-download-sources";
-import { SettingsContextNotifications } from "./settings-context-notifications";
 import { SettingsContextContentGameplay } from "./settings-context-content-gameplay";
 import { SettingsContextIntegrations } from "./settings-context-integrations";
 import { SettingsContextCompatibility } from "./settings-context-compatibility";
@@ -48,11 +46,6 @@ export default function Settings() {
         id: "download_sources" as const,
         label: t("download_sources"),
         icon: <LinkIcon size={16} />,
-      },
-      {
-        id: "notifications" as const,
-        label: t("notifications"),
-        icon: <BellIcon size={16} />,
       },
       {
         id: "content_gameplay" as const,
@@ -93,10 +86,6 @@ export default function Settings() {
 
             if (selectedCategoryId === "download_sources") {
               return <SettingsContextDownloadSources />;
-            }
-
-            if (selectedCategoryId === "notifications") {
-              return <SettingsContextNotifications />;
             }
 
             if (selectedCategoryId === "content_gameplay") {

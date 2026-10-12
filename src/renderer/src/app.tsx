@@ -25,6 +25,7 @@ import {
   setUserPreferences,
   toggleDraggingDisabled,
 } from "@renderer/features";
+import { useUserDetails } from "@renderer/hooks";
 import { useTranslation } from "react-i18next";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import { ArchiveDeletionModal } from "./pages/downloads/archive-deletion-error-modal";
@@ -60,14 +61,34 @@ export function App() {
     useState(false);
   const [archivePaths, setArchivePaths] = useState<string[]>([]);
 
+  const { fetchUserDetails, clearUserDetails } = useUserDetails();
+
   useEffect(() => {
     Promise.all([
       levelDBService.get("userPreferences", null, "json"),
       updateLibrary(),
+      fetchUserDetails(),
     ]).then(([preferences]) => {
       dispatch(setUserPreferences(preferences as UserPreferences | null));
     });
-  }, [navigate, location.pathname, dispatch, updateLibrary]);
+  }, [navigate, location.pathname, dispatch, updateLibrary, fetchUserDetails]);
+
+  // Hydra account session lifecycle: the sign in flow opens the auth
+  // window and the profile's download sources sync main-side; the
+  // renderer only reflects the account state here.
+  useEffect(() => {
+    const unsubscribeSignIn = window.electron.onSignIn(() => {
+      void fetchUserDetails();
+    });
+    const unsubscribeSignOut = window.electron.onSignOut(() => {
+      clearUserDetails();
+    });
+
+    return () => {
+      unsubscribeSignIn();
+      unsubscribeSignOut();
+    };
+  }, [fetchUserDetails, clearUserDetails]);
 
   useEffect(() => {
     const unsubscribe = window.electron.onUserPreferencesUpdated(

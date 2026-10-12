@@ -129,7 +129,6 @@ export function Header() {
   const title = useMemo(() => {
     if (location.pathname.startsWith("/game")) return headerTitle;
     if (location.pathname.startsWith("/profile")) return headerTitle;
-    if (location.pathname.startsWith("/notifications")) return headerTitle;
     if (location.pathname.startsWith("/library"))
       return headerTitle || t("library");
 

@@ -25,7 +25,6 @@
     "home": "Home",
     "queued": "{{title}} (Queued)",
     "game_has_no_executable_hint": "This game has no executable currently selected. Select it on the {{options}} > {{locations}} tab",
-    "notifications": "Notifications",
     "favorites": "Favorites",
     "add_custom_game_tooltip": "Add Custom Game",
     "filter_sort_tooltip": "Sort and filter",
@@ -59,7 +58,10 @@
     "expand_collections": "Expand collections",
     "expand_games": "Expand games",
     "games": "Games",
-    "playable_button_title": "Playable"
+    "playable_button_title": "Playable",
+    "sign_in": "Sign in",
+    "sign_out": "Sign out",
+    "sign_in_hint": "Sign in to sync your catalogue across devices"
   },
   "header": {
     "minimize": "Minimize",
@@ -100,7 +102,7 @@
     "scan_games_ambiguous_confirm": "Add selected",
     "scan_games_no_results": "We couldn't find any installed games.",
     "scan_games_in_progress": "Scanning your disks for installed games...",
-    "scan_games_in_progress_hint": "You can close this modal, you will receive a notification once it's done.",
+    "scan_games_in_progress_hint": "Games will be scanned in the background.",
     "scan_games_hide": "Hide",
     "scan_games_close": "Close",
     "scan_games_scan_again": "Scan Again",
@@ -700,7 +702,9 @@
     "online_mode_fix_unknown": "Patch status unavailable",
     "online_mode_note_steam": "Steam must be signed in to your account so the lobbies appear for your friends.",
     "online_mode_note_dlls": "The game folder is scanned on every launch: all shipped DLLs (steam_api, winmm, dinput8 and any fix proxies) load natively.",
-    "online_mode_note_version": "Everyone joining the session must use the same patched game version."
+    "online_mode_note_version": "Everyone joining the session must use the same patched game version.",
+    "online_mode_flatpak_warning": "Your Steam is Flatpak/Snap — Online-Fix games may fail (error 126). Prefer your distribution's native Steam.",
+    "online_mode_last_error": "Last logged module error: {{error}}"
   },
   "activation": {
     "title": "Activate Hydra",
@@ -769,9 +773,6 @@
     "integration_sync": "Sync",
     "downloads_path": "Downloads path",
     "change": "Change…",
-    "notifications": "Notifications",
-    "enable_download_notifications": "When a download is complete",
-    "enable_repack_list_notifications": "When a new repack is added",
     "quit_app_instead_hiding": "Don't hide Hydra when closing",
     "launch_with_system": "Launch Hydra on system start-up",
     "general": "General",
@@ -783,7 +784,6 @@
     "network_interface_default": "Default (all adapters)",
     "network_interface_hint": "Force torrents through a specific adapter, like a VPN. If it disconnects, downloads stop instead of leaking.",
     "network_interface_unavailable": "unavailable",
-    "library_notifications": "Library notifications",
     "content_gameplay": "Content & gameplay",
     "content_preferences": "Content preferences",
     "integrations": "Integrations",
@@ -954,26 +954,6 @@
     "proton_version_auto": "Automatic (global default or umu default)",
     "proton_source_compatibility_tools": "Installed in Steam's compatibilitytools.d"
   },
-  "notifications": {
-    "download_complete": "Download complete",
-    "game_ready_to_install": "{{title}} is ready to install",
-    "repack_list_updated": "Repack list updated",
-    "repack_count_one": "{{count}} repack added",
-    "repack_count_other": "{{count}} repacks added",
-    "new_update_available": "Version {{version}} available",
-    "restart_to_install_update": "Restart Hydra to install the update",
-    "extraction_complete": "Extraction complete",
-    "game_extracted": "{{title}} extracted successfully",
-    "download_halted": "Download halted",
-    "download_halted_no_disk_space": "{{title}} was halted because you ran out of storage space",
-    "scan_games_complete_title": "Scanning for games finished successfully",
-    "scan_games_complete_added_and_linked_description": "Added {{added}} new games to your library and found the executable of {{linked}} games that were already in it",
-    "scan_games_complete_added_description": "Added {{added}} new games to your library",
-    "scan_games_complete_linked_description": "Found the executable of {{linked}} games in your library",
-    "scan_games_complete_pending_description": "Found {{pending}} executables that need you to choose which game they belong to",
-    "scan_games_no_results_title": "Scanning for games finished",
-    "scan_games_no_results_description": "No installed games were found"
-  },
   "system_tray": {
     "open": "Open Hydra",
     "quit": "Quit"
@@ -1084,15 +1064,6 @@
     "preflight_downloading": "Downloading dependencies",
     "preflight_installing": "Installing dependencies",
     "preflight_installing_detail": "{{detail}}"
-  },
-  "notifications_page": {
-    "title": "Notifications",
-    "clear_all": "Clear All",
-    "loading": "Loading...",
-    "filter_all": "All",
-    "filter_unread": "Unread",
-    "dismiss": "Dismiss",
-    "notification": "Notification"
   },
   "language_name": "English"
 }

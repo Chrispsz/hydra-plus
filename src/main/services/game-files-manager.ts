@@ -22,7 +22,6 @@ import { getWindowsVbsPath } from "@main/helpers/shortcut-launch";
 import { GameExecutables } from "./game-executables";
 import { logger } from "./logger";
 import { deleteArchiveFile } from "@main/events/library/delete-archive";
-import { publishExtractionCompleteNotification } from "./notifications";
 import { SystemPath } from "./system-path";
 import { WindowManager } from "./window-manager";
 import { runAutomaticCloudSaveSync } from "./cloud-save";
@@ -259,7 +258,7 @@ export class GameFilesManager {
     return true;
   }
 
-  async setExtractionComplete(publishNotification = true) {
+  async setExtractionComplete() {
     const [download, game] = await Promise.all([
       downloadsSublevel.get(this.gameKey),
       gamesSublevel.get(this.gameKey),
@@ -289,10 +288,6 @@ export class GameFilesManager {
       this.shop,
       this.objectId
     );
-
-    if (publishNotification && game) {
-      publishExtractionCompleteNotification(game);
-    }
 
     this.lastProgressUpdateTime = 0;
     this.lastProgressUpdateValue = 0;

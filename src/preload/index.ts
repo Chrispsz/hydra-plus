@@ -1001,34 +1001,24 @@ contextBridge.exposeInMainWorld("electron", {
   startGoogleAuth: () => ipcRenderer.invoke("startGoogleAuth"),
   disconnectGoogleDrive: () => ipcRenderer.invoke("disconnectGoogleDrive"),
   getGoogleDriveStatus: () => ipcRenderer.invoke("getGoogleDriveStatus"),
+
+  /* Hydra account (sign in restores the profile's download sources) */
+  openAuthWindow: () => ipcRenderer.invoke("openAuthWindow"),
+  signOut: () => ipcRenderer.invoke("signOut"),
+  getMe: () => ipcRenderer.invoke("getMe"),
   minimizeAuthWindow: () => ipcRenderer.invoke("minimizeAuthWindow"),
   closeAuthWindow: () => ipcRenderer.invoke("closeAuthWindow"),
-
-  /* Notifications */
-  publishNewRepacksNotification: (newRepacksCount: number) =>
-    ipcRenderer.invoke("publishNewRepacksNotification", newRepacksCount),
-  getLocalNotifications: () => ipcRenderer.invoke("getLocalNotifications"),
-  getLocalNotificationsCount: () =>
-    ipcRenderer.invoke("getLocalNotificationsCount"),
-  markLocalNotificationRead: (id: string) =>
-    ipcRenderer.invoke("markLocalNotificationRead", id),
-  markLocalNotificationUnread: (id: string) =>
-    ipcRenderer.invoke("markLocalNotificationUnread", id),
-  markAllLocalNotificationsRead: () =>
-    ipcRenderer.invoke("markAllLocalNotificationsRead"),
-  deleteLocalNotification: (id: string) =>
-    ipcRenderer.invoke("deleteLocalNotification", id),
-  clearAllLocalNotifications: () =>
-    ipcRenderer.invoke("clearAllLocalNotifications"),
-  onLocalNotificationCreated: (cb: (notification: unknown) => void) => {
-    const listener = (
-      _event: Electron.IpcRendererEvent,
-      notification: unknown
-    ) => cb(notification);
-    ipcRenderer.on("on-local-notification-created", listener);
-    return () =>
-      ipcRenderer.removeListener("on-local-notification-created", listener);
+  onSignIn: (cb: () => void) => {
+    const listener = () => cb();
+    ipcRenderer.on("on-signin", listener);
+    return () => ipcRenderer.removeListener("on-signin", listener);
   },
+  onSignOut: (cb: () => void) => {
+    const listener = () => cb();
+    ipcRenderer.on("on-signout", listener);
+    return () => ipcRenderer.removeListener("on-signout", listener);
+  },
+
   onNewDownloadOptions: (
     cb: (gamesWithNewOptions: { gameId: string; count: number }[]) => void
   ) => {

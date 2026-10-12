@@ -367,6 +367,91 @@ export class Umu {
     });
   }
 
+  /**
+   * Runs a winetricks verb inside the prefix through umu-run (`umu-run
+   * winetricks <verb>`): umu executes it within the Steam Runtime
+   * container using the bundled protonfixes winetricks and skips verbs
+   * already present in the prefix's winetricks.log. Used to seed the
+   * VC++ runtime for Online-Fix sessions.
+   */
+  public static async runWinetricksVerb(options: {
+    winePrefixPath: string;
+    protonPath?: string | null;
+    gameId?: string | null;
+    verb: string;
+    timeoutMs?: number;
+  }): Promise<boolean> {
+    const timeoutMs = options.timeoutMs ?? 180_000;
+    const umuLogPath = getUmuLogPath();
+    const umuBinaryPath = getUmuBinaryPath();
+    const pythonPath = getCompatiblePythonPath();
+    const command = pythonPath ?? umuBinaryPath;
+    const args = pythonPath
+      ? [umuBinaryPath, "winetricks", options.verb]
+      : ["winetricks", options.verb];
+    const launchEnv = {
+      WINEPREFIX: options.winePrefixPath,
+      ...(options.gameId ? { GAMEID: `umu-${options.gameId}` } : {}),
+      ...(options.protonPath ? { PROTONPATH: options.protonPath } : {}),
+    };
+
+    fs.mkdirSync(path.dirname(umuLogPath), { recursive: true });
+    fs.mkdirSync(path.dirname(options.winePrefixPath), { recursive: true });
+    ensureExecutablePermission(umuBinaryPath);
+    fs.appendFileSync(
+      umuLogPath,
+      `\n[${new Date().toISOString()}] Running winetricks verb: ${options.verb}\n`
+    );
+
+    return new Promise<boolean>((resolve) => {
+      const shouldPipeToTerminal = is.dev;
+      const logFileDescriptor = shouldPipeToTerminal
+        ? null
+        : fs.openSync(umuLogPath, "a");
+      let settled = false;
+      let timeoutHandle: NodeJS.Timeout | null = null;
+
+      const finish = (result: boolean) => {
+        if (settled) return;
+        settled = true;
+        if (timeoutHandle) clearTimeout(timeoutHandle);
+        if (logFileDescriptor !== null) fs.closeSync(logFileDescriptor);
+        resolve(result);
+      };
+
+      timeoutHandle = setTimeout(() => finish(false), timeoutMs);
+
+      const child = spawn(command, args, {
+        detached: false,
+        stdio: shouldPipeToTerminal
+          ? "inherit"
+          : ["ignore", logFileDescriptor, logFileDescriptor],
+        shell: false,
+        cwd: SystemPath.getPath("home"),
+        env: {
+          ...process.env,
+          ...launchEnv,
+        },
+      });
+
+      child.once("error", (error) => {
+        logger.error("umu-run winetricks verb failed to start", {
+          verb: options.verb,
+          error,
+        });
+        finish(false);
+      });
+
+      child.once("close", (code) => {
+        fs.appendFileSync(
+          umuLogPath,
+          `[${new Date().toISOString()}] winetricks ${options.verb} exited with code=${code ?? "null"}\n`
+        );
+        finish(code === 0);
+      });
+    });
+  }
+
   public static async launchExecutable(
     executablePath: string,
     launchParameters: string[] = [],
