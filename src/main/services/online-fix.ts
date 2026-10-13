@@ -13,6 +13,7 @@ import {
   buildOnlineFixSteamContextEnv,
   buildSteamRuntimeCandidatePaths,
   buildWindowsOnlineFixPath,
+  extractOnlineFixListedDlls,
   findOnlineFixMarkerDlls,
   resolveSteamInstallKind,
   sanitizeOnlineFixIni,
@@ -78,24 +79,44 @@ const listDllNames = (directory: string): string[] => {
   }
 };
 
+/** Fix-side files listing extra DLLs that must load natively. */
+const ONLINE_FIX_DLL_LIST_FILES = ["dlllist.txt", "winmm.txt"] as const;
+
 /**
  * Collects the DLL file names an Online-Fix patch may rely on: the
  * executable's folder first, then the game root above it (repacks ship
  * the fix payload at the root while executables often live in
- * Binaries/Win64-style subfolders).
+ * Binaries/Win64-style subfolders). The fix's own dlllist.txt/winmm.txt
+ * lists are parsed too (OFLL parity): each listed module is one the
+ * loader resolves by name, and without an override Wine serves its
+ * built-in instead — the recurring "error 126".
  */
 export const collectOnlineFixDllNames = (
   executableDirectory: string
 ): string[] => {
   const names = new Set<string>();
 
-  listDllNames(executableDirectory).forEach((name) => names.add(name));
+  const collectFrom = (directory: string) => {
+    listDllNames(directory).forEach((name) => names.add(name));
+
+    for (const listFile of ONLINE_FIX_DLL_LIST_FILES) {
+      try {
+        const listPath = path.join(directory, listFile);
+        if (!fs.existsSync(listPath)) continue;
+        extractOnlineFixListedDlls(fs.readFileSync(listPath, "utf8")).forEach(
+          (name) => names.add(name)
+        );
+      } catch {
+        // Unreadable list — the file scan above still applies.
+      }
+    }
+  };
+
+  collectFrom(executableDirectory);
 
   const parentDirectory = path.dirname(executableDirectory);
   if (parentDirectory && parentDirectory !== executableDirectory) {
-    listDllNames(parentDirectory).forEach((name) => {
-      if (!names.has(name)) names.add(name);
-    });
+    collectFrom(parentDirectory);
   }
 
   return Array.from(names);
@@ -152,7 +173,10 @@ export const getWindowsOnlineFixLaunchEnv = (
 // Steam overlay injection (Linux, OFLL recipe)
 // ---------------------------------------------------------------------------
 
-export const STEAM_OVERLAY_GAME_ID = "480";
+const STEAM_OVERLAY_LIBRARY_RELATIVE_PATHS = [
+  path.join("ubuntu12_32", "gameoverlayrenderer.so"),
+  path.join("ubuntu12_64", "gameoverlayrenderer.so"),
+];
 
 const STEAM_BASE_DIRECTORIES = (
   [
@@ -164,11 +188,6 @@ const STEAM_BASE_DIRECTORIES = (
     ["snap", "steam", "common", ".local", "share", "Steam"],
   ] as const
 ).map((segments) => path.join(process.env.HOME ?? "", ...segments));
-
-const OVERLAY_LIB_RELATIVE_PATHS = [
-  path.join("ubuntu12_32", "gameoverlayrenderer.so"),
-  path.join("ubuntu12_64", "gameoverlayrenderer.so"),
-];
 
 /**
  * Resolves the REAL Steam client root for the detected install kind.
@@ -241,7 +260,7 @@ export const buildSteamOverlayPreload = (
   for (const steamBase of baseDirectories) {
     if (!steamBase) continue;
 
-    for (const relativePath of OVERLAY_LIB_RELATIVE_PATHS) {
+    for (const relativePath of STEAM_OVERLAY_LIBRARY_RELATIVE_PATHS) {
       const overlayPath = path.join(steamBase, relativePath);
       try {
         if (fs.existsSync(overlayPath) && !overlayPaths.includes(overlayPath)) {
@@ -524,23 +543,53 @@ export const ensureOnlineFixRuntimeReady = async (options: {
 };
 
 // ---------------------------------------------------------------------------
-// Launch diagnostics (umu.log err:module tail)
+// Launch diagnostics (runner log err:module tail)
 // ---------------------------------------------------------------------------
 
 /**
- * Extracts the last Wine module error from umu.log (games launched with
- * WINEDEBUG=+err log `err:module:import_dll ...` naming the missing
- * dependency) so the Online tab can show WHY a launch died with error
- * 126 instead of a bare code.
+ * Extracts the last Wine module error from the runner logs (games
+ * launched with WINEDEBUG=+err log `err:module:import_dll ...` naming
+ * the missing dependency) so the Online tab can show WHY a launch died
+ * with error 126 instead of a bare code.
+ *
+ * Both runner logs are checked — direct Proton sessions (the Online-Fix
+ * primary path) write proton.log while umu sessions write umu.log — and
+ * the most recently updated log wins.
  */
 export const readLastWineModuleError = (): string | null => {
+  const logCandidates = ["proton.log", "umu.log"].map((name) =>
+    path.join(logsPath, name)
+  );
+
+  const byRecency = logCandidates
+    .map((logPath) => {
+      try {
+        const stats = fs.statSync(logPath);
+        return stats.isFile() ? { logPath, mtimeMs: stats.mtimeMs } : null;
+      } catch {
+        return null;
+      }
+    })
+    .filter((entry): entry is { logPath: string; mtimeMs: number } =>
+      Boolean(entry)
+    )
+    .sort((a, b) => b.mtimeMs - a.mtimeMs);
+
+  for (const { logPath } of byRecency) {
+    const error = readLastWineModuleErrorFromLog(logPath);
+    if (error) return error;
+  }
+
+  return null;
+};
+
+const readLastWineModuleErrorFromLog = (logPath: string): string | null => {
   try {
-    const umuLogPath = path.join(logsPath, "umu.log");
-    const stats = fs.statSync(umuLogPath);
+    const stats = fs.statSync(logPath);
     if (!stats.isFile()) return null;
 
     const readBytes = Math.min(stats.size, 64 * 1024);
-    const handle = fs.openSync(umuLogPath, "r");
+    const handle = fs.openSync(logPath, "r");
     try {
       const buffer = Buffer.alloc(readBytes);
       fs.readSync(handle, buffer, 0, readBytes, stats.size - readBytes);
@@ -785,6 +834,71 @@ const waitForSteamClient = async (timeoutMs: number): Promise<boolean> => {
   return isSteamClientRunning();
 };
 
+const getLoginUsersVdfPath = (): string | null => {
+  const candidates = [
+    path.join(
+      process.env.HOME ?? "",
+      ".steam",
+      "steam",
+      "config",
+      "loginusers.vdf"
+    ),
+    path.join(
+      process.env.HOME ?? "",
+      ".local",
+      "share",
+      "Steam",
+      "config",
+      "loginusers.vdf"
+    ),
+  ];
+
+  for (const candidate of candidates) {
+    try {
+      if (candidate && fs.existsSync(candidate)) return candidate;
+    } catch {
+      // Unreadable location — try the next one.
+    }
+  }
+
+  return null;
+};
+
+const getLoginUsersMtime = (loginUsersPath: string | null): number => {
+  if (!loginUsersPath) return -1;
+  try {
+    return fs.statSync(loginUsersPath).mtimeMs;
+  } catch {
+    return -1;
+  }
+};
+
+const STEAM_SIGN_IN_WAIT_TIMEOUT_MS = 15_000;
+
+/**
+ * Best-effort wait for the Steam client to actually SIGN IN after being
+ * spawned (OFLL waits the same way, via loginusers.vdf): a running but
+ * logged-out client cannot provide the lobby/relay the fix needs. Never
+ * blocks the launch — the game may still work — it just gives the
+ * session a fair chance to reach the signed-in state.
+ */
+const waitForSteamSignIn = async (): Promise<void> => {
+  const loginUsersPath = getLoginUsersVdfPath();
+  if (!loginUsersPath) return;
+
+  const baselineMtime = getLoginUsersMtime(loginUsersPath);
+  const deadline = Date.now() + STEAM_SIGN_IN_WAIT_TIMEOUT_MS;
+
+  while (Date.now() < deadline) {
+    await new Promise((resolve) => setTimeout(resolve, STEAM_POLL_INTERVAL_MS));
+    if (getLoginUsersMtime(loginUsersPath) !== baselineMtime) return;
+  }
+
+  logger.warn(
+    "[Online Fix] Steam client sign-in was not observed in time — launching anyway"
+  );
+};
+
 /**
  * Guarantees the Steam client is up before an online session. Returns
  * true when the client is running; false means the launch should still
@@ -800,6 +914,9 @@ export const ensureSteamClientRunning = async (): Promise<boolean> => {
   const ready = await waitForSteamClient(STEAM_WAIT_TIMEOUT_MS);
   if (ready) {
     logger.info("[Online Fix] Steam client is up");
+    if (process.platform !== "win32") {
+      await waitForSteamSignIn();
+    }
   } else {
     logger.warn(
       "[Online Fix] Steam client did not report running in time — launching anyway"

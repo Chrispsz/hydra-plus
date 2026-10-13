@@ -289,26 +289,69 @@ export const buildOnlineFixSteamContextEnv = (
 // ---------------------------------------------------------------------------
 
 /**
- * Steam Linux Runtime entry points to try, in order, for each Steam
- * library root. Modern Proton builds are compiled against the sniper
- * runtime; wrapping the launch with its _v2-entry-point reproduces the
- * container Steam itself uses, so host library mismatches stop mattering.
+ * Steam Linux Runtime wrappers to try, in order, for each Steam library
+ * root — reproducing the container Steam itself uses so host library
+ * mismatches stop mattering.
+ *
+ * Runtimes (matching the OFLL mapping):
+ * - SteamLinuxRuntime_4   — required by GE-Proton 11+/newest builds
+ * - SteamLinuxRuntime_sniper — Proton 8–10 (current default)
+ * - SteamLinuxRuntime_soldier — Proton 7 and older
+ *
+ * Entry scripts: the `run` shell script is the proven stable wrapper
+ * (it execs _v2-entry-point with the correct verb); the raw
+ * _v2-entry-point stays as the fallback for runtimes without `run`.
  */
 export const buildSteamRuntimeCandidatePaths = (
   libraryRoots: string[]
 ): string[] => {
-  const runtimes = ["SteamLinuxRuntime_sniper", "SteamLinuxRuntime_soldier"];
+  const runtimes = [
+    "SteamLinuxRuntime_4",
+    "SteamLinuxRuntime_sniper",
+    "SteamLinuxRuntime_soldier",
+  ];
+  const entryScripts = ["run", "_v2-entry-point"];
   const candidates: string[] = [];
 
   for (const libraryRoot of libraryRoots) {
     for (const runtime of runtimes) {
-      candidates.push(
-        [libraryRoot, "steamapps", "common", runtime, "_v2-entry-point"].join(
-          "/"
-        )
-      );
+      for (const entryScript of entryScripts) {
+        candidates.push(
+          [libraryRoot, "steamapps", "common", runtime, entryScript].join("/")
+        );
+      }
     }
   }
 
   return candidates;
+};
+
+// ---------------------------------------------------------------------------
+// Fix-side DLL list files (pure)
+// ---------------------------------------------------------------------------
+
+/**
+ * Parses a fix-side DLL list (dlllist.txt / winmm.txt shipped by
+ * Online-Fix packages): one DLL per line, possibly with paths and
+ * inline comments. Mirrors the OFLL parser — every listed module is a
+ * DLL the fix loader expects to resolve NATIVELY, so each name must get
+ * an override or Wine loads its built-in instead and the session dies
+ * with "error 126".
+ */
+export const extractOnlineFixListedDlls = (content: string): string[] => {
+  const names = new Set<string>();
+
+  for (const rawLine of content.split(/\r?\n/)) {
+    const line = rawLine.trim();
+    if (!line || line.startsWith("#") || line.startsWith(";")) continue;
+
+    const firstToken = line.split(/\s+/)[0];
+    if (!firstToken) continue;
+
+    const baseName = firstToken.replace(/\\/g, "/").split("/").pop() ?? "";
+    const name = normalizeDllOverrideName(baseName);
+    if (name) names.add(name);
+  }
+
+  return Array.from(names);
 };

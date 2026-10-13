@@ -6,6 +6,7 @@ import {
   buildOnlineFixSteamContextEnv,
   buildSteamRuntimeCandidatePaths,
   buildWindowsOnlineFixPath,
+  extractOnlineFixListedDlls,
   findOnlineFixMarkerDlls,
   isSkippableDllName,
   MAX_SCANNED_DLL_OVERRIDES,
@@ -272,17 +273,62 @@ describe("buildOnlineFixSteamContextEnv", () => {
 });
 
 describe("buildSteamRuntimeCandidatePaths", () => {
-  it("tries sniper before soldier for every library", () => {
-    const candidates = buildSteamRuntimeCandidatePaths(["/games", "/steam"]);
+  it("covers the OFLL runtime mapping with the run script first", () => {
+    const candidates = buildSteamRuntimeCandidatePaths(["/games"]);
     assert.deepEqual(candidates, [
+      // SteamLinuxRuntime_4 — GE-Proton 11+ and newest builds
+      "/games/steamapps/common/SteamLinuxRuntime_4/run",
+      "/games/steamapps/common/SteamLinuxRuntime_4/_v2-entry-point",
+      // sniper — Proton 8-10
+      "/games/steamapps/common/SteamLinuxRuntime_sniper/run",
       "/games/steamapps/common/SteamLinuxRuntime_sniper/_v2-entry-point",
+      // soldier — Proton 7 and older
+      "/games/steamapps/common/SteamLinuxRuntime_soldier/run",
       "/games/steamapps/common/SteamLinuxRuntime_soldier/_v2-entry-point",
-      "/steam/steamapps/common/SteamLinuxRuntime_sniper/_v2-entry-point",
-      "/steam/steamapps/common/SteamLinuxRuntime_soldier/_v2-entry-point",
     ]);
+  });
+
+  it("tries every runtime per library before moving on", () => {
+    const candidates = buildSteamRuntimeCandidatePaths(["/a", "/b"]);
+    assert.equal(candidates.length, 12);
+    assert.ok(candidates[0].startsWith("/a/"));
+    assert.ok(candidates[6].startsWith("/b/"));
   });
 
   it("returns nothing without libraries", () => {
     assert.deepEqual(buildSteamRuntimeCandidatePaths([]), []);
+  });
+});
+
+describe("extractOnlineFixListedDlls", () => {
+  it("parses plain dll lists", () => {
+    assert.deepEqual(extractOnlineFixListedDlls("winmm.dll\ndinput8.dll\n"), [
+      "winmm",
+      "dinput8",
+    ]);
+  });
+
+  it("strips paths and inline comments", () => {
+    assert.deepEqual(
+      extractOnlineFixListedDlls(
+        "C:\\Windows\\system32\\winhttp.dll ; loader proxy\nwinmm.dll # classic\n"
+      ),
+      ["winhttp", "winmm"]
+    );
+  });
+
+  it("skips blank lines, comments and api-set shims", () => {
+    assert.deepEqual(
+      extractOnlineFixListedDlls(
+        "# header\n\n; comment\napi-ms-win-crt-runtime-l1-1-0.dll\ndsound.dll\n"
+      ),
+      ["dsound"]
+    );
+  });
+
+  it("deduplicates case-insensitively", () => {
+    assert.deepEqual(extractOnlineFixListedDlls("WinMM.dll\nwinmm.dll\n"), [
+      "winmm",
+    ]);
   });
 });
