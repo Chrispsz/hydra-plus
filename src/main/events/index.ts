@@ -5,7 +5,6 @@ import "./autoupdater";
 import "./auth";
 import "./catalogue";
 import "./cloud-save";
-import "./connectivity";
 import "./download-sources";
 import "./hardware";
 import "./library";
@@ -16,6 +15,7 @@ import "./profile";
 import "./torrenting";
 import "./user";
 import "./user-preferences";
+import "./connectivity";
 import "./library/transfer-game-files";
 
 ipcMain.handle("ping", () => "pong");

@@ -41,12 +41,6 @@ import type {
   ExtractionFailure,
 } from "@types";
 
-const fileExplorerApi = {
-  readDirectory: (path: string) => ipcRenderer.invoke("readDirectory", path),
-  getPathInfo: (path: string) => ipcRenderer.invoke("getPathInfo", path),
-  listDrives: () => ipcRenderer.invoke("listDrives"),
-};
-
 const invokeCloudSaveOperation = async <TResult = SyncGameCloudSaveResult>(
   channel:
     | "syncGameCloudSave"
@@ -471,23 +465,8 @@ contextBridge.exposeInMainWorld("electron", {
     ipcRenderer.invoke("removeDownloadSource", url, removeAll),
   getDownloadSources: () => ipcRenderer.invoke("getDownloadSources"),
   syncDownloadSources: () => ipcRenderer.invoke("syncDownloadSources"),
-  getDownloadSourcesCheckBaseline: () =>
-    ipcRenderer.invoke("getDownloadSourcesCheckBaseline"),
-  getDownloadSourcesSinceValue: () =>
-    ipcRenderer.invoke("getDownloadSourcesSinceValue"),
 
   /* Library */
-  toggleAutomaticCloudSync: (
-    shop: GameShop,
-    objectId: string,
-    automaticCloudSync: boolean
-  ) =>
-    ipcRenderer.invoke(
-      "toggleAutomaticCloudSync",
-      shop,
-      objectId,
-      automaticCloudSync
-    ),
   setGameHydraPlaytimeEnabled: (
     shop: GameShop,
     objectId: string,
@@ -515,7 +494,6 @@ contextBridge.exposeInMainWorld("electron", {
   installGameOnSteam: (steamAppId: string) =>
     ipcRenderer.invoke("installGameOnSteam", steamAppId),
   isMangohudAvailable: () => ipcRenderer.invoke("isMangohudAvailable"),
-  getSteamClientStatus: () => ipcRenderer.invoke("getSteamClientStatus"),
   getOnlineFixStatus: (shop: GameShop, objectId: string) =>
     ipcRenderer.invoke("getOnlineFixStatus", shop, objectId),
   isWinetricksAvailable: () => ipcRenderer.invoke("isWinetricksAvailable"),
@@ -540,17 +518,6 @@ contextBridge.exposeInMainWorld("electron", {
       logoImageUrl,
       libraryHeroImageUrl
     ),
-  copyCustomGameAsset: (
-    sourcePath: string,
-    assetType: "icon" | "logo" | "hero" | "grid"
-  ) => ipcRenderer.invoke("copyCustomGameAsset", sourcePath, assetType),
-  downloadGameArtwork: (artworkUrl: string): Promise<string | null> =>
-    ipcRenderer.invoke("downloadGameArtwork", artworkUrl),
-  saveTempFile: (fileName: string, fileData: Uint8Array) =>
-    ipcRenderer.invoke("saveTempFile", fileName, fileData),
-  deleteTempFile: (filePath: string) =>
-    ipcRenderer.invoke("deleteTempFile", filePath),
-  cleanupUnusedAssets: () => ipcRenderer.invoke("cleanupUnusedAssets"),
   updateCustomGame: (params: {
     shop: GameShop;
     objectId: string;
@@ -613,11 +580,6 @@ contextBridge.exposeInMainWorld("electron", {
     ipcRenderer.invoke("clearNewDownloadOptions", shop, objectId),
   toggleGamePin: (shop: GameShop, objectId: string, pinned: boolean) =>
     ipcRenderer.invoke("toggleGamePin", shop, objectId, pinned),
-  updateLaunchOptions: (
-    shop: GameShop,
-    objectId: string,
-    launchOptions: string | null
-  ) => ipcRenderer.invoke("updateLaunchOptions", shop, objectId, launchOptions),
 
   selectGameWinePrefix: (
     shop: GameShop,
@@ -681,10 +643,6 @@ contextBridge.exposeInMainWorld("electron", {
     ipcRenderer.invoke("deleteGameFolder", shop, objectId),
   getGameByObjectId: (shop: GameShop, objectId: string) =>
     ipcRenderer.invoke("getGameByObjectId", shop, objectId),
-  changeGamePlayTime: (shop: GameShop, objectId: string, playtime: number) =>
-    ipcRenderer.invoke("changeGamePlayTime", shop, objectId, playtime),
-  resetGamePlayTime: (shop: GameShop, objectId: string) =>
-    ipcRenderer.invoke("resetGamePlayTime", shop, objectId),
   extractGameDownload: (shop: GameShop, objectId: string) =>
     ipcRenderer.invoke("extractGameDownload", shop, objectId),
   scanInstalledGames: (
@@ -715,7 +673,6 @@ contextBridge.exposeInMainWorld("electron", {
     ipcRenderer.invoke("deleteSteamShortcut", shop, objectId),
   checkSteamShortcut: (shop: GameShop, objectId: string) =>
     ipcRenderer.invoke("checkSteamShortcut", shop, objectId),
-  getGamesRunning: () => ipcRenderer.invoke("getGamesRunning"),
   onGamesRunning: (
     cb: (
       gamesRunning: Pick<GameRunning, "id" | "sessionDurationInMillis">[]
@@ -813,28 +770,16 @@ contextBridge.exposeInMainWorld("electron", {
 
   /* Cloud save (Hydra Plus: Google Drive only) */
 
-  /* Clipboard (renderer-side `navigator.clipboard.*` is deprecated in Electron 40+;
-     direct `electron.clipboard` access from preload is also deprecated, so go through main via IPC) */
-  clipboard: {
-    writeText: (text: string) =>
-      ipcRenderer.invoke("clipboardWriteText", text) as Promise<void>,
-  },
-
   /* Misc */
   ping: () => ipcRenderer.invoke("ping"),
   getVersion: () => ipcRenderer.invoke("getVersion"),
   getDefaultDownloadsPath: () => ipcRenderer.invoke("getDefaultDownloadsPath"),
-  openFolder: (folderPath: string) =>
-    ipcRenderer.invoke("openFolder", folderPath),
   getAppSessionId: () => ipcRenderer.invoke("getAppSessionId"),
   isStaging: () => ipcRenderer.invoke("isStaging"),
   isPortableVersion: Boolean(process.env.PORTABLE_EXECUTABLE_FILE),
   openExternal: (src: string) => ipcRenderer.invoke("openExternal", src),
   showOpenDialog: (options: Electron.OpenDialogOptions) =>
     ipcRenderer.invoke("showOpenDialog", options),
-  ...fileExplorerApi,
-  showItemInFolder: (path: string) =>
-    ipcRenderer.invoke("showItemInFolder", path),
   getImageDataUrl: (imageUrl: string) =>
     ipcRenderer.invoke("getImageDataUrl", imageUrl),
   getProcessedImage: (
@@ -949,10 +894,6 @@ contextBridge.exposeInMainWorld("electron", {
   },
   canInstallCommonRedist: () => ipcRenderer.invoke("canInstallCommonRedist"),
   installCommonRedist: () => ipcRenderer.invoke("installCommonRedist"),
-  installHydraDeckyPlugin: () => ipcRenderer.invoke("installHydraDeckyPlugin"),
-  getHydraDeckyPluginInfo: () => ipcRenderer.invoke("getHydraDeckyPluginInfo"),
-  checkHomebrewFolderExists: () =>
-    ipcRenderer.invoke("checkHomebrewFolderExists"),
   platform: process.platform,
   isWayland:
     process.platform === "linux" &&
@@ -992,8 +933,6 @@ contextBridge.exposeInMainWorld("electron", {
     ipcRenderer.on("preflight-progress", listener);
     return () => ipcRenderer.removeListener("preflight-progress", listener);
   },
-  resetCommonRedistPreflight: () =>
-    ipcRenderer.invoke("resetCommonRedistPreflight"),
   checkForUpdates: () => ipcRenderer.invoke("checkForUpdates"),
   restartAndInstallUpdate: () => ipcRenderer.invoke("restartAndInstallUpdate"),
 

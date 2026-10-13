@@ -3,6 +3,7 @@ import ReactDOM from "react-dom/client";
 import i18n from "i18next";
 import { initReactI18next } from "react-i18next";
 import { Provider } from "react-redux";
+import { lazy, Suspense } from "react";
 import { HashRouter, Route, Routes } from "react-router-dom";
 
 import "@fontsource/noto-sans/latin-400.css";
@@ -25,14 +26,21 @@ import { addCookieInterceptor } from "./cookies";
 import { clearStateFromPreviousSession } from "./session-state";
 import { ErrorBoundary } from "./components/error-boundary/error-boundary";
 import { levelDBService } from "./services/leveldb.service";
-import Catalogue from "./pages/catalogue/catalogue";
 import Home from "./pages/home/home";
-import Downloads from "./pages/downloads/downloads";
-import GameDetails from "./pages/game-details/game-details";
-import Settings from "./pages/settings/settings";
-import Library from "./pages/library/library";
-import GameLauncher from "./pages/game-launcher/game-launcher";
-import AuthWindow from "./pages/auth-window/auth-window";
+
+/**
+ * Route-level code splitting: only Home (the landing page) ships in the
+ * main chunk; every other page is fetched on first navigation. The
+ * renderer loads chunks from local disk, so the lazy hop is negligible
+ * while keeping the initial bundle small.
+ */
+const Catalogue = lazy(() => import("./pages/catalogue/catalogue"));
+const Downloads = lazy(() => import("./pages/downloads/downloads"));
+const GameDetails = lazy(() => import("./pages/game-details/game-details"));
+const Settings = lazy(() => import("./pages/settings/settings"));
+const Library = lazy(() => import("./pages/library/library"));
+const GameLauncher = lazy(() => import("./pages/game-launcher/game-launcher"));
+const AuthWindow = lazy(() => import("./pages/auth-window/auth-window"));
 
 console.log = logger.log;
 
@@ -102,19 +110,24 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
       <ErrorBoundary>
         <HashRouter>
           <GameOptionsModalProvider>
-            <Routes>
-              <Route element={<App />}>
-                <Route path="/" element={<Home />} />
-                <Route path="/catalogue" element={<Catalogue />} />
-                <Route path="/library" element={<Library />} />
-                <Route path="/downloads" element={<Downloads />} />
-                <Route path="/game/:shop/:objectId" element={<GameDetails />} />
-                <Route path="/settings" element={<Settings />} />
-              </Route>
+            <Suspense fallback={null}>
+              <Routes>
+                <Route element={<App />}>
+                  <Route path="/" element={<Home />} />
+                  <Route path="/catalogue" element={<Catalogue />} />
+                  <Route path="/library" element={<Library />} />
+                  <Route path="/downloads" element={<Downloads />} />
+                  <Route
+                    path="/game/:shop/:objectId"
+                    element={<GameDetails />}
+                  />
+                  <Route path="/settings" element={<Settings />} />
+                </Route>
 
-              <Route path="/game-launcher" element={<GameLauncher />} />
-              <Route path="/auth-window" element={<AuthWindow />} />
-            </Routes>
+                <Route path="/game-launcher" element={<GameLauncher />} />
+                <Route path="/auth-window" element={<AuthWindow />} />
+              </Routes>
+            </Suspense>
           </GameOptionsModalProvider>
         </HashRouter>
       </ErrorBoundary>

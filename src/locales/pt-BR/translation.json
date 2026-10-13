@@ -983,7 +983,6 @@
     "stats": "Estatísticas",
     "games": "Jogos",
     "playtime": "Tempo de jogo",
-    "pinned": "Fixado",
     "amount_minutes_short": "{{amount}}m",
     "amount_hours_short": "{{amount}}h",
     "game_added_to_pinned": "Jogo adicionado aos fixados",

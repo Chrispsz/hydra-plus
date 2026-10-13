@@ -62,21 +62,6 @@ declare global {
     export default content;
   }
 
-  type FileExplorerEntry = {
-    name: string;
-    path: string;
-    isDirectory: boolean;
-    isFile: boolean;
-    extension: string;
-    size: number;
-  };
-
-  type FileExplorerPathInfo = {
-    exists: boolean;
-    isDirectory: boolean;
-    isFile: boolean;
-  };
-
   interface Electron {
     onCloudSaveAutomaticSyncModeChanged: (
       callback: (event: CloudSaveAutomaticSyncModeChangedEvent) => void
@@ -267,11 +252,6 @@ declare global {
       options?: { forceFresh?: boolean }
     ) => Promise<ShopAssets | null>;
     /* Library */
-    toggleAutomaticCloudSync: (
-      shop: GameShop,
-      objectId: string,
-      automaticCloudSync: boolean
-    ) => Promise<void>;
     setGameHydraPlaytimeEnabled: (
       shop: GameShop,
       objectId: string,
@@ -299,7 +279,6 @@ declare global {
     ) => Promise<boolean>;
     installGameOnSteam: (steamAppId: string) => Promise<void>;
     isMangohudAvailable: () => Promise<boolean>;
-    getSteamClientStatus: () => Promise<{ running: boolean }>;
     getOnlineFixStatus: (
       shop: GameShop,
       objectId: string
@@ -336,15 +315,6 @@ declare global {
       originalHeroPath?: string;
       customOriginalCoverPath?: string;
     }) => Promise<Game>;
-    copyCustomGameAsset: (
-      sourcePath: string,
-      assetType: "icon" | "logo" | "hero" | "grid"
-    ) => Promise<string>;
-    downloadGameArtwork: (artworkUrl: string) => Promise<string | null>;
-    cleanupUnusedAssets: () => Promise<{
-      deletedCount: number;
-      errors: string[];
-    }>;
     updateGameCustomAssets: (params: {
       shop: GameShop;
       objectId: string;
@@ -389,11 +359,6 @@ declare global {
       shop: GameShop,
       objectId: string,
       pinned: boolean
-    ) => Promise<void>;
-    updateLaunchOptions: (
-      shop: GameShop,
-      objectId: string,
-      launchOptions: string | null
     ) => Promise<void>;
     selectGameWinePrefix: (
       shop: GameShop,
@@ -449,9 +414,6 @@ declare global {
       shop: GameShop,
       objectId: string
     ) => Promise<LibraryGame | null>;
-    getGamesRunning: () => Promise<
-      Pick<GameRunning, "id" | "sessionDurationInMillis">[]
-    >;
     onGamesRunning: (
       cb: (
         gamesRunning: Pick<GameRunning, "id" | "sessionDurationInMillis">[]
@@ -459,12 +421,6 @@ declare global {
     ) => () => Electron.IpcRenderer;
     onLibraryBatchComplete: (cb: () => void) => () => Electron.IpcRenderer;
     onDownloadsUpdated: (cb: () => void) => () => Electron.IpcRenderer;
-    changeGamePlayTime: (
-      shop: GameShop,
-      objectId: string,
-      playtimeInSeconds: number
-    ) => Promise<void>;
-    resetGamePlayTime: (shop: GameShop, objectId: string) => Promise<void>;
     /* User preferences */
     authenticateRealDebrid: (apiToken: string) => Promise<RealDebridUser>;
     authenticatePremiumize: (apiToken: string) => Promise<PremiumizeUser>;
@@ -554,8 +510,6 @@ declare global {
     ) => Promise<void>;
     getDownloadSources: () => Promise<DownloadSource[]>;
     syncDownloadSources: () => Promise<void>;
-    getDownloadSourcesCheckBaseline: () => Promise<string | null>;
-    getDownloadSourcesSinceValue: () => Promise<string | null>;
 
     /* Hardware */
     getDiskFreeSpace: (path: string) => Promise<DiskUsage | null>;
@@ -565,9 +519,6 @@ declare global {
     /* Cloud save (Hydra Plus: Google Drive only) */
 
     /* Clipboard */
-    clipboard: {
-      writeText: (text: string) => Promise<void>;
-    };
 
     /* Misc */
     openExternal: (src: string) => Promise<void>;
@@ -576,15 +527,10 @@ declare global {
     isStaging: () => Promise<boolean>;
     ping: () => string;
     getDefaultDownloadsPath: () => Promise<string>;
-    openFolder: (folderPath: string) => Promise<string>;
     isPortableVersion: boolean;
     showOpenDialog: (
       options: Electron.OpenDialogOptions
     ) => Promise<Electron.OpenDialogReturnValue>;
-    readDirectory: (path: string) => Promise<FileExplorerEntry[]>;
-    getPathInfo: (path: string) => Promise<FileExplorerPathInfo>;
-    listDrives: () => Promise<string[]>;
-    showItemInFolder: (path: string) => Promise<void>;
     getImageDataUrl: (imageUrl: string) => Promise<string | null>;
     getProcessedImage: (
       imageUrl: string | null,
@@ -643,30 +589,12 @@ declare global {
     };
     canInstallCommonRedist: () => Promise<boolean>;
     installCommonRedist: () => Promise<void>;
-    installHydraDeckyPlugin: () => Promise<{
-      success: boolean;
-      path: string;
-      currentVersion: string | null;
-      expectedVersion: string;
-      error?: string;
-    }>;
-    getHydraDeckyPluginInfo: () => Promise<{
-      installed: boolean;
-      version: string | null;
-      path: string;
-      outdated: boolean;
-      expectedVersion: string | null;
-    }>;
-    checkHomebrewFolderExists: () => Promise<boolean>;
     onCommonRedistProgress: (
       cb: (value: { log: string; complete: boolean }) => void
     ) => () => Electron.IpcRenderer;
     onPreflightProgress: (
       cb: (value: { status: string; detail: string | null }) => void
     ) => () => Electron.IpcRenderer;
-    resetCommonRedistPreflight: () => Promise<void>;
-    saveTempFile: (fileName: string, fileData: Uint8Array) => Promise<string>;
-    deleteTempFile: (filePath: string) => Promise<void>;
     platform: NodeJS.Platform;
     isWayland: boolean;
 

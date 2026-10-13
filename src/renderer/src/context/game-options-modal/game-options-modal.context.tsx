@@ -1,21 +1,18 @@
 import {
   createContext,
-  useCallback,
+  lazy,
+  Suspense,
   useContext,
+  useCallback,
   useMemo,
   useState,
 } from "react";
 import { useNavigate } from "react-router-dom";
 
 import type { LibraryGame } from "@types";
-import { GameOptionsModal } from "@renderer/pages/game-details/modals";
-import { CloudSaveV2Provider } from "@renderer/pages/game-details/cloud-save-v2";
 import type { GameSettingsCategoryId } from "@renderer/pages/game-details/modals/game-options-modal/types";
 
-import {
-  gameDetailsContext,
-  GameDetailsContextProvider,
-} from "../game-details/game-details.context";
+const GameOptionsModalRoot = lazy(() => import("./game-options-modal-root"));
 
 export interface GameOptionsModalContext {
   openGameOptionsModal: (
@@ -39,32 +36,6 @@ export interface GameOptionsModalProviderProps {
 interface GameOptionsModalTarget {
   game: LibraryGame;
   initialCategory: GameSettingsCategoryId;
-}
-
-interface GameOptionsModalHostProps {
-  target: GameOptionsModalTarget;
-  onClose: () => void;
-  onNavigateHome: () => void;
-}
-
-function GameOptionsModalHost({
-  target,
-  onClose,
-  onNavigateHome,
-}: Readonly<GameOptionsModalHostProps>) {
-  const { game } = useContext(gameDetailsContext);
-
-  if (!game) return null;
-
-  return (
-    <GameOptionsModal
-      visible
-      game={game}
-      initialCategory={target.initialCategory}
-      onClose={onClose}
-      onNavigateHome={onNavigateHome}
-    />
-  );
 }
 
 export function GameOptionsModalProvider({
@@ -91,26 +62,16 @@ export function GameOptionsModalProvider({
       {children}
 
       {target && (
-        <GameDetailsContextProvider
-          objectId={target.game.objectId}
-          shop={target.game.shop}
-          gameTitle={target.game.title}
-          syncHeaderTitle={false}
-        >
-          <CloudSaveV2Provider
-            objectId={target.game.objectId}
-            shop={target.game.shop}
-          >
-            <GameOptionsModalHost
-              target={target}
-              onClose={closeGameOptionsModal}
-              onNavigateHome={() => {
-                closeGameOptionsModal();
-                navigate("/");
-              }}
-            />
-          </CloudSaveV2Provider>
-        </GameDetailsContextProvider>
+        <Suspense fallback={null}>
+          <GameOptionsModalRoot
+            target={target}
+            onClose={closeGameOptionsModal}
+            onNavigateHome={() => {
+              closeGameOptionsModal();
+              navigate("/");
+            }}
+          />
+        </Suspense>
       )}
     </Provider>
   );
