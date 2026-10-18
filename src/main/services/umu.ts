@@ -7,7 +7,14 @@ import { SystemPath } from "./system-path";
 import { logsPath } from "@main/constants";
 import { logger } from "./logger";
 import type { ProtonVersion } from "@types";
+import {
+  mergeLegacyLaunchToggles,
+  resolveLaunchFlags,
+} from "@shared/launch-flags";
 import { resolveLaunchCommand } from "@main/helpers/resolve-launch-command";
+import { isGamemodeAvailable } from "@main/helpers/is-gamemode-available";
+import { isGamescopeAvailable } from "@main/helpers/is-gamescope-available";
+import { isMangohudAvailable } from "@main/helpers/is-mangohud-available";
 import { evaluateUmuPrefixPreparation } from "./umu-prefix-preparation";
 import { Wine } from "./wine";
 import { getSteamLibraryFolders } from "./steam";
@@ -499,6 +506,8 @@ export class Umu {
       protonPath?: string | null;
       gameId?: string | null;
       launchOptions?: string | null;
+      /** Catalog launch flag ids saved on the game record (see @shared/launch-flags). */
+      launchFlags?: string[] | null;
       useMangohud?: boolean;
       useGamemode?: boolean;
       /** Extra environment variables appended last (e.g. Online-Fix mode). */
@@ -514,11 +523,53 @@ export class Umu {
     const executableArgs = pythonPath
       ? [umuBinaryPath, executablePath, ...launchParameters]
       : [executablePath, ...launchParameters];
+
+    // Catalog launch flags (ids from the game record) resolve into env
+    // assignments + wrapper commands. Wrapper flags are availability-probed
+    // here so a missing tool can never break the spawn; env flags are inert
+    // without their consumers and always pass through. Probes only run when
+    // the game actually has flags — a flagless launch must not pay for the
+    // spawnSync detection. The legacy autoRunMangohud/autoRunGamemode
+    // toggles keep their exact current semantics (MANGOHUD=1 env /
+    // gamemoderun wrapper) and only collapse with a matching flag to avoid
+    // duplicated wrappers. This is a Linux compatibility path — the Windows
+    // native path never calls umu-run.
+    const launchFlagToggles = mergeLegacyLaunchToggles(
+      resolveLaunchFlags(
+        options?.launchFlags,
+        (options?.launchFlags?.length ?? 0) > 0
+          ? {
+              mangohud: isMangohudAvailable(),
+              gamemode: isGamemodeAvailable(),
+              gamescope: isGamescopeAvailable(),
+            }
+          : undefined
+      ),
+      {
+        useMangohud: options?.useMangohud,
+        useGamemode: options?.useGamemode,
+      }
+    );
+
+    if (launchFlagToggles.unknownFlagIds.length > 0) {
+      logger.warn("Ignoring unknown game launch flags", {
+        executablePath,
+        unknownFlagIds: launchFlagToggles.unknownFlagIds,
+      });
+    }
+
+    if (launchFlagToggles.unavailableFlagIds.length > 0) {
+      logger.log("Skipping launch flags whose host tools are unavailable", {
+        executablePath,
+        unavailableFlagIds: launchFlagToggles.unavailableFlagIds,
+      });
+    }
+
     const resolvedLaunchCommand = resolveLaunchCommand({
       baseCommand: executableToSpawn,
       baseArgs: executableArgs,
       launchOptions: options?.launchOptions,
-      wrapperCommands: [...(options?.useGamemode ? ["gamemoderun"] : [])],
+      wrapperCommands: launchFlagToggles.wrapperCommands,
     });
 
     rotateUmuLogIfNeeded(umuLogPath);
@@ -531,7 +582,9 @@ export class Umu {
         ? { WINEPREFIX: options.winePrefixPath }
         : {}),
       ...(options?.protonPath ? { PROTONPATH: options.protonPath } : {}),
-      ...(options?.useMangohud ? { MANGOHUD: "1" } : {}),
+      // Flag env (and the legacy MANGOHUD=1) stays below the user's
+      // free-text launchOptions env: explicit user assignments win.
+      ...launchFlagToggles.env,
       ...resolvedLaunchCommand.env,
       ...(options?.extraEnv ?? {}),
     };

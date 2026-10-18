@@ -80,6 +80,12 @@ export interface Game {
   trackingExecutablePaths?: string[] | null;
   trackingExecutablePathsUpdatedAt?: Date | null;
   launchOptions?: string | null;
+  /**
+   * Catalog launch flag ids (see `@shared/launch-flags`) applied on the
+   * Linux compatibility path (umu-run / direct Proton) at launch time.
+   * Free-text `launchOptions` still wins over flag env assignments.
+   */
+  launchFlags?: string[] | null;
   autoRunMangohud?: boolean | null;
   autoRunGamemode?: boolean | null;
   favorite?: boolean;

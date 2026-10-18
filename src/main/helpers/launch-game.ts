@@ -534,6 +534,7 @@ const launchWindowsBinaryOnLinux = async (
   parsedPath: string,
   compatibilityContext: LinuxCompatibilityLaunchContext,
   launchOptions: string | null | undefined,
+  launchFlags: string[] | null,
   useMangohud: boolean,
   useGamemode: boolean,
   onlineFixEnv: Record<string, string> | null
@@ -568,6 +569,7 @@ const launchWindowsBinaryOnLinux = async (
         protonPath,
         gameId: objectId,
         launchOptions,
+        launchFlags,
         useGamemode,
         useMangohud,
         extraEnv: onlineFixEnv,
@@ -601,6 +603,7 @@ const launchWindowsBinaryOnLinux = async (
       protonPath,
       gameId: objectId,
       launchOptions,
+      launchFlags,
       useGamemode,
       useMangohud,
       extraEnv: onlineFixEnv ?? undefined,
@@ -621,6 +624,7 @@ const launchWindowsBinaryOnLinux = async (
         protonPath,
         gameId: objectId,
         launchOptions,
+        launchFlags,
         useGamemode,
         useMangohud,
         extraEnv: onlineFixEnv ?? undefined,
@@ -787,10 +791,16 @@ const launchResolvedGame = async (
   parsedPath: string,
   compatibilityContext: LinuxCompatibilityLaunchContext | null,
   launchOptions: string | null | undefined,
+  launchFlags: string[] | null,
   useMangohud: boolean,
   useGamemode: boolean,
   onlineFixEnv: Record<string, string> | null
 ) => {
+  // Launch flags only apply to the Linux compatibility runners (umu-run /
+  // direct Proton): wrapper and Proton/DXVK env flags are meaningless for
+  // the Windows native spawn and for Linux-native executables, so those
+  // paths ignore them (the legacy autoRun* toggles keep their own native
+  // behavior, unchanged).
   if (process.platform !== "linux") {
     return launchNatively(
       parsedPath,
@@ -813,6 +823,7 @@ const launchResolvedGame = async (
       parsedPath,
       compatibilityContext,
       launchOptions,
+      launchFlags,
       useMangohud,
       useGamemode,
       onlineFixEnv
@@ -877,6 +888,10 @@ const launchGameWithCloudSaveChecks = async (
     (userPreferences?.autoRunGamemode === true ||
       game?.autoRunGamemode === true) &&
     isGamemodeAvailable();
+
+  // Catalog launch flags saved on the game record — consumed (and
+  // availability-gated) by the compatibility runners themselves.
+  const gameLaunchFlags = game?.launchFlags ?? null;
 
   // Online (Online-Fix) sessions need the real Steam client running and
   // signed in before the game starts (lobby/relay via Spacewar) — on both
@@ -1058,7 +1073,12 @@ const launchGameWithCloudSaveChecks = async (
   await new Promise((resolve) => setTimeout(resolve, LAUNCH_DELAY_IN_MS));
 
   if (steamProtocolLaunch) {
-    if (launchOptions?.includes("%command%") || useMangohud || useGamemode) {
+    if (
+      launchOptions?.includes("%command%") ||
+      useMangohud ||
+      useGamemode ||
+      (gameLaunchFlags?.length ?? 0) > 0
+    ) {
       logger.warn(
         "Steam protocol launch delegates command wrappers to Steam settings",
         {
@@ -1066,6 +1086,7 @@ const launchGameWithCloudSaveChecks = async (
           hasCommandWrapper: launchOptions?.includes("%command%") === true,
           useMangohud,
           useGamemode,
+          launchFlags: gameLaunchFlags,
         }
       );
     }
@@ -1087,6 +1108,7 @@ const launchGameWithCloudSaveChecks = async (
           parsedPath,
           compatibilityContext,
           launchOptions,
+          gameLaunchFlags,
           useMangohud,
           useGamemode,
           onlineFixEnv
@@ -1120,6 +1142,7 @@ const launchGameWithCloudSaveChecks = async (
     parsedPath,
     compatibilityContext,
     launchOptions,
+    gameLaunchFlags,
     useMangohud,
     useGamemode,
     onlineFixEnv

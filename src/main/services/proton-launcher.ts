@@ -8,7 +8,14 @@ import { getSteamLocation } from "@main/services/steam";
 import { logger } from "@main/services/logger";
 import { SystemPath } from "@main/services/system-path";
 
+import {
+  mergeLegacyLaunchToggles,
+  resolveLaunchFlags,
+} from "@shared/launch-flags";
 import { resolveLaunchCommand } from "@main/helpers/resolve-launch-command";
+import { isGamemodeAvailable } from "@main/helpers/is-gamemode-available";
+import { isGamescopeAvailable } from "@main/helpers/is-gamescope-available";
+import { isMangohudAvailable } from "@main/helpers/is-mangohud-available";
 
 /**
  * Direct Proton runner — EMERGENCY FALLBACK ONLY.
@@ -242,6 +249,8 @@ export const ProtonRunner = {
       protonPath?: string | null;
       gameId?: string | null;
       launchOptions?: string | null;
+      /** Catalog launch flag ids saved on the game record (see @shared/launch-flags). */
+      launchFlags?: string[] | null;
       useMangohud?: boolean;
       useGamemode?: boolean;
       /** Extra environment variables appended last (e.g. Online-Fix mode). */
@@ -263,11 +272,51 @@ export const ProtonRunner = {
     }
 
     const workingDirectory = path.dirname(executablePath);
+
+    // Catalog launch flags (ids from the game record) resolve into env
+    // assignments + wrapper commands; wrappers are availability-probed so
+    // a missing tool can never break the spawn (probes only run when the
+    // game actually has flags — a flagless launch must not pay for the
+    // spawnSync detection). The legacy toggles keep their exact current
+    // semantics (MANGOHUD=1 env / gamemoderun wrapper) and only collapse
+    // with a matching flag to avoid duplicates. This is a Linux
+    // compatibility path — the Windows native path never gets here.
+    const launchFlagToggles = mergeLegacyLaunchToggles(
+      resolveLaunchFlags(
+        options?.launchFlags,
+        (options?.launchFlags?.length ?? 0) > 0
+          ? {
+              mangohud: isMangohudAvailable(),
+              gamemode: isGamemodeAvailable(),
+              gamescope: isGamescopeAvailable(),
+            }
+          : undefined
+      ),
+      {
+        useMangohud: options.useMangohud,
+        useGamemode: options.useGamemode,
+      }
+    );
+
+    if (launchFlagToggles.unknownFlagIds.length > 0) {
+      logger.warn("Ignoring unknown game launch flags", {
+        executablePath,
+        unknownFlagIds: launchFlagToggles.unknownFlagIds,
+      });
+    }
+
+    if (launchFlagToggles.unavailableFlagIds.length > 0) {
+      logger.log("Skipping launch flags whose host tools are unavailable", {
+        executablePath,
+        unavailableFlagIds: launchFlagToggles.unavailableFlagIds,
+      });
+    }
+
     const resolvedLaunchCommand = resolveLaunchCommand({
       baseCommand: path.join(options.protonPath as string, "proton"),
       baseArgs: ["waitforexitandrun", executablePath, ...launchParameters],
       launchOptions: options.launchOptions,
-      wrapperCommands: [...(options.useGamemode ? ["gamemoderun"] : [])],
+      wrapperCommands: launchFlagToggles.wrapperCommands,
     });
 
     let launchCommand = resolvedLaunchCommand.command;
@@ -279,6 +328,11 @@ export const ProtonRunner = {
         // gamemoderun <entry-point> -- proton run <exe>
         launchArgs = [options.steamRuntimeEntryPoint, "--", ...launchArgs];
       } else {
+        // With catalog flags the outermost wrapper may be mangohud or
+        // gamescope instead of gamemoderun; every wrapper then runs inside
+        // the Steam Linux Runtime container. Tools absent from the
+        // container fail here, the launch error is caught upstream and the
+        // umu-run fallback (wrappers on the host) takes over.
         launchCommand = options.steamRuntimeEntryPoint;
         launchArgs = ["--", resolvedLaunchCommand.command, ...launchArgs];
       }
@@ -290,6 +344,9 @@ export const ProtonRunner = {
       useMangohud: options.useMangohud,
       installPath: workingDirectory,
       extraEnv: {
+        // Flag env (and the legacy MANGOHUD=1) stays below the user's
+        // free-text launchOptions env: explicit user assignments win.
+        ...launchFlagToggles.env,
         ...(options.extraEnv ?? {}),
         ...resolvedLaunchCommand.env,
       },
