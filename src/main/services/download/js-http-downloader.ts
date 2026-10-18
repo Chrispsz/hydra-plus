@@ -3,6 +3,7 @@ import path from "node:path";
 import { Readable } from "node:stream";
 import { pipeline } from "node:stream/promises";
 import { logger } from "../logger";
+import type { DownloadThrottle } from "./download-throttle";
 import {
   applySkip,
   clampProgress,
@@ -30,13 +31,29 @@ export interface JsHttpDownloaderStatus {
   isReconnecting: boolean;
   isRecovering: boolean;
   recoveryProgress: number;
+  resumeCapability?: "unknown" | "supported" | "unsupported";
 }
 
 export interface JsHttpDownloaderOptions {
   url: string;
+  refreshUrl?: () => Promise<string>;
   savePath: string;
   filename?: string;
   headers?: Record<string, string>;
+  allowParallelRanges?: boolean;
+  parallelRangeSize?: number;
+  probeUnboundedRange?: boolean;
+  parallelRangeConnections?: number;
+  maxParallelRanges?: number;
+  preserveFilename?: boolean;
+  allowResume?: boolean;
+  verifyResumePrefix?: boolean;
+  resourceId?: string;
+  requireResourceIdentity?: boolean;
+  expectedSize?: number;
+  requireRangeResume?: boolean;
+  throttle?: DownloadThrottle;
+  beforeComplete?: (filePath: string) => Promise<void>;
 }
 
 const MAX_RETRY_ATTEMPTS = 10;
