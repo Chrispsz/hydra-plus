@@ -1081,6 +1081,17 @@ export class DownloadManager {
   >();
   private static readonly SEED_SIZE_CACHE_TTL_MS = 60_000;
 
+  /** Drops cached seed sizes for a download so deleted games stop growing the map. */
+  private static evictSeedSizeCache(downloadKey: string) {
+    const prefix = `${downloadKey}:`;
+
+    for (const cacheKey of this.seedSizeCache.keys()) {
+      if (cacheKey.startsWith(prefix)) {
+        this.seedSizeCache.delete(cacheKey);
+      }
+    }
+  }
+
   public static async getSeedStatus() {
     let seedStatus: LibtorrentPayload[] = [];
 
@@ -1104,7 +1115,10 @@ export class DownloadManager {
     for (const status of seedStatus) {
       const download = await downloadsSublevel.get(status.gameId);
 
-      if (!download) continue;
+      if (!download) {
+        this.evictSeedSizeCache(status.gameId);
+        continue;
+      }
 
       // A full recursive stat walk per seeded torrent per 2s tick is
       // wasted IO; the folder only shrinks when files are deleted.
@@ -1165,6 +1179,10 @@ export class DownloadManager {
 
   static async cancelDownload(downloadKey = this.downloadingGameId) {
     const isActiveDownload = downloadKey === this.downloadingGameId;
+
+    if (downloadKey) {
+      this.evictSeedSizeCache(downloadKey);
+    }
 
     if (isActiveDownload) {
       // Invalidate any in-flight startDownload preparation for this slot so a

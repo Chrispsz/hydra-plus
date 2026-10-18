@@ -24,18 +24,33 @@ export interface ExtractionResult {
 }
 
 export class SevenZip {
-  /** Handle of the currently running extraction, so quit/cancel can stop it. */
-  private static activeExtractionChild: ReturnType<typeof spawn> | null = null;
+  /** Handles of currently running extractions, so quit/cancel can stop them. */
+  private static readonly activeExtractionChildren = new Set<
+    ReturnType<typeof spawn>
+  >();
 
   public static cancelActiveExtraction(): void {
-    const child = this.activeExtractionChild;
-    if (!child) return;
-    this.activeExtractionChild = null;
-    try {
-      child.kill();
-    } catch {
-      // Already gone.
+    if (this.activeExtractionChildren.size === 0) return;
+
+    for (const child of this.activeExtractionChildren) {
+      try {
+        // Extraction children are spawned detached; on POSIX kill the whole
+        // process group so the 7z child cannot survive the app quit.
+        if (process.platform !== "win32" && child.pid) {
+          try {
+            process.kill(-child.pid);
+          } catch {
+            child.kill();
+          }
+        } else {
+          child.kill();
+        }
+      } catch {
+        // Already gone.
+      }
     }
+
+    this.activeExtractionChildren.clear();
   }
 
   private static readonly binaryPath = app.isPackaged
@@ -122,22 +137,19 @@ export class SevenZip {
 
         const stream = Seven.extractFull(filePath, ".", options);
 
-        stream._childProcess = spawn(stream._bin, stream._args, {
+        const child = spawn(stream._bin, stream._args, {
           cwd: destination,
           detached: true,
           windowsHide: true,
         });
 
-        this.activeExtractionChild = stream._childProcess;
+        stream._childProcess = child;
+        this.activeExtractionChildren.add(child);
         stream.once("end", () => {
-          if (this.activeExtractionChild === stream._childProcess) {
-            this.activeExtractionChild = null;
-          }
+          this.activeExtractionChildren.delete(child);
         });
         stream.once("error", () => {
-          if (this.activeExtractionChild === stream._childProcess) {
-            this.activeExtractionChild = null;
-          }
+          this.activeExtractionChildren.delete(child);
         });
 
         stream.on("progress", (progress) => {

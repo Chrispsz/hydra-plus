@@ -68,6 +68,15 @@ export class GameFilesManager {
 
     if (!download) return;
 
+    if (download.status === "removed") {
+      // The download was cancelled/removed while the extraction was
+      // running: rewriting the registry would resurrect it in the list.
+      logger.log(
+        `[GameFilesManager] Skipping state reset for removed download ${this.objectId}`
+      );
+      return;
+    }
+
     const status =
       download.progress === 1
         ? download.shouldSeed && download.downloader === Downloader.Torrent
@@ -266,6 +275,15 @@ export class GameFilesManager {
 
     if (!download) return;
 
+    if (download.status === "removed") {
+      // The download was cancelled/removed while the extraction was
+      // running: do not resurrect its registry entry.
+      logger.log(
+        `[GameFilesManager] Skipping completion for removed download ${this.objectId}`
+      );
+      return;
+    }
+
     await downloadsSublevel.put(this.gameKey, {
       ...download,
       extracting: false,
@@ -275,12 +293,22 @@ export class GameFilesManager {
     // Calculate and store the installed size
     if (game && download.folderName) {
       const gamePath = path.join(download.downloadPath, download.folderName);
-      const installedSizeInBytes = await getDirectorySize(gamePath);
 
-      await gamesSublevel.put(this.gameKey, {
-        ...game,
-        installedSizeInBytes,
-      });
+      try {
+        const installedSizeInBytes = await getDirectorySize(gamePath);
+
+        await gamesSublevel.put(this.gameKey, {
+          ...game,
+          installedSizeInBytes,
+        });
+      } catch (error) {
+        // The installed size is cosmetic: failing to compute or persist it
+        // must not condemn an otherwise successful extraction.
+        logger.warn(
+          `[GameFilesManager] Failed to compute installed size for ${this.objectId}`,
+          error
+        );
+      }
     }
 
     WindowManager.sendToAppWindows(
@@ -707,6 +735,18 @@ export class GameFilesManager {
               filePath,
             ]);
           }
+        }
+
+        const currentDownload = await downloadsSublevel.get(this.gameKey);
+
+        if (!currentDownload || currentDownload.status === "removed") {
+          // The download was cancelled/removed (or its registry purged)
+          // while the extraction was running: abort silently instead of
+          // resurrecting the record with stale data.
+          logger.log(
+            `[GameFilesManager] Download ${this.objectId} was removed during extraction; skipping registry update`
+          );
+          return true;
         }
 
         await downloadsSublevel.put(this.gameKey, {
