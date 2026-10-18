@@ -21,6 +21,7 @@ import {
 
 const TOKEN_ENDPOINT = "https://oauth2.googleapis.com/token";
 const EXPIRATION_OFFSET_IN_MS = 5 * 60 * 1000;
+const TOKEN_REFRESH_TIMEOUT_MS = 15_000;
 
 export interface GoogleDriveTokensRecord {
   encryptedRefreshToken: string;
@@ -165,7 +166,8 @@ const requestFreshAccessToken = async (): Promise<string> => {
         client_id: await resolveGoogleClientId(),
         refresh_token: refreshToken,
         grant_type: "refresh_token",
-      })
+      }),
+      { timeout: TOKEN_REFRESH_TIMEOUT_MS }
     ));
   } catch (error) {
     logger.error("Google Drive token refresh failed", error);

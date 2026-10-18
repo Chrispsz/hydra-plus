@@ -24,10 +24,37 @@ import {
 const DRIVE_API = "https://www.googleapis.com/drive/v3";
 const DRIVE_UPLOAD_API = "https://www.googleapis.com/upload/drive/v3";
 const FOLDER_MIME = "application/vnd.google-apps.folder";
+const DRIVE_REQUEST_TIMEOUT_MS = 60_000;
+const DRIVE_INACTIVITY_TIMEOUT_MS = 90_000;
 
 export const HYDRA_PLUS_ROOT_FOLDER_NAME = "Hydra Plus Saves";
 
 const escapeDriveQuery = (value: string) => value.replace(/'/g, "\\'");
+
+/**
+ * Aborts large transfers that stop making progress instead of enforcing a
+ * total deadline: the timer is rearmed on every upload/download progress
+ * event, so slow-but-alive transfers survive while dead sockets do not.
+ */
+const createInactivityWatchdog = () => {
+  const controller = new AbortController();
+  let timer: NodeJS.Timeout | null = setTimeout(
+    () => controller.abort(),
+    DRIVE_INACTIVITY_TIMEOUT_MS
+  );
+
+  return {
+    signal: controller.signal,
+    reset: () => {
+      if (timer) clearTimeout(timer);
+      timer = setTimeout(() => controller.abort(), DRIVE_INACTIVITY_TIMEOUT_MS);
+    },
+    clear: () => {
+      if (timer) clearTimeout(timer);
+      timer = null;
+    },
+  };
+};
 
 const authedRequest = async (
   config: AxiosRequestConfig
@@ -37,6 +64,7 @@ const authedRequest = async (
   try {
     return await axios.request({
       ...config,
+      timeout: config.timeout ?? DRIVE_REQUEST_TIMEOUT_MS,
       headers: {
         ...(config.headers ?? {}),
         Authorization: `Bearer ${token}`,
@@ -47,6 +75,7 @@ const authedRequest = async (
       const refreshed = await forceRefreshGoogleDriveAccessToken();
       return axios.request({
         ...config,
+        timeout: config.timeout ?? DRIVE_REQUEST_TIMEOUT_MS,
         headers: {
           ...(config.headers ?? {}),
           Authorization: `Bearer ${refreshed}`,
@@ -254,12 +283,15 @@ export interface UploadFileInput {
  */
 export const uploadFile = async (input: UploadFileInput): Promise<string> => {
   const token = await getValidGoogleDriveAccessToken();
+  const watchdog = createInactivityWatchdog();
 
   try {
     const session = await axios.request<{ headers: Record<string, string> }>({
       url: `${DRIVE_UPLOAD_API}/files`,
       method: "POST",
       params: { uploadType: "resumable", fields: "id" },
+      timeout: DRIVE_REQUEST_TIMEOUT_MS,
+      signal: watchdog.signal,
       headers: {
         Authorization: `Bearer ${token}`,
         "Content-Type": "application/json; charset=UTF-8",
@@ -282,6 +314,8 @@ export const uploadFile = async (input: UploadFileInput): Promise<string> => {
       ? fs.createReadStream(input.sourcePath)
       : (input.content as Buffer);
 
+    watchdog.reset();
+
     const { data } = await axios.request<{ id: string }>({
       url: uploadUrl,
       method: "PUT",
@@ -289,11 +323,15 @@ export const uploadFile = async (input: UploadFileInput): Promise<string> => {
       data: body,
       maxBodyLength: Infinity,
       maxContentLength: Infinity,
+      signal: watchdog.signal,
+      onUploadProgress: watchdog.reset,
     });
 
     return data.id;
   } catch (error) {
     throw toDriveError(error);
+  } finally {
+    watchdog.clear();
   }
 };
 
@@ -334,11 +372,16 @@ export const downloadFileToFile = async (
   fileId: string,
   destinationPath: string
 ): Promise<void> => {
+  const watchdog = createInactivityWatchdog();
+
   try {
     const response = await authedRequest({
       url: `${DRIVE_API}/files/${fileId}`,
       params: { alt: "media" },
       responseType: "stream",
+      timeout: 0,
+      signal: watchdog.signal,
+      onDownloadProgress: watchdog.reset,
     });
     await fs.promises.mkdir(path.dirname(destinationPath), { recursive: true });
     await pipeline(
@@ -347,6 +390,8 @@ export const downloadFileToFile = async (
     );
   } catch (error) {
     throw toDriveError(error);
+  } finally {
+    watchdog.clear();
   }
 };
 
