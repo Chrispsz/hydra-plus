@@ -198,6 +198,15 @@ type PendingResolver =
   | { type: "list"; resolve: (p: ProcessPayload[]) => void }
   | { type: "map"; resolve: (m: SystemProcessMap | null) => void };
 
+interface PendingRequest {
+  resolver: PendingResolver;
+  /** Guards against a worker that never answers a request. */
+  timeout: NodeJS.Timeout;
+}
+
+/** A stuck worker must not leave requesters pending forever. */
+const WORKER_REQUEST_TIMEOUT_MS = 10_000;
+
 export class NativeAddon {
   public static torrentInitialize(port: number) {
     return this.load().torrentInitialize(port);
@@ -213,7 +222,7 @@ export class NativeAddon {
   }
   private static nativeModule: HydraNativeModule | null = null;
   private static worker: Worker | null = null;
-  private static pendingResolvers: PendingResolver[] = [];
+  private static pendingResolvers: PendingRequest[] = [];
 
   private static resolveAddonPath() {
     if (app.isPackaged) {
@@ -269,8 +278,9 @@ export class NativeAddon {
     this.worker.on("message", ({ result }) => {
       const pending = this.pendingResolvers.shift();
       if (!pending) return;
-      if (pending.type === "list") {
-        (pending.resolve as (p: ProcessPayload[]) => void)(
+      clearTimeout(pending.timeout);
+      if (pending.resolver.type === "list") {
+        (pending.resolver.resolve as (p: ProcessPayload[]) => void)(
           (result as ProcessPayload[]).filter(
             (p): p is ProcessPayload =>
               typeof p?.pid === "number" &&
@@ -279,7 +289,7 @@ export class NativeAddon {
           )
         );
       } else {
-        (pending.resolve as (m: SystemProcessMap | null) => void)(
+        (pending.resolver.resolve as (m: SystemProcessMap | null) => void)(
           result as SystemProcessMap | null
         );
       }
@@ -366,16 +376,71 @@ export class NativeAddon {
   private static drainResolvers() {
     const drained = this.pendingResolvers.splice(0);
     for (const pending of drained) {
-      if (pending.type === "list") pending.resolve([]);
-      else pending.resolve(null);
+      clearTimeout(pending.timeout);
+      if (pending.resolver.type === "list") {
+        pending.resolver.resolve([]);
+      } else {
+        pending.resolver.resolve(null);
+      }
     }
+  }
+
+  /**
+   * Times out a single request: resolves it with the empty payload (the
+   * same contract the callers already handle for a failed enumeration)
+   * and recycles the worker so later requests get a fresh one.
+   */
+  private static trackPendingRequest(
+    resolver: PendingResolver
+  ): PendingRequest {
+    const request: PendingRequest = {
+      resolver,
+      timeout: setTimeout(() => {
+        const index = this.pendingResolvers.indexOf(request);
+        if (index === -1) return; // answered in the meantime
+
+        this.pendingResolvers.splice(index, 1);
+        logger.warn(
+          "Process list worker request timed out; recycling the worker"
+        );
+
+        if (request.resolver.type === "list") {
+          request.resolver.resolve([]);
+        } else {
+          request.resolver.resolve(null);
+        }
+
+        this.recycleWorker();
+      }, WORKER_REQUEST_TIMEOUT_MS),
+    };
+
+    request.timeout.unref();
+    return request;
+  }
+
+  /**
+   * Discards the current worker: pending requests were posted to it and
+   * will never be answered, so they are drained with the empty payload
+   * before the next request spawns a replacement worker.
+   */
+  private static recycleWorker() {
+    const worker = this.worker;
+    this.worker = null;
+    if (!worker) return;
+
+    this.drainResolvers();
+    // The intentional termination must not be logged as a crash.
+    worker.removeAllListeners();
+    void worker.terminate().catch(() => {});
   }
 
   public static listProcesses(): Promise<ProcessPayload[]> {
     return new Promise((resolve) => {
       try {
         const worker = this.getWorker();
-        this.pendingResolvers.push({ type: "list", resolve });
+        this.pendingResolvers.push(
+          this.trackPendingRequest({ type: "list", resolve })
+        );
         worker.postMessage("list");
       } catch {
         resolve([]);
@@ -407,7 +472,9 @@ export class NativeAddon {
     return new Promise((resolve) => {
       try {
         const worker = this.getWorker();
-        this.pendingResolvers.push({ type: "map", resolve });
+        this.pendingResolvers.push(
+          this.trackPendingRequest({ type: "map", resolve })
+        );
         worker.postMessage("map");
       } catch {
         resolve(null);

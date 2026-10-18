@@ -313,7 +313,7 @@ export const watchProcesses = async () => {
         await onOpenGame(game, matchedPath);
       }
     } else if (gamesPlaytime.has(gameKey)) {
-      onCloseGame(game);
+      await onCloseGame(game);
     }
   }
 
@@ -390,7 +390,12 @@ function onTickGame(game: Game) {
   void persistGamePlaytime(
     levelKeys.game(game.shop, game.objectId),
     updatedGame
-  );
+  ).catch((error: unknown) => {
+    logger.error("Failed to persist game playtime tick", {
+      gameKey: levelKeys.game(game.shop, game.objectId),
+      error,
+    });
+  });
 
   setGamePlaytime(levelKeys.game(game.shop, game.objectId), {
     ...gamePlaytime,
@@ -398,7 +403,7 @@ function onTickGame(game: Game) {
   });
 }
 
-const onCloseGame = (game: Game) => {
+const onCloseGame = async (game: Game) => {
   const gameKey = levelKeys.game(game.shop, game.objectId);
   const now = performance.now();
   const gamePlaytime = gamesPlaytime.get(gameKey)!;
@@ -426,7 +431,16 @@ const onCloseGame = (game: Game) => {
     lastTimePlayed: new Date(),
   };
 
-  void persistGamePlaytime(gameKey, updatedGame);
+  // Awaited so the quit path (clearGamesPlaytime) flushes the final
+  // playtime of the session before the app exits.
+  try {
+    await persistGamePlaytime(gameKey, updatedGame);
+  } catch (error) {
+    logger.error("Failed to persist final game playtime", {
+      gameKey,
+      error,
+    });
+  }
 
   if (game.shop === "custom") return;
 
