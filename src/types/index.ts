@@ -40,6 +40,48 @@ export interface ProtonVersion {
   source?: "steam" | "compatibility_tools" | "unknown";
 }
 
+/** Downloadable Proton build source (GitHub releases registry entry). */
+export interface ProtonProvider {
+  id: string;
+  name: string;
+  repo: string;
+  description?: string;
+}
+
+/** A downloadable Proton release asset resolved from a provider. */
+export interface ProtonRelease {
+  tag: string;
+  name: string;
+  publishedAt: string;
+  sizeBytes: number;
+  downloadUrl: string;
+  digest?: string;
+}
+
+/** A compatibilitytools.d root where Proton builds can be installed. */
+export interface ProtonInstallTarget {
+  path: string;
+  label: string;
+  isDefault: boolean;
+}
+
+export type ProtonInstallPhase =
+  | "downloading"
+  | "verifying"
+  | "extracting"
+  | "promoting"
+  | "done"
+  | "error";
+
+export interface ProtonInstallProgress {
+  providerId: string;
+  tag: string;
+  phase: ProtonInstallPhase;
+  receivedBytes?: number;
+  totalBytes?: number;
+  error?: string;
+}
+
 export interface ShopAssets {
   objectId: string;
   shop: GameShop;
