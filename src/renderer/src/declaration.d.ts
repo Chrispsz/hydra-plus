@@ -22,6 +22,10 @@ import type {
   NetworkInterface,
   DownloadSource,
   ProtonVersion,
+  ProtonProvider,
+  ProtonRelease,
+  ProtonInstallTarget,
+  ProtonInstallProgress,
   CreateSteamShortcutOptions,
   TorrentFilesResponse,
   DownloadLayoutState,
@@ -375,6 +379,23 @@ declare global {
       shop: GameShop,
       objectId: string
     ) => Promise<string | null>;
+    getProtonProviders: () => Promise<ProtonProvider[]>;
+    getProtonReleases: (
+      providerId: string,
+      page?: number
+    ) => Promise<{ releases: ProtonRelease[]; hasMore: boolean }>;
+    getProtonInstallTargets: () => Promise<ProtonInstallTarget[]>;
+    installProtonRelease: (
+      providerId: string,
+      tag: string
+    ) => Promise<{ ok: boolean; error?: string }>;
+    cancelProtonInstall: (providerId: string, tag: string) => Promise<boolean>;
+    removeInstalledProton: (
+      protonPath: string
+    ) => Promise<{ ok: boolean; error?: string }>;
+    onProtonInstallProgress: (
+      cb: (progress: ProtonInstallProgress) => void
+    ) => () => void;
     verifyExecutablePathInUse: (executablePath: string) => Promise<Game>;
     getLibrary: (includeConcealed?: boolean) => Promise<LibraryGame[]>;
     getHiddenLibrary: () => Promise<LibraryGame[]>;

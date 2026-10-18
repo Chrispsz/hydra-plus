@@ -1061,5 +1061,74 @@
     "preflight_installing": "Instalando dependências",
     "preflight_installing_detail": "{{detail}}"
   },
-  "language_name": "Português do Brasil"
+  "language_name": "Português do Brasil",
+  "proton_manager": {
+    "title": "Gerenciar versões de Proton",
+    "description": "Baixe builds de Proton (GE-Proton, CachyOS) para os seus jogos. Ficam disponíveis instantaneamente na seleção de runner de cada jogo.",
+    "provider": "Fonte",
+    "releases_title": "Versões disponíveis",
+    "installed_title": "Instalados",
+    "install": "Instalar",
+    "installing": "Instalando",
+    "cancel": "Cancelar",
+    "remove": "Remover",
+    "refresh": "Atualizar",
+    "load_more": "Carregar mais",
+    "no_releases": "Nenhuma versão encontrada.",
+    "no_installed": "Nenhum Proton instalado ainda.",
+    "confirm_remove": "Remover este Proton? Jogos configurados para ele ficarão sem runner até escolherem outro.",
+    "phase_downloading": "Baixando",
+    "phase_verifying": "Verificando",
+    "phase_extracting": "Extraindo",
+    "phase_promoting": "Instalando",
+    "phase_done": "Concluído",
+    "phase_error": "Falhou",
+    "rate_limited": "Limite de requisições do GitHub atingido. Tente novamente mais tarde.",
+    "not_supported_on_windows": "O gerenciamento de Proton está disponível apenas no Linux.",
+    "target": "Destino da instalação"
+  },
+  "launch_flags": {
+    "section_title": "Flags de inicialização",
+    "section_description": "Ajustes rápidos aplicados ao iniciar o jogo pelo Proton. O campo de opções avançadas tem precedência sobre as flags.",
+    "mangohud": {
+      "label": "MangoHud",
+      "description": "Exibe FPS, uso de CPU/GPU e temperaturas durante o jogo."
+    },
+    "gamemode": {
+      "label": "GameMode",
+      "description": "Solicita otimizações temporárias de desempenho do sistema enquanto o jogo roda."
+    },
+    "gamescope": {
+      "label": "Gamescope",
+      "description": "Executa o jogo em uma sessão Gamescope."
+    },
+    "dxvk-async": {
+      "label": "Compilação assíncrona (DXVK)",
+      "description": "Habilita a compilação assíncrona de pipelines do DXVK. Requer build DXVK com patch."
+    },
+    "dxvk-hdr": {
+      "label": "DXVK HDR",
+      "description": "Anuncia o espaço de cores HDR10 para jogos DXVK. Requer compositor/monitor HDR e Vulkan 1.3."
+    },
+    "nvidia-nvapi": {
+      "label": "NVIDIA NVAPI",
+      "description": "Permite que jogos acessem recursos NVIDIA como DLSS."
+    },
+    "proton-hdr": {
+      "label": "HDR legado do Proton",
+      "description": "Ativa o caminho antigo PROTON_ENABLE_HDR — apenas em builds Proton customizados que ainda o anunciam."
+    },
+    "proton-log": {
+      "label": "Log de depuração do Proton",
+      "description": "Ativa logs de solução de problemas do Proton (steam-<id>.log no diretório home)."
+    },
+    "vkd3d-shader-cache": {
+      "label": "Cache de shaders do VKD3D",
+      "description": "Habilita o cache interno de shaders do VKD3D-Proton."
+    },
+    "amd-fsr4": {
+      "label": "FSR 4 (upgrade)",
+      "description": "Melhora jogos FSR 3.1 suportados via build Proton customizado. Requer hardware AMD compatível."
+    }
+  }
 }

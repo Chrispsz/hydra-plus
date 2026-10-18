@@ -15,6 +15,10 @@ import type {
   ShortcutLocation,
   CreateSteamShortcutOptions,
   ProtonVersion,
+  ProtonProvider,
+  ProtonRelease,
+  ProtonInstallTarget,
+  ProtonInstallProgress,
   TorrentFilesResponse,
   DownloadLayoutState,
   CloudSaveAutomaticSyncModeChangedEvent,
@@ -598,6 +602,38 @@ contextBridge.exposeInMainWorld("electron", {
     >,
   getGameLaunchProtonVersion: (shop: GameShop, objectId: string) =>
     ipcRenderer.invoke("getGameLaunchProtonVersion", shop, objectId),
+  getProtonProviders: () =>
+    ipcRenderer.invoke("getProtonProviders") as Promise<ProtonProvider[]>,
+  getProtonReleases: (providerId: string, page?: number) =>
+    ipcRenderer.invoke("getProtonReleases", providerId, page) as Promise<{
+      releases: ProtonRelease[];
+      hasMore: boolean;
+    }>,
+  getProtonInstallTargets: () =>
+    ipcRenderer.invoke("getProtonInstallTargets") as Promise<
+      ProtonInstallTarget[]
+    >,
+  installProtonRelease: (providerId: string, tag: string) =>
+    ipcRenderer.invoke("installProtonRelease", providerId, tag) as Promise<{
+      ok: boolean;
+      error?: string;
+    }>,
+  cancelProtonInstall: (providerId: string, tag: string) =>
+    ipcRenderer.invoke("cancelProtonInstall", providerId, tag),
+  removeInstalledProton: (protonPath: string) =>
+    ipcRenderer.invoke("removeInstalledProton", protonPath) as Promise<{
+      ok: boolean;
+      error?: string;
+    }>,
+  onProtonInstallProgress: (cb: (progress: ProtonInstallProgress) => void) => {
+    const listener = (
+      _event: Electron.IpcRendererEvent,
+      progress: ProtonInstallProgress
+    ) => cb(progress);
+    ipcRenderer.on("on-proton-install-progress", listener);
+    return () =>
+      ipcRenderer.removeListener("on-proton-install-progress", listener);
+  },
   verifyExecutablePathInUse: (executablePath: string) =>
     ipcRenderer.invoke("verifyExecutablePathInUse", executablePath),
   getLibrary: (includeConcealed = false) =>
