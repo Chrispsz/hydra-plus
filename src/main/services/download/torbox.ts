@@ -217,40 +217,4 @@ export class TorBoxClient {
       typeof name === "string" ? name : name?.[0]
     );
   }
-
-  /**
-   * Legacy single-ZIP entry point kept so the pre-batch-engine download
-   * manager still resolves TorBox downloads (whole-torrent zip). The batch
-   * engine replaces this with getDownloadFiles()/per-file requestLink();
-   * remove it together with the legacy manager call sites (wave 3).
-   */
-  static async getDownloadInfo(uri: string) {
-    const torrent = await this.getDownloadableTorrent(uri);
-    const url = await this.requestZipLink(torrent.id);
-    const name = torrent.name ? `${torrent.name}.zip` : undefined;
-    return { url, name };
-  }
-
-  private static async requestZipLink(id: number) {
-    const searchParams = new URLSearchParams({
-      token: this.apiToken,
-      torrent_id: id.toString(),
-      zip_link: "true",
-    });
-
-    const response = await this.instance.get<TorBoxRequestLinkRequest>(
-      "/torrents/requestdl?" + searchParams.toString()
-    );
-
-    const { success, detail, data } = response.data;
-
-    if (!success || typeof data !== "string" || !data) {
-      logger.error(
-        `[TorBox] requestdl did not return a zip link for torrent ${id}: ${detail}`
-      );
-      throw new Error(DownloadError.TorBoxLinkUnavailable);
-    }
-
-    return data;
-  }
 }
