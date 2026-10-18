@@ -1,18 +1,14 @@
 import { Downloader } from "@shared";
 
 export const DOWNLOADER_NAME = {
-  [Downloader.RealDebrid]: "Real-Debrid",
   [Downloader.Torrent]: "Torrent",
   [Downloader.Gofile]: "Gofile",
   [Downloader.PixelDrain]: "PixelDrain",
   [Downloader.Datanodes]: "Datanodes",
   [Downloader.Mediafire]: "Mediafire",
   [Downloader.FuckingFast]: "FuckingFast",
-  [Downloader.TorBox]: "TorBox",
   [Downloader.Hydra]: "Nimbus",
   [Downloader.Rootz]: "Rootz",
-  [Downloader.Premiumize]: "Premiumize",
-  [Downloader.AllDebrid]: "AllDebrid",
   [Downloader.ArchiveOrg]: "Archive.org",
 };
 

@@ -1,16 +1,14 @@
+// Values are persisted in LevelDB and come from the catalogue, so the
+// remaining members keep their original numeric values.
 export enum Downloader {
-  RealDebrid = 0,
   Torrent = 1,
   Gofile = 2,
   PixelDrain = 3,
   Datanodes = 4,
   Mediafire = 5,
-  TorBox = 6,
   Hydra = 7,
   FuckingFast = 9,
   Rootz = 11,
-  Premiumize = 12,
-  AllDebrid = 13,
   ArchiveOrg = 14,
 }
 
@@ -58,22 +56,8 @@ export enum Cracker {
 }
 
 export enum DownloadError {
-  NotCachedOnRealDebrid = "download_error_not_cached_on_real_debrid",
-  RealDebridTorrentNotReady = "download_error_real_debrid_torrent_not_ready",
-  RealDebridLinksNotReady = "download_error_real_debrid_links_not_ready",
-  NotCachedOnTorBox = "download_error_not_cached_on_torbox",
   GofileQuotaExceeded = "download_error_gofile_quota_exceeded",
-  RealDebridAccountNotAuthorized = "download_error_real_debrid_account_not_authorized",
   NotCachedOnHydra = "download_error_not_cached_on_hydra",
-  NotCachedOnPremiumize = "download_error_not_cached_on_premiumize",
-  PremiumizeTransferStarted = "download_error_premiumize_transfer_started",
-  NotCachedOnAllDebrid = "download_error_not_cached_on_alldebrid",
-  PremiumizeAccountNotAuthorized = "download_error_premiumize_account_not_authorized",
-  AllDebridAccountNotAuthorized = "download_error_alldebrid_account_not_authorized",
-  PremiumizeRateLimitExceeded = "download_error_premiumize_rate_limit_exceeded",
-  AllDebridRateLimitExceeded = "download_error_alldebrid_rate_limit_exceeded",
-  PremiumizeUnavailable = "download_error_premiumize_unavailable",
-  AllDebridUnavailable = "download_error_alldebrid_unavailable",
   HosterUnlockLoginRequired = "download_error_hoster_unlock_login_required",
   HosterUnlockFileNotFound = "download_error_hoster_unlock_file_not_found",
   HosterUnlockUnavailable = "download_error_hoster_unlock_unavailable",
@@ -87,11 +71,6 @@ export enum DownloadError {
   TorrentFilesUnavailable = "download_error_torrent_files_unavailable",
   TorrentInvalidTrackers = "download_error_torrent_invalid_trackers",
   ArchiveOrgInvalidFileUrl = "download_error_archive_org_invalid_file_url",
-  TorBoxAccountNotAuthorized = "download_error_torbox_account_not_authorized",
-  TorBoxRateLimitExceeded = "download_error_torbox_rate_limit_exceeded",
-  TorBoxUnavailable = "download_error_torbox_unavailable",
-  TorBoxTorrentNotReady = "download_error_torbox_torrent_not_ready",
-  TorBoxLinkUnavailable = "download_error_torbox_link_unavailable",
   NetworkUnreachable = "download_error_network_unreachable",
   NetworkCertificateRejected = "download_error_network_certificate_rejected",
 }

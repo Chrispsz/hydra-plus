@@ -9,10 +9,6 @@ import fs from "node:fs";
 import {
   SystemPath,
   CommonRedistManager,
-  TorBoxClient,
-  RealDebridClient,
-  PremiumizeClient,
-  AllDebridClient,
   DownloadManager,
   HydraApi,
   syncDownloadSourcesFromApi,
@@ -78,22 +74,6 @@ export const loadState = async () => {
   }
 
   await import("./events");
-
-  if (userPreferences?.realDebridApiToken) {
-    RealDebridClient.authorize(userPreferences.realDebridApiToken);
-  }
-
-  if (userPreferences?.premiumizeApiToken) {
-    PremiumizeClient.authorize(userPreferences.premiumizeApiToken);
-  }
-
-  if (userPreferences?.allDebridApiToken) {
-    AllDebridClient.authorize(userPreferences.allDebridApiToken);
-  }
-
-  if (userPreferences?.torBoxApiToken) {
-    TorBoxClient.authorize(userPreferences.torBoxApiToken);
-  }
 
   GofileApi.initialize();
 

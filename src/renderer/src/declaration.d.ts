@@ -1,4 +1,3 @@
-import type { Downloader } from "@shared";
 import type {
   AppUpdaterEvent,
   GameShop,
@@ -8,13 +7,9 @@ import type {
   UserPreferences,
   UserDetails,
   StartGameDownloadPayload,
-  RealDebridUser,
-  PremiumizeUser,
-  AllDebridUser,
   GameStats,
   LibraryGame,
   GameRunning,
-  TorBoxUser,
   ShortcutLocation,
   ShopAssets,
   ShopDetailsWithAssets,
@@ -211,15 +206,7 @@ declare global {
       payload: StartGameDownloadPayload
     ) => Promise<{ ok: boolean; error?: string }>;
     cancelGameDownload: (shop: GameShop, objectId: string) => Promise<void>;
-    pauseGameDownload: (
-      shop: GameShop,
-      objectId: string,
-      confirmed?: boolean
-    ) => Promise<boolean>;
-    getDownloadPauseWarning: (
-      shop: GameShop,
-      objectId: string
-    ) => Promise<boolean>;
+    pauseGameDownload: (shop: GameShop, objectId: string) => Promise<boolean>;
     resumeGameDownload: (
       shop: GameShop,
       objectId: string,
@@ -248,12 +235,6 @@ declare global {
     onHardDelete: (cb: () => void) => () => Electron.IpcRenderer;
     getTorrentFiles: (
       magnet: string
-    ) => Promise<
-      { ok: true; data: TorrentFilesResponse } | { ok: false; error: string }
-    >;
-    getDebridFiles: (
-      magnet: string,
-      provider: Downloader
     ) => Promise<
       { ok: true; data: TorrentFilesResponse } | { ok: false; error: string }
     >;
@@ -458,10 +439,6 @@ declare global {
     onLibraryBatchComplete: (cb: () => void) => () => Electron.IpcRenderer;
     onDownloadsUpdated: (cb: () => void) => () => Electron.IpcRenderer;
     /* User preferences */
-    authenticateRealDebrid: (apiToken: string) => Promise<RealDebridUser>;
-    authenticatePremiumize: (apiToken: string) => Promise<PremiumizeUser>;
-    authenticateAllDebrid: (apiToken: string) => Promise<AllDebridUser>;
-    authenticateTorBox: (apiToken: string) => Promise<TorBoxUser>;
     getUserPreferences: () => Promise<UserPreferences | null>;
     updateUserPreferences: (
       preferences: Partial<UserPreferences>

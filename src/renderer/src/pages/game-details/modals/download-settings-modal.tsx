@@ -9,7 +9,6 @@ import {
   SyncIcon,
 } from "@primer/octicons-react";
 import {
-  Badge,
   Button,
   CheckboxField,
   Link,
@@ -44,7 +43,6 @@ import {
 import { Trans, useTranslation } from "react-i18next";
 import { Tooltip } from "react-tooltip";
 import "./download-settings-modal.scss";
-import { RealDebridInfoModal } from "./real-debrid-info-modal";
 
 export interface DownloadSettingsModalProps {
   visible: boolean;
@@ -230,31 +228,7 @@ const buildTorrentTreeData = (
   };
 };
 
-const getProviderTorrentFiles = (
-  magnetUri: string,
-  downloader: Downloader | null
-) => {
-  if (downloader === Downloader.Torrent) {
-    return window.electron.getTorrentFiles(magnetUri);
-  }
-
-  return window.electron.getDebridFiles(magnetUri, downloader!);
-};
-
 const MAX_CACHED_TORRENT_MANIFESTS = 20;
-
-const rememberTorrentFiles = (
-  cache: Map<string, TorrentFilesResponse>,
-  downloader: Downloader | null,
-  key: string,
-  files: TorrentFilesResponse
-) => {
-  if (cache.size >= MAX_CACHED_TORRENT_MANIFESTS) {
-    const oldestKey = cache.keys().next().value;
-    if (oldestKey) cache.delete(oldestKey);
-  }
-  if (downloader === Downloader.Torrent) cache.set(key, files);
-};
 
 export function DownloadSettingsModal({
   visible,
@@ -290,7 +264,6 @@ export function DownloadSettingsModal({
   const [hasWritePermission, setHasWritePermission] = useState<boolean | null>(
     null
   );
-  const [showRealDebridModal, setShowRealDebridModal] = useState(false);
   const [torrentFiles, setTorrentFiles] = useState<TorrentFile[]>([]);
   const [torrentFilesLoading, setTorrentFilesLoading] = useState(false);
   const [torrentFilesError, setTorrentFilesError] = useState<string | null>(
@@ -304,9 +277,6 @@ export function DownloadSettingsModal({
     new Set()
   );
   const [showTorrentStepModal, setShowTorrentStepModal] = useState(false);
-  const [singleArchiveSelectionKey, setSingleArchiveSelectionKey] = useState<
-    string | null
-  >(null);
   const [torrentSort, setTorrentSort] = useState<{
     column: TorrentSortColumn;
     direction: TorrentSortDirection;
@@ -331,12 +301,7 @@ export function DownloadSettingsModal({
   }, [repack, selectedDownloader]);
 
   const selectedMagnetUri = useMemo(() => {
-    if (
-      selectedDownloader !== Downloader.Torrent &&
-      selectedDownloader !== Downloader.TorBox &&
-      selectedDownloader !== Downloader.RealDebrid
-    )
-      return null;
+    if (selectedDownloader !== Downloader.Torrent) return null;
     if (!selectedUri?.startsWith("magnet:")) return null;
     return selectedUri;
   }, [selectedDownloader, selectedUri]);
@@ -369,10 +334,7 @@ export function DownloadSettingsModal({
   const downloadOptions = useMemo(() => {
     const unavailableUrisSet = new Set(repack?.unavailableUris ?? []);
 
-    const downloaderMap = new Map<
-      Downloader,
-      { hasAvailable: boolean; hasUnavailable: boolean }
-    >();
+    const downloaderMap = new Map<Downloader, { hasAvailable: boolean }>();
 
     if (repack) {
       for (const uri of repack.uris) {
@@ -383,12 +345,8 @@ export function DownloadSettingsModal({
           const existing = downloaderMap.get(downloader);
           if (existing) {
             existing.hasAvailable = existing.hasAvailable || isAvailable;
-            existing.hasUnavailable = existing.hasUnavailable || !isAvailable;
           } else {
-            downloaderMap.set(downloader, {
-              hasAvailable: isAvailable,
-              hasUnavailable: !isAvailable,
-            });
+            downloaderMap.set(downloader, { hasAvailable: isAvailable });
           }
         }
       }
@@ -398,93 +356,21 @@ export function DownloadSettingsModal({
       (value) => typeof value === "number"
     ) as Downloader[];
 
-    const getDownloaderPriority = (option: {
-      isAvailable: boolean;
-      isAvailableButNotConfigured: boolean;
-    }) => {
-      if (option.isAvailable) return 0;
-      if (option.isAvailableButNotConfigured) return 2;
-      return 1;
-    };
-
     return allDownloaders
       .filter((downloader) => {
         if (downloader === Downloader.Hydra) return false; // Temporarily comment out Nimbus
-        if (!downloaderMap.has(downloader)) return false;
-        if (
-          downloader === Downloader.Premiumize &&
-          !isFeatureEnabled(Feature.Premiumize)
-        ) {
-          return false;
-        }
-
-        if (
-          downloader === Downloader.AllDebrid &&
-          !isFeatureEnabled(Feature.AllDebrid)
-        ) {
-          return false;
-        }
-
-        return true;
+        return downloaderMap.has(downloader);
       })
-      .map((downloader) => {
-        const status = downloaderMap.get(downloader);
-        const hasAvailableUri = status?.hasAvailable ?? false;
-
-        let isConfigured = true;
-        if (downloader === Downloader.RealDebrid) {
-          isConfigured = !!userPreferences?.realDebridApiToken;
-        } else if (downloader === Downloader.Premiumize) {
-          isConfigured = !!userPreferences?.premiumizeApiToken;
-        } else if (downloader === Downloader.AllDebrid) {
-          isConfigured = !!userPreferences?.allDebridApiToken;
-        } else if (downloader === Downloader.TorBox) {
-          isConfigured = !!userPreferences?.torBoxApiToken;
-        }
-        // } else if (downloader === Downloader.Hydra) {
-        //   isConfigured = isFeatureEnabled(Feature.Nimbus);
-        // }
-
-        const isAvailableButNotConfigured = hasAvailableUri && !isConfigured;
-
-        const isAvailable = hasAvailableUri && isConfigured;
-
-        return {
-          downloader,
-          isAvailable,
-          isAvailableButNotConfigured,
-        };
-      })
-      .sort((a, b) => getDownloaderPriority(a) - getDownloaderPriority(b));
-  }, [
-    repack,
-    userPreferences?.realDebridApiToken,
-    userPreferences?.premiumizeApiToken,
-    userPreferences?.allDebridApiToken,
-    userPreferences?.torBoxApiToken,
-    isFeatureEnabled,
-    Feature,
-  ]);
+      .map((downloader) => ({
+        downloader,
+        isAvailable: downloaderMap.get(downloader)?.hasAvailable ?? false,
+      }))
+      .sort((a, b) => Number(b.isAvailable) - Number(a.isAvailable));
+  }, [repack]);
 
   const getDefaultDownloader = useCallback(
     (availableDownloaders: Downloader[]) => {
       if (availableDownloaders.length === 0) return null;
-
-      if (availableDownloaders.includes(Downloader.RealDebrid)) {
-        return Downloader.RealDebrid;
-      }
-
-      if (availableDownloaders.includes(Downloader.Premiumize)) {
-        return Downloader.Premiumize;
-      }
-
-      if (availableDownloaders.includes(Downloader.AllDebrid)) {
-        return Downloader.AllDebrid;
-      }
-
-      if (availableDownloaders.includes(Downloader.TorBox)) {
-        return Downloader.TorBox;
-      }
 
       return availableDownloaders[0];
     },
@@ -752,17 +638,9 @@ export function DownloadSettingsModal({
   ]);
 
   const canOpenTorrentStep =
-    visible &&
-    !!selectedMagnetUri &&
-    (selectedDownloader === Downloader.Torrent ||
-      (selectedDownloader === Downloader.TorBox &&
-        !!userPreferences?.torBoxApiToken) ||
-      (selectedDownloader === Downloader.RealDebrid &&
-        !!userPreferences?.realDebridApiToken));
+    visible && selectedDownloader === Downloader.Torrent && !!selectedMagnetUri;
 
   const shouldShowTorrentFiles = canOpenTorrentStep && showTorrentStepModal;
-  const selectedTorrentKey = `${selectedDownloader}:${selectedMagnetUri}`;
-  const isSingleArchive = singleArchiveSelectionKey === selectedTorrentKey;
 
   const allTorrentFilesSelected =
     torrentFiles.length > 0 &&
@@ -779,9 +657,7 @@ export function DownloadSettingsModal({
     setShowTorrentStepModal(false);
   }, []);
 
-  const fetchTorrentFiles = useCallback(async (): Promise<
-    TorrentFilesResponse | null | undefined
-  > => {
+  const fetchTorrentFiles = useCallback(async () => {
     if (!selectedMagnetUri) {
       return;
     }
@@ -790,11 +666,7 @@ export function DownloadSettingsModal({
     const isRequestOutdated = () =>
       requestId !== torrentFilesRequestIdRef.current || !canOpenTorrentStep;
 
-    const cacheKey = `${selectedDownloader}:${selectedMagnetUri}`;
-    const cached =
-      selectedDownloader !== Downloader.Torrent
-        ? undefined
-        : torrentFilesCache.current.get(cacheKey);
+    const cached = torrentFilesCache.current.get(selectedMagnetUri);
     const setAvailableFiles = (files: TorrentFile[]) => {
       setTorrentFiles(files);
       setSelectedTorrentIndices(new Set(files.map((file) => file.index)));
@@ -813,7 +685,7 @@ export function DownloadSettingsModal({
     if (cached) {
       if (isRequestOutdated()) return;
       setAvailableFiles(cached.files);
-      return cached;
+      return;
     }
 
     setTorrentFilesLoading(true);
@@ -824,14 +696,11 @@ export function DownloadSettingsModal({
       | { ok: false; error: string };
 
     try {
-      response = await getProviderTorrentFiles(
-        selectedMagnetUri,
-        selectedDownloader
-      );
+      response = await window.electron.getTorrentFiles(selectedMagnetUri);
     } catch {
       if (isRequestOutdated()) return;
       setUnavailableFiles(DownloadError.TorrentFilesUnavailable);
-      return null;
+      return;
     }
 
     if (!response.ok) {
@@ -841,26 +710,24 @@ export function DownloadSettingsModal({
           ? (response.error as DownloadError)
           : DownloadError.TorrentFilesUnavailable
       );
-      return null;
+      return;
     }
 
     if (isRequestOutdated()) return;
 
-    rememberTorrentFiles(
-      torrentFilesCache.current,
-      selectedDownloader,
-      cacheKey,
-      response.data
-    );
+    if (torrentFilesCache.current.size >= MAX_CACHED_TORRENT_MANIFESTS) {
+      const oldestKey = torrentFilesCache.current.keys().next().value;
+      if (oldestKey) torrentFilesCache.current.delete(oldestKey);
+    }
+    torrentFilesCache.current.set(selectedMagnetUri, response.data);
     setAvailableFiles(response.data.files);
-    return response.data;
-  }, [canOpenTorrentStep, selectedDownloader, selectedMagnetUri]);
+  }, [canOpenTorrentStep, selectedMagnetUri]);
 
   useEffect(() => {
     if (!shouldShowTorrentFiles) {
       resetTorrentStepState();
     }
-  }, [resetTorrentStepState, selectedTorrentKey, shouldShowTorrentFiles]);
+  }, [resetTorrentStepState, shouldShowTorrentFiles]);
 
   useEffect(() => {
     if (!visible) {
@@ -868,7 +735,6 @@ export function DownloadSettingsModal({
       startAbortControllerRef.current?.abort();
       startAbortControllerRef.current = null;
       setDownloadStarting(false);
-      setSingleArchiveSelectionKey(null);
       resetTorrentStepState();
     }
   }, [resetTorrentStepState, visible]);
@@ -1072,28 +938,12 @@ export function DownloadSettingsModal({
   };
 
   const handleOpenTorrentStep = async () => {
-    const response = await fetchTorrentFiles();
-    if (response === undefined) return;
-
-    // Debrid providers that only expose a single archive (or a TorBox
-    // generated ZIP) offer no meaningful file selection: download it whole.
-    if (
-      selectedDownloader !== Downloader.Torrent &&
-      response &&
-      (response.archiveOnly ||
-        (response.files.length === 1 &&
-          /\.(zip|rar|7z)$/i.test(response.files[0].path)))
-    ) {
-      setSingleArchiveSelectionKey(selectedTorrentKey);
-      setShowTorrentStepModal(false);
-      return;
-    }
-
+    await fetchTorrentFiles();
     setShowTorrentStepModal(true);
   };
 
   const handleRetryFetchTorrentFiles = async () => {
-    await handleOpenTorrentStep();
+    await fetchTorrentFiles();
   };
 
   const toggleAllTorrentFiles = () => {
@@ -1309,8 +1159,7 @@ export function DownloadSettingsModal({
                 const tooltipId = `availability-indicator-${option.downloader}`;
                 const isLastItem = index === downloadOptions.length - 1;
 
-                const isDisabled =
-                  !option.isAvailable && !option.isAvailableButNotConfigured;
+                const isDisabled = !option.isAvailable;
 
                 const getAvailabilityIndicator = () => {
                   if (option.isAvailable) {
@@ -1319,16 +1168,6 @@ export function DownloadSettingsModal({
                         className={`download-settings-modal__availability-indicator download-settings-modal__availability-indicator--available download-settings-modal__availability-indicator--pulsating`}
                         data-tooltip-id={tooltipId}
                         data-tooltip-content={t("downloader_online")}
-                      />
-                    );
-                  }
-
-                  if (option.isAvailableButNotConfigured) {
-                    return (
-                      <span
-                        className={`download-settings-modal__availability-indicator download-settings-modal__availability-indicator--warning`}
-                        data-tooltip-id={tooltipId}
-                        data-tooltip-content={t("downloader_not_configured")}
                       />
                     );
                   }
@@ -1354,14 +1193,6 @@ export function DownloadSettingsModal({
                     );
                   }
 
-                  if (option.downloader === Downloader.RealDebrid) {
-                    return (
-                      <div className="download-settings-modal__recommendation-badge">
-                        <Badge>{t("recommended")}</Badge>
-                      </div>
-                    );
-                  }
-
                   return null;
                 };
 
@@ -1382,20 +1213,7 @@ export function DownloadSettingsModal({
                           : ""
                       }`}
                       disabled={isDisabled}
-                      onClick={() => {
-                        if (
-                          [
-                            Downloader.RealDebrid,
-                            Downloader.Premiumize,
-                            Downloader.AllDebrid,
-                          ].includes(option.downloader) &&
-                          option.isAvailableButNotConfigured
-                        ) {
-                          setShowRealDebridModal(true);
-                        } else {
-                          setSelectedDownloader(option.downloader);
-                        }
-                      }}
+                      onClick={() => setSelectedDownloader(option.downloader)}
                     >
                       <span className="download-settings-modal__downloader-name">
                         {DOWNLOADER_NAME[option.downloader]}
@@ -1412,12 +1230,7 @@ export function DownloadSettingsModal({
             </div>
           </div>
 
-          {canOpenTorrentStep && isSingleArchive && (
-            <p className="download-settings-modal__single-archive-notice">
-              {t("single_archive_download_notice")}
-            </p>
-          )}
-          {canOpenTorrentStep && !isSingleArchive && (
+          {canOpenTorrentStep && (
             <button
               type="button"
               className="download-settings-modal__select-files-link"
@@ -1489,19 +1302,13 @@ export function DownloadSettingsModal({
             !hasEnoughDiskSpace ||
             downloadOptions.some(
               (option) =>
-                option.downloader === selectedDownloader &&
-                (option.isAvailableButNotConfigured || !option.isAvailable)
+                option.downloader === selectedDownloader && !option.isAvailable
             )
           }
         >
           {getButtonContent()}
         </Button>
       </div>
-
-      <RealDebridInfoModal
-        visible={showRealDebridModal}
-        onClose={() => setShowRealDebridModal(false)}
-      />
 
       <Modal
         visible={showTorrentStepModal}

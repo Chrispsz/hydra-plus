@@ -350,7 +350,7 @@ app.on("before-quit", async (e) => {
     e.preventDefault();
     if (isAppClosing) return;
     isAppClosing = true;
-    DownloadOrchestrator.cancelPendingDebridPreparations();
+    DownloadOrchestrator.cancelPendingPreparations();
     PowerSaveBlockerManager.reset();
     try {
       await DownloadManager.pauseDownload();

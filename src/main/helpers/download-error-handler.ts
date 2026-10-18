@@ -74,65 +74,8 @@ const handleAxiosError = (
     return { ok: false, error: DownloadError.GofileQuotaExceeded };
   }
 
-  if (err.response?.status === 403 && downloader === Downloader.RealDebrid) {
-    return { ok: false, error: DownloadError.RealDebridAccountNotAuthorized };
-  }
-
-  if (
-    (err.response?.status === 401 || err.response?.status === 403) &&
-    downloader === Downloader.Premiumize
-  ) {
-    return { ok: false, error: DownloadError.PremiumizeAccountNotAuthorized };
-  }
-
-  if (
-    (err.response?.status === 401 || err.response?.status === 403) &&
-    downloader === Downloader.AllDebrid
-  ) {
-    return { ok: false, error: DownloadError.AllDebridAccountNotAuthorized };
-  }
-
-  if (err.response?.status === 429 && downloader === Downloader.Premiumize) {
-    return { ok: false, error: DownloadError.PremiumizeRateLimitExceeded };
-  }
-
-  if (err.response?.status === 429 && downloader === Downloader.AllDebrid) {
-    return { ok: false, error: DownloadError.AllDebridRateLimitExceeded };
-  }
-
-  if (err.response?.status === 503 && downloader === Downloader.Premiumize) {
-    return { ok: false, error: DownloadError.PremiumizeUnavailable };
-  }
-
-  if (err.response?.status === 503 && downloader === Downloader.AllDebrid) {
-    return { ok: false, error: DownloadError.AllDebridUnavailable };
-  }
-
   const hydraUnlockResult = handleHydraUnlockError(err, downloader);
   if (hydraUnlockResult) return hydraUnlockResult;
-
-  if (downloader === Downloader.TorBox) {
-    const status = err.response?.status;
-
-    if (status === 401 || status === 403) {
-      return { ok: false, error: DownloadError.TorBoxAccountNotAuthorized };
-    }
-
-    if (status === 429) {
-      return { ok: false, error: DownloadError.TorBoxRateLimitExceeded };
-    }
-
-    if (status === 503) {
-      return { ok: false, error: DownloadError.TorBoxUnavailable };
-    }
-
-    const detail = (err.response?.data as { detail?: unknown } | undefined)
-      ?.detail;
-
-    if (typeof detail === "string" && detail.length > 0) {
-      return { ok: false, error: detail };
-    }
-  }
 
   return null;
 };

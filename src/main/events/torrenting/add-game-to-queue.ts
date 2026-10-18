@@ -60,9 +60,7 @@ const addGameToQueue = async (
       customTrackers: globalTrackers,
     };
 
-    if (!DownloadOrchestrator.preparesRealDebridInBackground(download)) {
-      await DownloadOrchestrator.validateDownloadOrMarkPending(download);
-    }
+    await DownloadManager.validateDownloadUrl(download);
     await prepareGameEntry({ gameKey, title, objectId, shop });
     await DownloadManager.cancelDownload(gameKey).catch(() => null);
   } catch (err: unknown) {

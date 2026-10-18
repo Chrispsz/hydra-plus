@@ -113,16 +113,8 @@ export function useDownload() {
     return response;
   };
 
-  const pauseDownload = async (
-    shop: GameShop,
-    objectId: string,
-    confirmed = false
-  ) => {
-    const paused = await window.electron.pauseGameDownload(
-      shop,
-      objectId,
-      confirmed
-    );
+  const pauseDownload = async (shop: GameShop, objectId: string) => {
+    const paused = await window.electron.pauseGameDownload(shop, objectId);
     if (paused === false) return false;
     await updateLibrary();
     if (lastPacket?.gameId === `${shop}:${objectId}`) dispatch(clearDownload());

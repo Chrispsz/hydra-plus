@@ -3,22 +3,21 @@ import fs from "node:fs";
 import path from "node:path";
 import { describe, it } from "node:test";
 
-const INTEGRATION_DISPLAY_KEYS = [
-  "integration_connect",
-  "integration_disconnect",
-  "integration_reconnect",
-  "integration_status_not_connected",
-  "integration_sync",
-  "steam_status_reconnect_required",
-] as const;
-
+/**
+ * Google Drive is the only account integration left in Hydra Plus (the paid
+ * download services were removed). These tests keep guarding the
+ * integration copy: every displayed key must exist in every desktop locale
+ * and must be actually translated in pt-BR.
+ */
 const INTEGRATION_SOURCE_FILES = [
-  "src/renderer/src/pages/settings/settings-debrid.tsx",
+  "src/renderer/src/helpers/google-drive-connect.ts",
+  "src/renderer/src/pages/game-details/modals/game-options-modal/drive-connect-cta.tsx",
+  "src/renderer/src/pages/settings/settings-context-cloud.tsx",
 ] as const;
 
-const LANGUAGE_NEUTRAL_KEYS = new Set(["steam", "steam_sync_progress"]);
+const INTEGRATION_KEY_NAMESPACE_FALLBACKS = ["settings", "game_details"];
 
-const readSettingsTranslations = (locale: string) => {
+const readTranslation = (locale: string) => {
   const translationPath = path.resolve(
     process.cwd(),
     "src/locales",
@@ -26,13 +25,27 @@ const readSettingsTranslations = (locale: string) => {
     "translation.json"
   );
 
-  return JSON.parse(fs.readFileSync(translationPath, "utf8"))
-    .settings as Record<string, string>;
+  return JSON.parse(fs.readFileSync(translationPath, "utf8")) as Record<
+    string,
+    Record<string, string>
+  >;
+};
+
+const resolveIntegrationValue = (
+  translation: Record<string, Record<string, string>>,
+  key: string
+): string | undefined => {
+  for (const namespace of INTEGRATION_KEY_NAMESPACE_FALLBACKS) {
+    const value = translation[namespace]?.[key];
+    if (typeof value === "string") return value;
+  }
+
+  return undefined;
 };
 
 const getIntegrationKeys = () => {
-  const keys = new Set(["cancel", "steam"]);
-  const integrationKeyPattern = /["']((?:integration|steam)_[a-z0-9_]+)["']/g;
+  const keys = new Set<string>();
+  const integrationKeyPattern = /["'](google_drive_[a-z0-9_]+)["']/g;
 
   for (const sourceFile of INTEGRATION_SOURCE_FILES) {
     const source = fs.readFileSync(
@@ -52,6 +65,12 @@ describe("integration translations", () => {
   it("defines every displayed integration key in every desktop locale", () => {
     const localesPath = path.resolve(process.cwd(), "src/locales");
     const locales = fs.readdirSync(localesPath);
+    const integrationKeys = getIntegrationKeys();
+
+    assert.ok(
+      integrationKeys.size > 0,
+      "no integration keys found in the scanned source files"
+    );
 
     for (const locale of locales) {
       const translationPath = path.join(
@@ -61,41 +80,44 @@ describe("integration translations", () => {
       );
       if (!fs.existsSync(translationPath)) continue;
 
-      const translation = JSON.parse(fs.readFileSync(translationPath, "utf8"));
+      const translation = readTranslation(locale);
 
-      for (const key of INTEGRATION_DISPLAY_KEYS) {
+      for (const key of integrationKeys) {
         assert.equal(
-          typeof translation.settings?.[key],
+          typeof resolveIntegrationValue(translation, key),
           "string",
-          `${locale} is missing settings.${key}`
+          `${locale} is missing integration key ${key}`
         );
         assert.ok(
-          translation.settings[key].trim(),
-          `${locale} has an empty settings.${key}`
+          resolveIntegrationValue(translation, key)?.trim(),
+          `${locale} has an empty integration key ${key}`
         );
       }
     }
   });
 
   it("keeps every integration copy translated in pt-BR", () => {
-    const english = readSettingsTranslations("en");
-    const portuguese = readSettingsTranslations("pt-BR");
+    const english = readTranslation("en");
+    const portuguese = readTranslation("pt-BR");
 
     for (const key of getIntegrationKeys()) {
-      assert.equal(
-        typeof portuguese[key],
-        "string",
-        `pt-BR is missing settings.${key}`
-      );
-      assert.ok(portuguese[key].trim(), `pt-BR has an empty settings.${key}`);
+      const englishValue = resolveIntegrationValue(english, key);
+      const portugueseValue = resolveIntegrationValue(portuguese, key);
 
-      if (!LANGUAGE_NEUTRAL_KEYS.has(key)) {
-        assert.notEqual(
-          portuguese[key],
-          english[key],
-          `settings.${key} still uses the English copy in pt-BR`
-        );
-      }
+      assert.equal(
+        typeof portugueseValue,
+        "string",
+        `pt-BR is missing integration key ${key}`
+      );
+      assert.ok(
+        portugueseValue?.trim(),
+        `pt-BR has an empty integration key ${key}`
+      );
+      assert.notEqual(
+        portugueseValue,
+        englishValue,
+        `integration key ${key} still uses the English copy in pt-BR`
+      );
     }
   });
 });

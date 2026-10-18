@@ -114,8 +114,6 @@ export const formatName = pipe<string>(
   (str) => str.trim()
 );
 
-const realDebridHosts = ["https://1fichier.com", "https://mediafire.com"];
-
 export const getDownloadersForUri = (uri: string) => {
   if (uri.startsWith("https://gofile.io")) return [Downloader.Gofile];
 
@@ -123,6 +121,8 @@ export const getDownloadersForUri = (uri: string) => {
   if (uri.startsWith("https://datanodes.to")) return [Downloader.Datanodes];
   if (uri.startsWith("https://www.mediafire.com"))
     return [Downloader.Mediafire];
+  // Mediafire links without the "www" prefix resolve through MediafireApi too.
+  if (uri.startsWith("https://mediafire.com")) return [Downloader.Mediafire];
   if (uri.startsWith("https://fuckingfast.co")) {
     return [Downloader.FuckingFast];
   }
@@ -133,18 +133,8 @@ export const getDownloadersForUri = (uri: string) => {
     return [Downloader.ArchiveOrg];
   }
 
-  if (realDebridHosts.some((host) => uri.startsWith(host)))
-    return [Downloader.RealDebrid];
-
   if (uri.startsWith("magnet:")) {
-    return [
-      Downloader.Torrent,
-      Downloader.Hydra,
-      Downloader.TorBox,
-      Downloader.RealDebrid,
-      Downloader.Premiumize,
-      Downloader.AllDebrid,
-    ];
+    return [Downloader.Torrent, Downloader.Hydra];
   }
 
   return [];

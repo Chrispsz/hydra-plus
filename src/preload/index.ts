@@ -44,7 +44,6 @@ import type {
   ConfirmCloudSaveCustomPathRebindApprovalResult,
   ExtractionFailure,
 } from "@types";
-import type { Downloader } from "@shared";
 
 const invokeCloudSaveOperation = async <TResult = SyncGameCloudSaveResult>(
   channel:
@@ -374,10 +373,8 @@ contextBridge.exposeInMainWorld("electron", {
     ipcRenderer.invoke("addGameToQueue", payload),
   cancelGameDownload: (shop: GameShop, objectId: string) =>
     ipcRenderer.invoke("cancelGameDownload", shop, objectId),
-  pauseGameDownload: (shop: GameShop, objectId: string, confirmed?: boolean) =>
-    ipcRenderer.invoke("pauseGameDownload", shop, objectId, confirmed),
-  getDownloadPauseWarning: (shop: GameShop, objectId: string) =>
-    ipcRenderer.invoke("getDownloadPauseWarning", shop, objectId),
+  pauseGameDownload: (shop: GameShop, objectId: string) =>
+    ipcRenderer.invoke("pauseGameDownload", shop, objectId),
   resumeGameDownload: (
     shop: GameShop,
     objectId: string,
@@ -427,10 +424,6 @@ contextBridge.exposeInMainWorld("electron", {
     ipcRenderer.invoke("getTorrentFiles", magnet) as Promise<
       { ok: true; data: TorrentFilesResponse } | { ok: false; error: string }
     >,
-  getDebridFiles: (magnet: string, provider: Downloader) =>
-    ipcRenderer.invoke("getDebridFiles", magnet, provider) as Promise<
-      { ok: true; data: TorrentFilesResponse } | { ok: false; error: string }
-    >,
 
   /* Catalogue */
   getGameShopDetails: (objectId: string, shop: GameShop, language: string) =>
@@ -460,14 +453,6 @@ contextBridge.exposeInMainWorld("electron", {
   },
   autoLaunch: (autoLaunchProps: { enabled: boolean; minimized: boolean }) =>
     ipcRenderer.invoke("autoLaunch", autoLaunchProps),
-  authenticateRealDebrid: (apiToken: string) =>
-    ipcRenderer.invoke("authenticateRealDebrid", apiToken),
-  authenticatePremiumize: (apiToken: string) =>
-    ipcRenderer.invoke("authenticatePremiumize", apiToken),
-  authenticateAllDebrid: (apiToken: string) =>
-    ipcRenderer.invoke("authenticateAllDebrid", apiToken),
-  authenticateTorBox: (apiToken: string) =>
-    ipcRenderer.invoke("authenticateTorBox", apiToken),
 
   /* Download sources */
   addDownloadSource: (url: string) =>

@@ -55,7 +55,6 @@ export const ASSETS_PATH = path.join(SystemPath.getPath("userData"), "Assets");
 export const INTERVALS = {
   processWatcher: 2_000,
   downloadWatcher: 2_000,
-  debridReadinessWatcher: 5_000,
   seedStatusWatcher: 2_000,
   updateChecker: 60_000 * 50, // 50 minutes
   powerSaveBlockerSync: 20_000,

@@ -105,14 +105,6 @@ export interface Game {
   romSizeBytes?: number | null;
 }
 
-export interface DownloadFile {
-  index: number;
-  path: string;
-  size: number;
-  bytesDownloaded: number;
-  completed: boolean;
-}
-
 export interface Download {
   shop: GameShop;
   objectId: string;
@@ -133,14 +125,7 @@ export interface Download {
   automaticallyExtract: boolean;
   automaticallyDeleteArchiveFiles: boolean;
   fileIndices?: number[];
-  files?: DownloadFile[];
   selectedFilesSize?: number | null;
-  realDebridTorrentId?: string;
-  awaitingDebrid?: boolean;
-  debridAutoResume?: boolean;
-  debridQueueOnly?: boolean;
-  debridQueuePosition?: number;
-  debridPreparationDeadline?: number;
   customTrackers?: string[];
 }
 
@@ -186,10 +171,6 @@ export interface UserPreferences {
   optionalDownloadsPaths?: string[];
   ggDealsApiKey?: string | null;
   language?: string;
-  realDebridApiToken?: string | null;
-  premiumizeApiToken?: string | null;
-  allDebridApiToken?: string | null;
-  torBoxApiToken?: string | null;
   preferQuitInsteadOfHiding?: boolean;
   runAtStartup?: boolean;
   startMinimized?: boolean;

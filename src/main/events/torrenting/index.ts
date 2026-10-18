@@ -6,7 +6,6 @@ import "./resume-game-download";
 import "./resume-game-seed";
 import "./start-game-download";
 import "./get-torrent-files";
-import "./get-debrid-files";
 import "./update-download-queue-position";
 import "./get-download-layout-state";
 import "./save-global-trackers";

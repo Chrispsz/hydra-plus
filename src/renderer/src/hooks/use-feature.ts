@@ -5,9 +5,6 @@ import { ensureArray } from "@renderer/helpers";
 
 enum Feature {
   CheckDownloadWritePermission = "CHECK_DOWNLOAD_WRITE_PERMISSION",
-  TorBox = "TORBOX",
-  Premiumize = "PREMIUMIZE",
-  AllDebrid = "ALLDEBRID",
   Nimbus = "NIMBUS",
   NimbusPreview = "NIMBUS_PREVIEW",
 }

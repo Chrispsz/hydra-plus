@@ -11,7 +11,6 @@ import {
   GearIcon,
   LinkIcon,
   PlayIcon,
-  PlugIcon,
 } from "@primer/octicons-react";
 import { Wrench } from "lucide-react";
 import { SettingsContextGeneral } from "./settings-context-general";
@@ -19,7 +18,6 @@ import { SettingsContextCloud } from "./settings-context-cloud";
 import { SettingsContextDownloads } from "./settings-context-downloads";
 import { SettingsContextDownloadSources } from "./settings-context-download-sources";
 import { SettingsContextContentGameplay } from "./settings-context-content-gameplay";
-import { SettingsContextIntegrations } from "./settings-context-integrations";
 import { SettingsContextCompatibility } from "./settings-context-compatibility";
 
 export default function Settings() {
@@ -51,11 +49,6 @@ export default function Settings() {
         id: "content_gameplay" as const,
         label: t("content_gameplay"),
         icon: <PlayIcon size={16} />,
-      },
-      {
-        id: "integrations" as const,
-        label: t("integrations"),
-        icon: <PlugIcon size={16} />,
       },
       {
         id: "compatibility" as const,
@@ -94,10 +87,6 @@ export default function Settings() {
 
             if (selectedCategoryId === "cloud") {
               return <SettingsContextCloud />;
-            }
-
-            if (selectedCategoryId === "integrations") {
-              return <SettingsContextIntegrations />;
             }
 
             return <SettingsContextCompatibility />;
