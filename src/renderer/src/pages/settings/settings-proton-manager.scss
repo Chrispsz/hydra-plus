@@ -1,0 +1,191 @@
+@use "../../scss/globals.scss";
+
+@keyframes settings-proton-manager-indeterminate {
+  from {
+    transform: translateX(-100%);
+  }
+
+  to {
+    transform: translateX(400%);
+  }
+}
+
+@keyframes settings-proton-manager-spin {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.settings-proton-manager {
+  &__title {
+    margin: 0;
+    font-size: globals.$body-font-size;
+    font-weight: 600;
+  }
+
+  &__description {
+    margin: 0;
+    color: globals.$muted-color;
+    font-size: globals.$small-font-size;
+    line-height: 1.5;
+  }
+
+  &__target {
+    display: flex;
+    flex-direction: column;
+    gap: calc(globals.$spacing-unit / 4);
+    margin: 0;
+    color: globals.$muted-color;
+    font-size: globals.$small-font-size;
+
+    small {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      direction: rtl;
+      text-align: left;
+    }
+  }
+
+  &__releases,
+  &__installed {
+    display: flex;
+    flex-direction: column;
+    gap: globals.$spacing-unit;
+  }
+
+  &__subheader {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: globals.$spacing-unit;
+  }
+
+  &__subtitle {
+    margin: 0;
+    font-size: globals.$body-font-size;
+    font-weight: 600;
+  }
+
+  &__list {
+    display: flex;
+    flex-direction: column;
+    gap: calc(globals.$spacing-unit / 2);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    max-height: 280px;
+    overflow-y: auto;
+  }
+
+  &__item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: globals.$spacing-unit;
+    padding: calc(globals.$spacing-unit) calc(globals.$spacing-unit * 1.5);
+    background-color: globals.$dark-background-color;
+    border: solid 1px globals.$border-color;
+    border-radius: 8px;
+  }
+
+  &__item-info {
+    display: flex;
+    flex-direction: column;
+    gap: calc(globals.$spacing-unit / 4);
+    min-width: 0;
+  }
+
+  &__item-name {
+    font-size: globals.$body-font-size;
+    font-weight: 600;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  &__item-meta {
+    color: globals.$muted-color;
+    font-size: globals.$small-font-size;
+  }
+
+  &__empty {
+    margin: 0;
+    color: globals.$muted-color;
+    font-size: globals.$small-font-size;
+  }
+
+  &__error {
+    margin: 0;
+    color: globals.$danger-color;
+    font-size: globals.$small-font-size;
+  }
+
+  &__loading-spinner {
+    animation: settings-proton-manager-spin 1s linear infinite;
+    color: globals.$muted-color;
+    align-self: center;
+  }
+
+  &__load-more {
+    align-self: center;
+  }
+
+  &__progress {
+    display: flex;
+    flex-direction: column;
+    gap: calc(globals.$spacing-unit / 2);
+    padding: calc(globals.$spacing-unit) calc(globals.$spacing-unit * 1.5);
+    background-color: globals.$dark-background-color;
+    border: solid 1px globals.$border-color;
+    border-radius: 8px;
+  }
+
+  &__progress-header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: calc(globals.$spacing-unit / 2);
+  }
+
+  &__progress-title {
+    font-size: globals.$body-font-size;
+    font-weight: 600;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  &__progress-status {
+    color: globals.$muted-color;
+    font-size: globals.$small-font-size;
+  }
+
+  &__progress-bar {
+    position: relative;
+    width: 100%;
+    height: 6px;
+    border-radius: 4px;
+    background-color: globals.$border-color;
+    overflow: hidden;
+
+    &--indeterminate .settings-proton-manager__progress-fill {
+      width: 25%;
+      animation: settings-proton-manager-indeterminate 1.4s ease-in-out infinite;
+    }
+  }
+
+  &__progress-fill {
+    height: 100%;
+    border-radius: 4px;
+    // Matches the download progress fill styling in downloads pages.
+    background-color: #fff;
+    transition: width 0.2s ease;
+  }
+}

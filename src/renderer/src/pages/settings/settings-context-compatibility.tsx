@@ -15,6 +15,7 @@ import type { ProtonVersion } from "@types";
 import { DesktopDownloadIcon, LinkExternalIcon } from "@primer/octicons-react";
 import { logger } from "@renderer/logger";
 import { Tooltip } from "react-tooltip";
+import { SettingsProtonManager } from "./settings-proton-manager";
 
 import "./settings-behavior.scss";
 import "./settings-general.scss";
@@ -417,6 +418,12 @@ export function SettingsContextCompatibility() {
           </Button>
         </div>
       )}
+
+      {/*
+        Proton manager lives in the compatibility panel: full UI on Linux,
+        plain "not supported" notice on Windows (self-gated inside).
+      */}
+      <SettingsProtonManager />
     </div>
   );
 }

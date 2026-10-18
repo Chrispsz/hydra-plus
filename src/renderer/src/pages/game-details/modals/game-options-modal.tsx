@@ -52,6 +52,7 @@ import { logger } from "@renderer/logger";
 import { GameOptionsSidebar } from "./game-options-modal/sidebar";
 import { GeneralSettingsSection } from "./game-options-modal/general-section";
 import { CompatibilitySettingsSection } from "./game-options-modal/compatibility-section";
+import { toggleLaunchFlagId } from "./game-options-modal/launch-flags-selection";
 import { DownloadsSettingsSection } from "./game-options-modal/downloads-section";
 import { DangerZoneSection } from "./game-options-modal/danger-zone-section";
 import { HydraCloudV2SettingsSection } from "./game-options-modal/hydra-cloud-v2-section";
@@ -120,6 +121,9 @@ export function GameOptionsModal({
   );
   const [onlineFixEnabled, setOnlineFixEnabled] = useState<boolean>(
     game.onlineFixEnabled === true
+  );
+  const [launchFlags, setLaunchFlags] = useState<string[]>(
+    () => game.launchFlags ?? []
   );
   const [gamemodeAvailable, setGamemodeAvailable] = useState(false);
   const [mangohudAvailable, setMangohudAvailable] = useState(false);
@@ -198,6 +202,9 @@ export function GameOptionsModal({
   useEffect(() => {
     setAutoRunGamemode(game.autoRunGamemode === true);
   }, [game.autoRunGamemode]);
+  useEffect(() => {
+    setLaunchFlags(game.launchFlags ?? []);
+  }, [game.launchFlags]);
 
   useEffect(() => {
     if (!visible || globalThis.window.electron.platform !== "linux") return;
@@ -622,6 +629,45 @@ export function GameOptionsModal({
       setOnlineFixEnabled(!value);
     }
   };
+
+  /**
+   * Persists `launchFlags` on the game record through the same LevelDB
+   * path `launchOptions` uses (get → spread → put), then refreshes the
+   * record. Optimistic local state, reverted on failure.
+   */
+  const handleChangeLaunchFlag = useCallback(
+    async (flagId: string, enabled: boolean) => {
+      const previousFlagIds = game.launchFlags ?? [];
+      const nextFlagIds = toggleLaunchFlagId(previousFlagIds, flagId, enabled);
+
+      setLaunchFlags(nextFlagIds);
+
+      try {
+        const gameKey = getGameKey(game.shop, game.objectId);
+        const gameData = (await levelDBService.get(
+          gameKey,
+          "games"
+        )) as Game | null;
+
+        if (gameData) {
+          await levelDBService.put(
+            gameKey,
+            {
+              ...gameData,
+              launchFlags: nextFlagIds.length > 0 ? nextFlagIds : null,
+            },
+            "games"
+          );
+        }
+
+        await updateGame();
+      } catch (error) {
+        logger.error("Failed to save launch flags", error);
+        setLaunchFlags(previousFlagIds);
+      }
+    },
+    [game.launchFlags, game.objectId, game.shop, updateGame]
+  );
 
   const applyProtonPathChange = async (protonPath: string) => {
     try {
@@ -1061,12 +1107,16 @@ export function GameOptionsModal({
                   winetricksAvailable={winetricksAvailable}
                   gamemodeSiteUrl={GAMEMODE_SITE_URL}
                   mangohudSiteUrl={MANGOHUD_SITE_URL}
+                  launchFlags={launchFlags}
                   onChangeWinePrefixPath={handleChangeWinePrefixPath}
                   onClearWinePrefixPath={handleClearWinePrefixPath}
                   onOpenWinetricks={handleOpenWinetricks}
                   onChangeGamemodeState={handleChangeGamemodeState}
                   onChangeMangohudState={handleChangeMangohudState}
                   onChangeProtonVersion={handleChangeProtonVersion}
+                  onChangeLaunchFlag={(flagId, enabled) => {
+                    void handleChangeLaunchFlag(flagId, enabled);
+                  }}
                 />
               )}
             {selectedCategory === "online" && (

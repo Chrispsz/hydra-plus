@@ -10,6 +10,7 @@ import {
 import type { LibraryGame, ProtonVersion } from "@types";
 import { FileDirectoryIcon, LinkExternalIcon } from "@primer/octicons-react";
 import { Tooltip } from "react-tooltip";
+import { LaunchFlagsSection } from "./launch-flags-section";
 
 interface CompatibilitySettingsSectionProps {
   game: LibraryGame;
@@ -25,12 +26,14 @@ interface CompatibilitySettingsSectionProps {
   winetricksAvailable: boolean;
   mangohudSiteUrl: string;
   gamemodeSiteUrl: string;
+  launchFlags: string[];
   onChangeWinePrefixPath: () => Promise<void>;
   onClearWinePrefixPath: () => Promise<void>;
   onOpenWinetricks: () => Promise<void>;
   onChangeGamemodeState: (value: boolean) => Promise<void>;
   onChangeMangohudState: (value: boolean) => Promise<void>;
   onChangeProtonVersion: (value: string) => void;
+  onChangeLaunchFlag: (flagId: string, enabled: boolean) => void;
 }
 
 export function CompatibilitySettingsSection({
@@ -53,6 +56,8 @@ export function CompatibilitySettingsSection({
   onChangeGamemodeState,
   onChangeMangohudState,
   onChangeProtonVersion,
+  launchFlags,
+  onChangeLaunchFlag,
 }: Readonly<CompatibilitySettingsSectionProps>) {
   const { t } = useTranslation("game_details");
 
@@ -275,6 +280,13 @@ export function CompatibilitySettingsSection({
           compatibilityToolsSourceDescription={protonSourceCompatibilityTools}
         />
       </div>
+
+      <LaunchFlagsSection
+        launchFlags={launchFlags}
+        gamemodeAvailable={gamemodeAvailable}
+        mangohudAvailable={mangohudAvailable}
+        onChangeLaunchFlag={onChangeLaunchFlag}
+      />
     </>
   );
 }

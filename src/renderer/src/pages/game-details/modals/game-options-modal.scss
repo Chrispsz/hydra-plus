@@ -563,6 +563,47 @@ $disc-menu-transition-duration: 0.15s;
     gap: 10px;
     margin-top: calc(globals.$spacing-unit / 2);
   }
+
+  &__launch-flags {
+    display: flex;
+    flex-direction: column;
+    gap: calc(globals.$spacing-unit * 1.5);
+  }
+
+  &__launch-flags-list {
+    display: flex;
+    flex-direction: column;
+    gap: calc(globals.$spacing-unit);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  &__launch-flag {
+    display: flex;
+    flex-direction: column;
+  }
+
+  &__launch-flag-label {
+    display: flex;
+    flex-direction: column;
+    gap: calc(globals.$spacing-unit / 4);
+
+    &--disabled {
+      text-decoration: underline dotted;
+      text-underline-offset: 2px;
+    }
+  }
+
+  &__launch-flag-name {
+    font-size: globals.$body-font-size;
+  }
+
+  &__launch-flag-description {
+    color: globals.$muted-color;
+    font-size: globals.$small-font-size;
+    line-height: 1.5;
+  }
 }
 
 .drive-card {
