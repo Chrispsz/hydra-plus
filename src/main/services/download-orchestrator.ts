@@ -192,6 +192,24 @@ export class DownloadOrchestrator {
       );
 
       WindowManager.sendDownloadsUpdated();
+
+      // The active slot is free again: keep the queue moving instead of
+      // stalling on the download that failed to prepare (e.g. expired link),
+      // the same way the cancellation path does.
+      try {
+        const remainingDownloads = await this.getAllDownloads();
+        await this.startNextQueuedDownload(
+          remainingDownloads.filter(
+            (entry) => getDownloadId(entry) !== downloadId
+          )
+        );
+      } catch (queueError) {
+        logger.error(
+          "[DownloadOrchestrator] Failed to start the next queued download after an activation failure",
+          queueError
+        );
+      }
+
       throw error;
     }
 

@@ -57,6 +57,7 @@ export class RootzApi {
       const apiUrl = `${this.baseUrl}/api/files/download-by-short?shortId=${encodeURIComponent(id)}`;
 
       const pageResponse = await axios.get<string>(pageUrl, {
+        timeout: 30_000,
         headers: {
           "User-Agent": this.userAgent,
           Accept: "text/html",
@@ -66,6 +67,7 @@ export class RootzApi {
       const pageToken = this.extractPageToken(pageResponse.data);
 
       const response = await axios.get<RootzApiResponse>(apiUrl, {
+        timeout: 30_000,
         headers: {
           "User-Agent": this.userAgent,
           Accept: "application/json",

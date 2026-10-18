@@ -73,6 +73,10 @@ export class Ludusavi {
       cp.execFile(
         this.binaryPath,
         args,
+        {
+          timeout: 30_000,
+          maxBuffer: 32 * 1024 * 1024,
+        },
         (err: cp.ExecFileException | null, stdout: string) => {
           if (err) {
             return reject(err);

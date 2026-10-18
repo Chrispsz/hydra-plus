@@ -25,6 +25,7 @@ export class TorBoxClient {
     this.apiToken = apiToken;
     this.instance = axios.create({
       baseURL: this.baseURL,
+      timeout: 30_000,
       headers: {
         Authorization: `Bearer ${apiToken}`,
         "User-Agent": `Hydra/${appVersion}`,

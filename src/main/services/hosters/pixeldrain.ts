@@ -40,7 +40,7 @@ export class PixelDrainApi {
   private static async checkAvailability(id: string): Promise<void> {
     const response = await axios.get<PixelDrainFileInfo>(
       `${this.API_BASE_URL}/${id}/info`,
-      { validateStatus: () => true }
+      { validateStatus: () => true, timeout: 30_000 }
     );
 
     if (response.status === 404) {

@@ -90,6 +90,7 @@ export class PremiumizeClient {
     this.apiToken = apiToken;
     this.instance = axios.create({
       baseURL: this.baseURL,
+      timeout: 30_000,
     });
   }
 
