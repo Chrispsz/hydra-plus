@@ -1,5 +1,6 @@
 import { registerEvent } from "../register-event";
 import { launchedGamePids, logger, Wine } from "@main/services";
+import { execFile } from "node:child_process";
 import sudo from "sudo-prompt";
 import { app } from "electron";
 import { gamesSublevel, levelKeys } from "@main/level";
@@ -11,7 +12,11 @@ import { isWindowsBatchFile } from "@main/helpers/windows-batch-command";
 
 const getKillCommand = (pid: number) => {
   if (process.platform == "win32") {
-    return `taskkill /PID ${pid}`;
+    // /T terminates the whole process tree: game roots spawned by
+    // launchers (Online-Fix, Proton) leave child processes alive
+    // otherwise, and the process watcher then reports the game as closed
+    // while its children are still writing saves.
+    return `taskkill /PID ${pid} /T /F`;
   }
 
   return `kill -9 ${pid}`;
@@ -106,6 +111,26 @@ const closeGame = async (
     : fallbackProcesses;
 
   for (const processToClose of processesToClose) {
+    if (process.platform === "win32") {
+      // process.kill() only terminates the root process on Windows, so
+      // taskkill /T runs directly; elevation stays as the last resort.
+      execFile(
+        "taskkill",
+        ["/PID", String(processToClose.pid), "/T", "/F"],
+        (error) => {
+          if (!error) return;
+          sudo.exec(
+            getKillCommand(processToClose.pid),
+            { name: app.getName() },
+            (sudoError, _stdout, _stderr) => {
+              logger.error(sudoError);
+            }
+          );
+        }
+      );
+      continue;
+    }
+
     try {
       process.kill(processToClose.pid);
     } catch {

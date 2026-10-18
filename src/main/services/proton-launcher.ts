@@ -43,6 +43,27 @@ const isValidProtonDirectory = (dir: string): boolean => {
 
 const getProtonLogPath = () => path.join(logsPath, "proton.log");
 
+const PROTON_LOG_MAX_BYTES = 5 * 1024 * 1024;
+
+/**
+ * Cheap rotation: an oversized log is renamed to `.old` (replacing any
+ * previous one) so a long-lived installation cannot grow proton.log
+ * without bounds. Best-effort — logging must never break launching.
+ */
+const rotateProtonLogIfNeeded = (logPath: string) => {
+  try {
+    if (fs.statSync(logPath).size <= PROTON_LOG_MAX_BYTES) return;
+
+    try {
+      fs.renameSync(logPath, `${logPath}.old`);
+    } catch {
+      fs.rmSync(logPath, { force: true });
+    }
+  } catch {
+    // No log yet, or rotation failed — keep going.
+  }
+};
+
 /**
  * Proton derives the wine prefix from STEAM_COMPAT_DATA_PATH/pfx unless
  * STEAM_COMPAT_PREFIX_PATH overrides it. For prefixes whose basename is
@@ -87,6 +108,8 @@ const buildProtonEnv = async (options: {
   winePrefixPath: string;
   gameId?: string | null;
   useMangohud?: boolean;
+  /** Game install directory (falls back to the process cwd). */
+  installPath?: string | null;
   extraEnv?: Record<string, string>;
 }): Promise<Record<string, string>> => {
   const steamRoot = await getSteamLocation();
@@ -100,7 +123,9 @@ const buildProtonEnv = async (options: {
     STEAM_COMPAT_CLIENT_INSTALL_PATH: steamRoot,
     STEAM_COMPAT_DATA_PATH: compatDataPath,
     STEAM_COMPAT_PREFIX_PATH: options.winePrefixPath,
-    STEAM_COMPAT_INSTALL_PATH: process.cwd(),
+    // Steam points this at the GAME's install directory; the launcher's
+    // own cwd is only the fallback for prefix-maintenance verbs.
+    STEAM_COMPAT_INSTALL_PATH: options.installPath ?? process.cwd(),
     SteamAppId: /^\d+$/.test(options.gameId ?? "")
       ? (options.gameId as string)
       : "0",
@@ -133,6 +158,7 @@ const spawnProtonVerb = async (options: {
     `\n[${new Date().toISOString()}] proton ${options.verb}\n` +
     `Prefix: ${options.winePrefixPath}\n` +
     `Proton: ${options.protonPath}\n`;
+  rotateProtonLogIfNeeded(logPath);
   appendProtonLog(header);
 
   logger.info("Running Proton directly", {
@@ -262,6 +288,7 @@ export const ProtonRunner = {
       winePrefixPath: options.winePrefixPath,
       gameId: options.gameId,
       useMangohud: options.useMangohud,
+      installPath: workingDirectory,
       extraEnv: {
         ...(options.extraEnv ?? {}),
         ...resolvedLaunchCommand.env,
@@ -272,6 +299,7 @@ export const ProtonRunner = {
     const envCommandPart = Object.entries(env)
       .map(([key, value]) => `${key}="${value.replace(/"/g, '\\"')}"`)
       .join(" ");
+    rotateProtonLogIfNeeded(logPath);
     appendProtonLog(
       `\n[${new Date().toISOString()}] Launching with direct Proton\n` +
         `Command: ${envCommandPart} "${launchCommand}" ${launchArgs

@@ -748,10 +748,28 @@ const NATIVE_STEAM_BINARY_PATHS = [
   "/usr/games/steam",
 ];
 
+const STEAM_DETECTOR_TIMEOUT_MS = 5_000;
+
+/**
+ * Probing `which`/`flatpak`/`snap` is a blocking spawnSync on the main
+ * process, so each detector caches its result — only the first
+ * Online-Fix launch pays for the probes. A timed-out probe (status
+ * null) counts as "not available", never as a crash.
+ */
+let nativeSteamBinaryAvailable: boolean | undefined;
+let flatpakSteamRegistered: boolean | undefined;
+let snapSteamRegistered: boolean | undefined;
+
 const hasNativeSteamBinary = (): boolean => {
+  if (nativeSteamBinaryAvailable !== undefined) {
+    return nativeSteamBinaryAvailable;
+  }
+
   for (const binaryPath of NATIVE_STEAM_BINARY_PATHS) {
     try {
-      if (fs.existsSync(binaryPath)) return true;
+      if (fs.existsSync(binaryPath)) {
+        return (nativeSteamBinaryAvailable = true);
+      }
     } catch {
       // Unreadable location — try the next one.
     }
@@ -761,34 +779,45 @@ const hasNativeSteamBinary = (): boolean => {
     const which = spawnSync("which", ["steam"], {
       stdio: ["ignore", "pipe", "ignore"],
       encoding: "utf8",
+      timeout: STEAM_DETECTOR_TIMEOUT_MS,
     });
-    return which.status === 0;
+    return (nativeSteamBinaryAvailable = which.status === 0);
   } catch {
-    return false;
+    return (nativeSteamBinaryAvailable = false);
   }
 };
 
 const isFlatpakSteamRegistered = (): boolean => {
+  if (flatpakSteamRegistered !== undefined) {
+    return flatpakSteamRegistered;
+  }
+
   try {
     const info = spawnSync("flatpak", ["info", "com.valvesoftware.Steam"], {
       stdio: ["ignore", "ignore", "ignore"],
       encoding: "utf8",
+      timeout: STEAM_DETECTOR_TIMEOUT_MS,
     });
-    return info.status === 0;
+    return (flatpakSteamRegistered = info.status === 0);
   } catch {
-    return false;
+    return (flatpakSteamRegistered = false);
   }
 };
 
 const isSnapSteamRegistered = (): boolean => {
+  if (snapSteamRegistered !== undefined) {
+    return snapSteamRegistered;
+  }
+
   try {
     const list = spawnSync("snap", ["list", "steam"], {
       stdio: ["ignore", "pipe", "ignore"],
       encoding: "utf8",
+      timeout: STEAM_DETECTOR_TIMEOUT_MS,
     });
-    return list.status === 0;
+    return (snapSteamRegistered = list.status === 0);
   } catch {
-    return false;
+    return (snapSteamRegistered = false);
   }
 };
 

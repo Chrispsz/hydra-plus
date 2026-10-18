@@ -25,6 +25,27 @@ const getVersionName = (directoryPath: string) => {
 
 const getUmuLogPath = () => path.join(logsPath, "umu.log");
 
+const UMU_LOG_MAX_BYTES = 5 * 1024 * 1024;
+
+/**
+ * Cheap rotation: an oversized log is renamed to `.old` (replacing any
+ * previous one) so a long-lived installation cannot grow umu.log
+ * without bounds. Best-effort — logging must never break launching.
+ */
+const rotateUmuLogIfNeeded = (umuLogPath: string) => {
+  try {
+    if (fs.statSync(umuLogPath).size <= UMU_LOG_MAX_BYTES) return;
+
+    try {
+      fs.renameSync(umuLogPath, `${umuLogPath}.old`);
+    } catch {
+      fs.rmSync(umuLogPath, { force: true });
+    }
+  } catch {
+    // No log yet, or rotation failed — keep going.
+  }
+};
+
 const getUmuBinaryPath = () =>
   app.isPackaged
     ? path.join(process.resourcesPath, "umu-run")
@@ -42,7 +63,18 @@ const hasSupportedPythonVersion = (version: [number, number]) => {
   return major > 3 || (major === 3 && minor >= 10);
 };
 
+const PYTHON_PROBE_TIMEOUT_MS = 5_000;
+
+/**
+ * Module-level cache for the python3 probe: environment detection does
+ * not change between launches, and the blocking spawnSync must not
+ * freeze the main process on every compatible launch.
+ */
+let compatiblePythonPath: string | null | undefined;
+
 const getCompatiblePythonPath = (): string | null => {
+  if (compatiblePythonPath !== undefined) return compatiblePythonPath;
+
   const candidates = [
     process.env.HYDRA_UMU_PYTHON,
     "/usr/bin/python3",
@@ -63,20 +95,25 @@ const getCompatiblePythonPath = (): string | null => {
           stdio: ["ignore", "pipe", "ignore"],
           encoding: "utf8",
           shell: false,
+          timeout: PYTHON_PROBE_TIMEOUT_MS,
         }
       );
 
+      // A timed out or failed probe counts as "not available", never as
+      // a crash — the umu-run binary fallback below handles it.
       if (result.status !== 0) continue;
 
       const version = parsePythonVersion(result.stdout);
       if (!version || !hasSupportedPythonVersion(version)) continue;
 
+      compatiblePythonPath = candidate;
       return candidate;
     } catch {
       continue;
     }
   }
 
+  compatiblePythonPath = null;
   return null;
 };
 
@@ -267,6 +304,7 @@ export class Umu {
       ...(options.protonPath ? { PROTONPATH: options.protonPath } : {}),
     };
 
+    rotateUmuLogIfNeeded(umuLogPath);
     fs.mkdirSync(path.dirname(umuLogPath), { recursive: true });
     fs.mkdirSync(path.dirname(options.winePrefixPath), { recursive: true });
     ensureExecutablePermission(umuBinaryPath);
@@ -395,6 +433,7 @@ export class Umu {
       ...(options.protonPath ? { PROTONPATH: options.protonPath } : {}),
     };
 
+    rotateUmuLogIfNeeded(umuLogPath);
     fs.mkdirSync(path.dirname(umuLogPath), { recursive: true });
     fs.mkdirSync(path.dirname(options.winePrefixPath), { recursive: true });
     ensureExecutablePermission(umuBinaryPath);
@@ -482,6 +521,7 @@ export class Umu {
       wrapperCommands: [...(options?.useGamemode ? ["gamemoderun"] : [])],
     });
 
+    rotateUmuLogIfNeeded(umuLogPath);
     fs.mkdirSync(path.dirname(umuLogPath), { recursive: true });
     ensureExecutablePermission(umuBinaryPath);
 

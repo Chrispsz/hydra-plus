@@ -29,6 +29,7 @@ import {
   launchedGamePids,
 } from "@main/services";
 import { updateGameRecord } from "@main/services/game-record-updater";
+import { isGameRunning } from "@main/services/game-running-state";
 import { dispatchSteamProtocolLaunch } from "@main/services/steam-integration/steam-protocol-launch-dispatch";
 import {
   ensureOnlineFixRuntimeReady,
@@ -57,6 +58,24 @@ export interface LaunchGameOptions {
 }
 
 const LAUNCH_DELAY_IN_MS = 2_000;
+
+/** Launch pipelines currently in flight, keyed by gameKey → started at. */
+const activeGameLaunches = new Map<string, number>();
+/** Timestamp of the last COMPLETED launch pipeline, keyed by gameKey. */
+const recentGameLaunches = new Map<string, number>();
+
+/**
+ * Safety valve: a launch slot that somehow never got released (e.g. a
+ * hung promise) is taken over after this long, so the game can never be
+ * permanently blocked from launching.
+ */
+const ACTIVE_LAUNCH_STALE_MS = 15 * 60_000;
+/**
+ * The process watcher takes up to one tick (~2s) to match freshly
+ * spawned game processes — compatibility cleanup must stay away from a
+ * session inside that window.
+ */
+const RECENT_LAUNCH_SKIP_MS = 10_000;
 
 const isWindowsExecutable = (executablePath: string) =>
   path.extname(executablePath).toLowerCase() === ".exe";
@@ -385,11 +404,63 @@ const prepareCompatibilityPrefixForCloudSave = async (
   };
 };
 
+const STALE_COMPAT_GRACE_PERIOD_MS = 5_000;
+const STALE_COMPAT_POLL_INTERVAL_MS = 250;
+
+/** Signal-0 probe: checks whether a pid exists without signaling it. */
+const isProcessAlive = (pid: number) => {
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch (error) {
+    // EPERM means the process exists but belongs to another user.
+    return (error as NodeJS.ErrnoException).code === "EPERM";
+  }
+};
+
+const waitForProcessesToExit = async (pids: number[], timeoutMs: number) => {
+  const deadline = Date.now() + timeoutMs;
+  let remaining = pids.filter(isProcessAlive);
+
+  while (remaining.length && Date.now() < deadline) {
+    await new Promise((resolve) =>
+      setTimeout(resolve, STALE_COMPAT_POLL_INTERVAL_MS)
+    );
+    remaining = remaining.filter(isProcessAlive);
+  }
+
+  return remaining;
+};
+
 const cleanupStaleCompatibilityProcesses = async (
+  shop: GameShop,
   objectId: string,
   winePrefixPath: string | null
 ) => {
   if (process.platform !== "linux" || !winePrefixPath) return;
+
+  // Never touch the compatibility stack while the game may still be
+  // running: killing wineserver mid-session risks a corrupted prefix and
+  // in-flight saves. isGameRunning covers watcher-tracked sessions; the
+  // recent-launch check covers the window before the first watcher tick
+  // has matched the freshly spawned processes.
+  if (isGameRunning(objectId, shop)) {
+    logger.info("Skipping stale compatibility cleanup: game is running", {
+      shop,
+      objectId,
+    });
+    return;
+  }
+
+  const gameKey = levelKeys.game(shop, objectId);
+  const lastLaunchAt = recentGameLaunches.get(gameKey);
+  if (lastLaunchAt && Date.now() - lastLaunchAt < RECENT_LAUNCH_SKIP_MS) {
+    logger.info(
+      "Skipping stale compatibility cleanup: a launch just finished",
+      { shop, objectId }
+    );
+    return;
+  }
 
   const defaultPrefixPath = await Wine.resolvePrefixPath(
     Wine.getDefaultPrefixPathForGame(objectId)
@@ -416,13 +487,39 @@ const cleanupStaleCompatibilityProcesses = async (
 
   if (!stalePids.length) return;
 
-  logger.info("Killing stale compatibility processes before game launch", {
+  logger.info("Terminating stale compatibility processes before game launch", {
     objectId,
     winePrefixPath,
     stalePids,
   });
 
+  // SIGTERM first so wineserver can flush the prefix; escalate to SIGKILL
+  // only for whatever survives the grace period.
   for (const pid of stalePids) {
+    try {
+      process.kill(pid, "SIGTERM");
+    } catch {
+      // Already gone or not ours — the poll below re-checks.
+    }
+  }
+
+  const survivors = await waitForProcessesToExit(
+    stalePids,
+    STALE_COMPAT_GRACE_PERIOD_MS
+  );
+
+  if (!survivors.length) return;
+
+  logger.warn(
+    "Force killing stale compatibility processes after grace period",
+    {
+      objectId,
+      winePrefixPath,
+      survivors,
+    }
+  );
+
+  for (const pid of survivors) {
     try {
       process.kill(pid, "SIGKILL");
     } catch {
@@ -621,7 +718,11 @@ const prepareLinuxCompatibilityForLaunch = async (
     canonicalWinePrefixPath: context.winePrefixPath,
     prefixSource: game?.winePrefixPath ? "game" : "default",
   });
-  await cleanupStaleCompatibilityProcesses(objectId, context.winePrefixPath);
+  await cleanupStaleCompatibilityProcesses(
+    shop,
+    objectId,
+    context.winePrefixPath
+  );
 
   if (!shouldPrepareForCloudSave) {
     return {
@@ -1059,13 +1160,60 @@ export const launchGame = async (options: LaunchGameOptions) => {
           if (changed) {
             WindowManager.sendToAppWindows("on-library-batch-complete");
           }
+        })
+        .catch((error: unknown) => {
+          logger.error("Failed to refresh Steam game executable", {
+            shop: options.shop,
+            objectId: options.objectId,
+            error,
+          });
         });
     }
 
     return null;
   }
 
-  return runWithCloudSaveLaunchGate(options.objectId, options.shop, () =>
-    launchGameWithCloudSaveChecks(options)
-  );
+  // Double-launch guard: two rapid clicks (or a deep link racing a
+  // click) would run the whole pipeline twice and spawn the game twice —
+  // Online-Fix sessions would register two relay sessions. The slot is
+  // released in a finally on EVERY exit path (success, failure, blocked
+  // launch), and a stale slot is taken over after ACTIVE_LAUNCH_STALE_MS
+  // so a leaked guard can never permanently block the game.
+  const gameKey = levelKeys.game(options.shop, options.objectId);
+  const startedAt = activeGameLaunches.get(gameKey);
+  if (
+    startedAt !== undefined &&
+    Date.now() - startedAt < ACTIVE_LAUNCH_STALE_MS
+  ) {
+    logger.warn(
+      "Game launch already in progress — ignoring duplicate request",
+      {
+        shop: options.shop,
+        objectId: options.objectId,
+        startedAt: new Date(startedAt).toISOString(),
+      }
+    );
+    return null;
+  }
+
+  if (startedAt !== undefined) {
+    logger.warn("Discarding a stale game launch guard", {
+      shop: options.shop,
+      objectId: options.objectId,
+    });
+  }
+
+  activeGameLaunches.set(gameKey, Date.now());
+  try {
+    return await runWithCloudSaveLaunchGate(
+      options.objectId,
+      options.shop,
+      () => launchGameWithCloudSaveChecks(options)
+    );
+  } finally {
+    activeGameLaunches.delete(gameKey);
+    // Record completion so compatibility cleanup of the NEXT launch waits
+    // for the watcher to catch up with the spawned processes.
+    recentGameLaunches.set(gameKey, Date.now());
+  }
 };
