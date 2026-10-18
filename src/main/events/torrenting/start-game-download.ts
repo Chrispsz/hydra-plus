@@ -53,7 +53,7 @@ const startGameDownload = async (
       folderName: null,
       shouldSeed: false,
       timestamp: Date.now(),
-      queued: true,
+      queued: false,
       pinnedToHero: false,
       extracting: false,
       automaticallyExtract,
@@ -63,12 +63,22 @@ const startGameDownload = async (
       fileSize: selectedFilesSize ?? parsedFileSize,
       customTrackers: globalTrackers,
     };
-    await DownloadManager.validateDownloadUrl(download);
+    const prepareRealDebridInBackground =
+      DownloadOrchestrator.preparesRealDebridInBackground(download);
+    if (!prepareRealDebridInBackground) {
+      await DownloadOrchestrator.validateDownloadOrMarkPending(download);
+    }
     await prepareGameEntry({ gameKey, title, objectId, shop });
     await DownloadManager.cancelDownload(gameKey).catch(() => null);
     await downloadsSublevel.put(gameKey, download);
     didWriteDownload = true;
-    await DownloadOrchestrator.startPreparedDownload(download);
+    if (download.awaitingDebrid) {
+      await DownloadOrchestrator.saveAwaitingDebridDownload(download);
+    } else if (prepareRealDebridInBackground) {
+      await DownloadOrchestrator.prepareAndStartDownload(download);
+    } else {
+      await DownloadOrchestrator.startPreparedDownload(download);
+    }
 
     const updatedGame = await gamesSublevel.get(gameKey);
 

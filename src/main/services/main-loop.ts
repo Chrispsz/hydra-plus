@@ -1,5 +1,6 @@
 import { sleep } from "@main/helpers";
 import { DownloadManager } from "./download";
+import { DownloadOrchestrator } from "./download-orchestrator";
 import { gamesPlaytime, watchProcesses } from "./process-watcher";
 import { UpdateManager } from "./update-manager";
 import { runPeriodicCloudSaveSync } from "./cloud-save/periodic-sync";
@@ -28,6 +29,10 @@ const wrapInLoop = (fn: () => unknown, interval: number) => {
 export const startMainLoop = async () => {
   wrapInLoop(() => watchProcesses(), INTERVALS.processWatcher);
   wrapInLoop(() => DownloadManager.watchDownloads(), INTERVALS.downloadWatcher);
+  wrapInLoop(
+    () => DownloadOrchestrator.pollAwaitingDebridDownloads(),
+    INTERVALS.debridReadinessWatcher
+  );
   wrapInLoop(
     () => DownloadManager.getSeedStatus(),
     INTERVALS.seedStatusWatcher

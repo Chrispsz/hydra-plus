@@ -19,6 +19,7 @@ import {
   Lock,
   SevenZip,
   PowerSaveBlockerManager,
+  DownloadManager,
   DownloadOrchestrator,
   cleanupPortableUpdateCache,
   runPostUpdateMaintenance,
@@ -349,7 +350,13 @@ app.on("before-quit", async (e) => {
     e.preventDefault();
     if (isAppClosing) return;
     isAppClosing = true;
+    DownloadOrchestrator.cancelPendingDebridPreparations();
     PowerSaveBlockerManager.reset();
+    try {
+      await DownloadManager.pauseDownload();
+    } catch (error) {
+      logger.error("Could not save active download before quitting", error);
+    }
     // Stop any in-flight 7z extraction so quitting never leaves an
     // orphaned 7zzs process chewing disk IO.
     SevenZip.cancelActiveExtraction();
