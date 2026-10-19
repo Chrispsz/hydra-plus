@@ -175,6 +175,7 @@ export const LibraryGameCard = memo(function LibraryGameCard({
   return (
     <button
       type="button"
+      aria-label={game.title}
       onMouseEnter={() => setIsCoverHovered(true)}
       onMouseLeave={() => setIsCoverHovered(false)}
       className="library-game-card__wrapper"

@@ -380,6 +380,7 @@ export function Header() {
             })}
             onClick={handleBackButtonClick}
             disabled={location.key === "default"}
+            aria-label={t("back")}
           >
             <ArrowLeftIcon />
           </button>
@@ -404,6 +405,7 @@ export function Header() {
                 ns: "sidebar",
               })}
               data-tooltip-place="bottom"
+              aria-label={t("add_custom_game_tooltip", { ns: "sidebar" })}
             >
               <PlusIcon size={16} />
             </button>
@@ -423,6 +425,7 @@ export function Header() {
               data-tooltip-id={scanButtonTooltipId}
               data-tooltip-content={t("scan_games_tooltip")}
               data-tooltip-place="bottom"
+              aria-label={t("scan_games_tooltip")}
             >
               <SyncIcon size={16} />
             </button>
@@ -438,6 +441,7 @@ export function Header() {
               type="button"
               className="header__action-button"
               onClick={focusInput}
+              aria-label={isOnLibraryPage ? t("search_library") : t("search")}
             >
               <SearchIcon />
             </button>
@@ -447,6 +451,7 @@ export function Header() {
               type="text"
               name="search"
               placeholder={isOnLibraryPage ? t("search_library") : t("search")}
+              aria-label={isOnLibraryPage ? t("search_library") : t("search")}
               value={localSearchValue}
               className="header__search-input"
               onChange={(event) => handleInputChange(event.target.value)}
@@ -461,6 +466,7 @@ export function Header() {
                 onMouseDown={handleClearSearchMouseDown}
                 onClick={handleClearSearch}
                 className="header__action-button"
+                aria-label={t("clear_search")}
               >
                 <XIcon />
               </button>

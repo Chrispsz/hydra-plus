@@ -24,7 +24,7 @@
 
   &--primary {
     &:hover {
-      background-color: #dadbe1;
+      background-color: globals.$color-muted-hover;
     }
 
     &:disabled {
@@ -57,7 +57,7 @@
     color: globals.$muted-color;
 
     &:hover {
-      background-color: #b3203f;
+      background-color: globals.$color-danger-hover;
     }
   }
 }

@@ -23,3 +23,9 @@ export const REVIEW_PROMPT_DISMISS_TTL_IN_MS = 7 * 24 * 60 * 60 * 1000;
 export const REVIEW_BANNER_IMAGE_SIZE = { width: 960, height: 140 };
 
 export const MAX_DOWNLOAD_SPEED_HISTORY = 300;
+
+// Mirror of the $motion-fast token in src/renderer/src/scss/globals.scss.
+// The modal exit (content scale-fade-out + backdrop fade-out) runs for exactly
+// this long before the modal tree unmounts — change this together with the
+// matching animation-duration rules in modal.scss / backdrop.scss.
+export const MODAL_EXIT_DURATION_MS = 150;

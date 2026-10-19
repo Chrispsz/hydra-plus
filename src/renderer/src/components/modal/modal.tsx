@@ -4,6 +4,7 @@ import { XIcon } from "@primer/octicons-react";
 
 import "./modal.scss";
 
+import { MODAL_EXIT_DURATION_MS } from "@renderer/constants";
 import { Backdrop } from "../backdrop/backdrop";
 import { useTranslation } from "react-i18next";
 import cn from "classnames";
@@ -44,8 +45,11 @@ export function Modal({
     setIsClosing(true);
     const zero = performance.now();
 
+    // Hold the exit animation for the token-based duration (150ms), then drop
+    // the modal. Faster than the 200ms enter, per the exit-faster-than-enter
+    // rule; the CSS animations in modal.scss/backdrop.scss match this window.
     requestAnimationFrame(function animateClosing(time) {
-      if (time - zero <= 400) {
+      if (time - zero <= MODAL_EXIT_DURATION_MS) {
         requestAnimationFrame(animateClosing);
       } else {
         onClose();

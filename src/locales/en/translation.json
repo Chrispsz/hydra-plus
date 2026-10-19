@@ -84,6 +84,7 @@
     "sign_in_hint": "Sign in to sync your catalogue across devices"
   },
   "header": {
+    "back": "Go back",
     "minimize": "Minimize",
     "maximize": "Maximize",
     "restore": "Restore",
@@ -93,6 +94,7 @@
     "recent_searches": "Recent Searches",
     "suggestions": "Suggestions",
     "clear_history": "Clear",
+    "clear_search": "Clear search",
     "remove_from_history": "Remove from history",
     "loading": "Loading...",
     "no_results": "No results",
@@ -575,6 +577,8 @@
     "download_error_not_cached_on_hydra": "This download is not available on Nimbus.",
     "game_removed_from_favorites": "Game removed from favorites",
     "game_added_to_favorites": "Game added to favorites",
+    "add_to_favorites": "Add to favorites",
+    "remove_from_favorites": "Remove from favorites",
     "game_removed_from_pinned": "Game removed from pinned",
     "game_added_to_pinned": "Game added to pinned",
     "automatically_extract_downloaded_files": "Automatically extract downloaded files",
@@ -760,7 +764,8 @@
     "network": "NETWORK",
     "peak": "PEAK",
     "move_up": "Move up",
-    "move_down": "Move down"
+    "move_down": "Move down",
+    "more_actions": "More actions"
   },
   "settings": {
     "downloads_path": "Downloads path",

@@ -84,6 +84,7 @@
     "sign_in_hint": "Entre na sua conta para sincronizar seu catálogo"
   },
   "header": {
+    "back": "Voltar",
     "minimize": "Minimizar",
     "maximize": "Maximizar",
     "restore": "Restaurar",
@@ -93,6 +94,7 @@
     "recent_searches": "Buscas Recentes",
     "suggestions": "Sugestões",
     "clear_history": "Limpar",
+    "clear_search": "Limpar busca",
     "remove_from_history": "Remover do histórico",
     "loading": "Carregando...",
     "no_results": "Sem resultados",
@@ -450,6 +452,8 @@
     "download_error_not_cached_on_hydra": "Este download não está disponível no Nimbus.",
     "game_removed_from_favorites": "Jogo removido dos favoritos",
     "game_added_to_favorites": "Jogo adicionado aos favoritos",
+    "add_to_favorites": "Adicionar aos favoritos",
+    "remove_from_favorites": "Remover dos favoritos",
     "failed_update_favorites": "Falha ao atualizar favoritos",
     "game_removed_from_library": "Jogo removido da biblioteca",
     "failed_remove_from_library": "Falha ao remover da biblioteca",
@@ -719,6 +723,7 @@
     "peak": "PICO",
     "move_up": "Mover para cima",
     "move_down": "Mover para baixo",
+    "more_actions": "Mais ações",
     "extraction_failed_title": "Extração falhou",
     "extraction_failed_description": "O Hydra não conseguiu extrair este arquivo. Verifique a integridade do arquivo/espaço em disco e tente extrair novamente.",
     "extraction_unsupported_format_title": "Não foi possível extrair este arquivo",

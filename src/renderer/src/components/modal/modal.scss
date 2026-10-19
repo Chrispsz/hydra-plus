@@ -16,6 +16,10 @@
 
   &--closing {
     animation-name: scale-fade-out;
+    // ui-ux-pro-max: exit-faster-than-enter — the exit is the $motion-fast
+    // token (150ms) and modal.tsx unmounts after the matching constant
+    // (MODAL_EXIT_DURATION_MS), so the animation always completes first.
+    animation-duration: globals.$motion-fast;
     opacity: 0;
   }
 

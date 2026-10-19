@@ -1,0 +1,44 @@
+// ============================================================================
+// window-base.scss — global guards shared by every Electron window surface.
+//
+// ui-ux-pro-max: focus-states + reduced-motion. The main window gets these
+// from app.scss; detached windows (game-launcher, auth-window) render outside
+// <App/> and never load app.scss, so they must include this partial too.
+// Keep the two mixins byte-stable: app.scss's compiled output is diffed
+// against this file's content (see skills/design-system/SKILL.md).
+// ============================================================================
+
+@use "./globals.scss";
+
+@mixin focus-ring {
+  /* ui-ux-pro-max: focus-states (one keyboard focus ring for every interactive
+     element; :where() keeps specificity at 0 so component styles always win and
+     the ring never shows on mouse :focus, only on :focus-visible) */
+  :where(
+    button,
+    a,
+    input,
+    select,
+    textarea,
+    [role="button"],
+    [tabindex]
+  ):focus-visible {
+    outline: none;
+    box-shadow:
+      0 0 0 2px globals.$color-ring-offset,
+      0 0 0 4px globals.$focus-ring-color;
+  }
+}
+
+@mixin reduced-motion {
+  /* ui-ux-pro-max: reduced-motion (OS-level kill-switch for all animation) */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}

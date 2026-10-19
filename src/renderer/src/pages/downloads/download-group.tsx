@@ -1081,6 +1081,7 @@ export function DownloadGroup({
                       onClick={() => resumeDownload(game.shop, game.objectId)}
                       className="download-group__simple-menu-btn"
                       tooltip={t("resume")}
+                      aria-label={t("resume")}
                     >
                       <DownloadIcon size={16} />
                     </Button>
@@ -1089,6 +1090,7 @@ export function DownloadGroup({
                     <Button
                       theme="outline"
                       className="download-group__simple-menu-btn"
+                      aria-label={t("more_actions")}
                     >
                       <MoreVertical size={16} />
                     </Button>

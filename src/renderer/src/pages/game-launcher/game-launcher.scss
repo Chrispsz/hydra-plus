@@ -1,4 +1,11 @@
 @use "../../scss/globals.scss";
+@use "../../scss/window-base.scss";
+
+// This window renders outside <App/> (no app.scss), so the global focus ring
+// and the reduced-motion kill-switch are included from window-base directly.
+@include window-base.focus-ring;
+
+@include window-base.reduced-motion;
 
 .game-launcher {
   display: flex;

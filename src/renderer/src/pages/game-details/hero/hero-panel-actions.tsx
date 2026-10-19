@@ -292,6 +292,9 @@ export function HeroPanelActions() {
           theme="outline"
           disabled={deleting}
           className="hero-panel-actions__action"
+          aria-label={
+            game.favorite ? t("remove_from_favorites") : t("add_to_favorites")
+          }
         >
           {game.favorite ? <HeartFillIcon /> : <HeartIcon />}
         </Button>
@@ -302,6 +305,7 @@ export function HeroPanelActions() {
             theme="outline"
             disabled={deleting}
             className="hero-panel-actions__action"
+            aria-label={game.isPinned ? t("unpin_game") : t("pin_game")}
           >
             {game.isPinned ? <PinSlashIcon /> : <PinIcon />}
           </Button>

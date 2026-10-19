@@ -53,6 +53,13 @@ $brand-teal: $teal-500;
 $brand-blue: $blue-600;
 $platinum-cyan: $cyan-400;
 
+// Hover tints of the muted and danger surfaces. Promoted verbatim from
+// button.scss (ui-ux-pro-max: token-architecture — no raw hex in component
+// modules). These are NOT rgba derivatives of the brand colors — they keep
+// their own exact values so the compiled CSS stays byte-identical.
+$color-muted-hover: #dadbe1;
+$color-danger-hover: #b3203f;
+
 // Classics (value kept as-is)
 $classics-rainbow: conic-gradient(
   from 0deg,

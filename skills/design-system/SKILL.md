@@ -22,9 +22,10 @@ spacing, z-index, duration, or reviewing a diff that changes how something looks
 | 3. Component  | Component-scoped aliases        | Per component need           | `$button-bg: $color-accent` (via semantic) |
 
 Rule chain: **a component SCSS module never declares a raw value** — it may only
-reference semantic or component tokens. A raw hex that appears in a component (for
-example the hover tints `#dadbe1` / `#b3203f` still living in `button.scss` today) is
-debt: promote it to the semantic layer (`$color-<role>-hover`) and consume the alias.
+reference semantic or component tokens. A raw hex that appears in a component
+is debt: promote it to the semantic layer (`$color-<role>-hover`) and consume
+the alias — as done for the button hover tints (`$color-muted-hover` /
+`$color-danger-hover` in `globals.scss`).
 The payoff: a palette swap = editing **one semantic block** in `globals.scss`, not
 grep-and-replace across every module.
 
@@ -118,9 +119,12 @@ class alone.
 - Scrim: measured against the real content behind it, ~`rgb(0 0 0 / 0.5)` composed
   result, strong enough to isolate the modal on `#121212`.
 - Enter animation comes from the trigger direction (current `scale-fade-in` 200 ms is
-  right); **exit runs 60–70 % faster** than enter. Known deviation: `modal.tsx` holds
-  the closing animation for 400 ms via a rAF loop — that path should become a ≤140 ms
-  exit that does not depend on JS timing for correctness.
+  right); **exit runs faster** than enter. The exit is now the `$motion-fast` token
+  (150 ms) on both the content and the scrim, and `modal.tsx` holds the tree for the
+  matching `MODAL_EXIT_DURATION_MS` constant before unmounting, so the animations
+  always complete first. Remaining structural note: the close is still JS-timer-driven
+  (rAF loop) — keep unmount independent of `animationend` events if that loop is ever
+  revisited.
 - `clickOutsideToClose` only for non-destructive modals; destructive confirms always
   require an explicit choice.
 
