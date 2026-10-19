@@ -38,6 +38,7 @@ import type {
   SnapshotVersionSummary,
   RestoreRemoteSnapshotResult,
   DiscoveredSaveLocation,
+  ExternalGameCandidate,
   PortableReleaseInfo,
   DriveHygieneOverview,
   DriveCleanupResult,
@@ -300,7 +301,10 @@ declare global {
       executablePath: string,
       iconUrl?: string,
       logoImageUrl?: string,
-      libraryHeroImageUrl?: string
+      libraryHeroImageUrl?: string,
+      savePaths?: string[],
+      platform?: string,
+      source?: string
     ) => Promise<Game>;
     updateCustomGame: (params: {
       shop: GameShop;
@@ -474,6 +478,7 @@ declare global {
       total: number;
     }>;
     cancelScanInstalledGames: (requestId: string) => Promise<void>;
+    scanExternalGames: () => Promise<ExternalGameCandidate[]>;
     addScannedGames: (
       picks: { objectId: string; executablePath: string }[]
     ) => Promise<

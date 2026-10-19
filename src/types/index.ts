@@ -376,6 +376,7 @@ export type UserGameDetails = ShopAssets & {
 };
 
 export * from "./game.types";
+export * from "./external-games.types";
 export * from "./steam.types";
 export * from "./steam-integration.types";
 export * from "./download.types";

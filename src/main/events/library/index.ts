@@ -31,6 +31,7 @@ import "./remove-game-from-favorites";
 import "./remove-game-from-library";
 import "./remove-game";
 import "./scan-installed-games";
+import "./scan-external-games";
 import "./add-scanned-game";
 import "./select-game-proton-path";
 import "./select-game-wine-prefix";

@@ -11,6 +11,7 @@ import type {
 import { getCloudSaveGameContext } from "./cloud-save/cloud-save-game-context";
 import { getCloudSaveCustomPathBindings } from "./cloud-save/custom-path-store";
 import { cloudSaveCustomPathContextFromPathContext } from "./cloud-save/custom-path";
+import { getHytaleDataRoots } from "./external-games/hytale";
 import { findSteamCompatibilityPrefixForApp } from "./steam-integration/steam-compat-prefix";
 import { findInstalledSteamApp } from "./steam-integration/steam-installation-core";
 import { getSteamLibraryFolders } from "./steam";
@@ -516,6 +517,44 @@ export const discoverGameSaveLocations = async (
     }
   }
 
+  // Hytale (launcher-managed): the save folder is a fixed subfolder of
+  // the launcher data root on every platform, so the generic name scan
+  // cannot surface it. Curated roots, same shape as the Steam Cloud block
+  // below — but keyed by the Hytale data-root table.
+  if (isHytaleGameMatcher(matchers)) {
+    for (const dataRoot of getHytaleDataRoots({
+      platform: process.platform,
+      env: process.env,
+      homeDir: pathContext.homeDir,
+    })) {
+      const savesDir = path.join(dataRoot.root, "UserData", "Saves");
+      try {
+        if (!fs.statSync(savesDir).isDirectory()) continue;
+      } catch {
+        continue;
+      }
+
+      const resolved = path.resolve(savesDir);
+      if (seen.has(resolved)) continue;
+      seen.add(resolved);
+
+      const stats = await collectCandidateStats(resolved);
+      if (!stats) continue;
+
+      locations.push({
+        absolutePath: resolved,
+        environment: "native",
+        environmentHint: dataRoot.hint,
+        matchReason: "Hytale launcher save folder (UserData/Saves)",
+        fileCount: stats.fileCount,
+        totalSizeBytes: stats.totalSizeBytes,
+        lastModifiedAt: stats.lastModifiedAt,
+        confidence: "high",
+        tracked: trackedPaths.has(resolved),
+      });
+    }
+  }
+
   // Steam Cloud userdata folders do not carry the game name — they are
   // keyed by app id. Check them explicitly for Steam games.
   const steamLocation =
@@ -577,6 +616,14 @@ export const discoverGameSaveLocations = async (
 
 /** Exposed for tests: the name matcher derivation. */
 export const buildSaveNameMatchers = buildNameMatchers;
+
+/** True when the matchers identify the game as Hytale (title or client exe). */
+const isHytaleGameMatcher = (matchers: Set<string>): boolean =>
+  [...matchers].some(
+    (matcher) =>
+      matcher === "hytale" ||
+      (matcher.length >= 6 && matcher.includes("hytale"))
+  );
 
 const getSteamLocationFallback = async (): Promise<string | null> => {
   const home = os.homedir();

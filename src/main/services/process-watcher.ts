@@ -366,8 +366,6 @@ async function onOpenGame(game: Game, matchedPath: string) {
       }
     })
     .catch(() => {});
-
-  if (game.shop === "custom") return;
 }
 
 function onTickGame(game: Game) {
@@ -442,8 +440,9 @@ const onCloseGame = async (game: Game) => {
     });
   }
 
-  if (game.shop === "custom") return;
-
+  // Custom games join the same automatic Cloud Save V2 lifecycle as
+  // Steam games: the per-game preference, the eligibility helpers and the
+  // launch guard decide whether the post-exit upload actually runs.
   void runAutomaticCloudSaveOnClose(game).catch((error: unknown) => {
     handleAutomaticCloudSaveLifecycleError("close", game, error);
   });

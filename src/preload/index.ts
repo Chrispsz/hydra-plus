@@ -36,6 +36,7 @@ import type {
   SnapshotVersionSummary,
   RestoreRemoteSnapshotResult,
   DiscoveredSaveLocation,
+  ExternalGameCandidate,
   PortableReleaseInfo,
   DriveHygieneOverview,
   DriveCleanupResult,
@@ -504,7 +505,10 @@ contextBridge.exposeInMainWorld("electron", {
     executablePath: string,
     iconUrl?: string,
     logoImageUrl?: string,
-    libraryHeroImageUrl?: string
+    libraryHeroImageUrl?: string,
+    savePaths?: string[],
+    platform?: string,
+    source?: string
   ) =>
     ipcRenderer.invoke(
       "addCustomGameToLibrary",
@@ -512,7 +516,10 @@ contextBridge.exposeInMainWorld("electron", {
       executablePath,
       iconUrl,
       logoImageUrl,
-      libraryHeroImageUrl
+      libraryHeroImageUrl,
+      savePaths,
+      platform,
+      source
     ),
   updateCustomGame: (params: {
     shop: GameShop;
@@ -686,6 +693,8 @@ contextBridge.exposeInMainWorld("electron", {
       addGamesToLibrary,
       requestId
     ),
+  scanExternalGames: () =>
+    ipcRenderer.invoke("scanExternalGames") as Promise<ExternalGameCandidate[]>,
   cancelScanInstalledGames: (requestId: string) =>
     ipcRenderer.invoke("cancelScanInstalledGames", requestId),
   addScannedGames: (picks: { objectId: string; executablePath: string }[]) =>
