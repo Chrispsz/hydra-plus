@@ -6,6 +6,14 @@
     flex-direction: column;
     gap: calc(globals.$spacing-unit * 3);
     min-width: 500px;
+
+    // The fork has no global :focus-visible styles yet, so the wizard ships
+    // its own keyboard focus ring, scoped to this modal only (F6 will
+    // graduate focus styles to the shared components).
+    button:focus-visible {
+      outline: 2px solid globals.$brand-teal;
+      outline-offset: 2px;
+    }
   }
 
   &__form {
@@ -41,9 +49,276 @@
     object-fit: contain;
   }
 
+  &__detect-section {
+    display: flex;
+    flex-direction: column;
+    gap: calc(globals.$spacing-unit * 2);
+    text-align: left;
+  }
+
+  &__detect-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: calc(globals.$spacing-unit * 2);
+  }
+
+  &__detect-heading {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+  }
+
+  &__detect-title {
+    color: globals.$body-color;
+    font-size: 14px;
+    font-weight: 500;
+    margin: 0;
+  }
+
+  &__detect-hint {
+    color: globals.$muted-color;
+    font-size: 12px;
+    line-height: 1.4;
+    margin: 0;
+  }
+
+  &__scan-spinner {
+    animation: sidebar-adding-custom-game-modal-spin 1s linear infinite;
+
+    @media (prefers-reduced-motion: reduce) {
+      animation: none;
+    }
+  }
+
+  &__scan-error {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: calc(globals.$spacing-unit * 2);
+    color: globals.$error-color;
+    font-size: 12px;
+    line-height: 1.4;
+  }
+
+  &__scan-empty,
+  &__scan-count {
+    color: globals.$muted-color;
+    font-size: 12px;
+    line-height: 1.4;
+    margin: 0;
+  }
+
+  &__candidates-list {
+    list-style: none;
+    margin: 0;
+    padding: calc(globals.$spacing-unit * 2);
+    max-height: 260px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: globals.$spacing-unit;
+    background-color: globals.$dark-background-color;
+    border-radius: 4px;
+  }
+
+  &__candidate {
+    display: flex;
+    align-items: center;
+    gap: calc(globals.$spacing-unit * 1.5);
+    width: 100%;
+    padding: globals.$spacing-unit;
+    background: none;
+    border: 1px solid globals.$border-color;
+    border-radius: 4px;
+    color: globals.$body-color;
+    cursor: pointer;
+    text-align: left;
+
+    &:hover {
+      background-color: rgba(255, 255, 255, 0.05);
+    }
+
+    &:disabled {
+      opacity: globals.$disabled-opacity;
+      cursor: not-allowed;
+    }
+
+    &--selected,
+    &--selected:hover {
+      border-color: globals.$brand-teal;
+      background-color: rgba(22, 177, 149, 0.08);
+    }
+  }
+
+  &__candidate-icon {
+    width: 32px;
+    height: 32px;
+    flex-shrink: 0;
+    border-radius: 4px;
+    object-fit: cover;
+    background-color: globals.$background-color;
+
+    &--empty {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: globals.$body-color;
+    }
+  }
+
+  &__candidate-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    flex: 1;
+    min-width: 0;
+  }
+
+  &__candidate-title {
+    color: globals.$body-color;
+    font-size: 14px;
+    font-weight: 500;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  &__candidate-path {
+    color: globals.$muted-color;
+    font-size: 12px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  &__candidate-chip {
+    flex-shrink: 0;
+    padding: 2px 6px;
+    border: 1px solid globals.$border-color;
+    border-radius: 4px;
+    color: globals.$muted-color;
+    font-size: 11px;
+    line-height: 1.4;
+    white-space: nowrap;
+
+    &--saves {
+      border-color: rgba(22, 177, 149, 0.5);
+      color: globals.$brand-teal;
+    }
+  }
+
+  &__cloud-saves-section {
+    display: flex;
+    flex-direction: column;
+    gap: globals.$spacing-unit;
+    text-align: left;
+  }
+
+  &__cloud-saves-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: calc(globals.$spacing-unit * 2);
+  }
+
+  &__cloud-saves-title {
+    color: globals.$body-color;
+    font-size: 14px;
+    font-weight: 500;
+    margin: 0;
+  }
+
+  &__cloud-saves-actions {
+    display: flex;
+    gap: globals.$spacing-unit;
+  }
+
+  &__cloud-saves-hint {
+    color: globals.$muted-color;
+    font-size: 12px;
+    line-height: 1.4;
+    margin: 0;
+  }
+
+  &__save-paths-list {
+    list-style: none;
+    margin: 0;
+    padding: calc(globals.$spacing-unit * 2);
+    max-height: 160px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: globals.$spacing-unit;
+    background-color: globals.$dark-background-color;
+    border-radius: 4px;
+  }
+
+  &__save-path-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: calc(globals.$spacing-unit * 2);
+  }
+
+  &__save-path-text {
+    color: globals.$body-color;
+    font-size: 12px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  &__save-path-remove {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    padding: 4px;
+    background: none;
+    border: none;
+    border-radius: 4px;
+    color: globals.$muted-color;
+    cursor: pointer;
+
+    &:hover {
+      color: globals.$body-color;
+      background-color: globals.$border-color;
+    }
+
+    &:disabled {
+      opacity: globals.$disabled-opacity;
+      cursor: not-allowed;
+    }
+  }
+
+  &__auto-sync {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  &__auto-sync-hint {
+    color: globals.$muted-color;
+    font-size: 12px;
+    line-height: 1.4;
+    margin: 0 0 0 28px;
+  }
+
   &__actions {
     display: flex;
     justify-content: flex-end;
     gap: calc(globals.$spacing-unit * 2);
+  }
+}
+
+@keyframes sidebar-adding-custom-game-modal-spin {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
   }
 }
