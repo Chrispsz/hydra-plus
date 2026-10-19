@@ -18,6 +18,10 @@
 // and both release/4.1.5 and release/v4.1.5 mean v4.1.5. The check is skipped
 // with a warning when that ref doesn't exist yet, i.e. nothing has shipped for
 // it.
+// --base local is the lean-fork mode: it compares against the preload in the
+// current worktree instead of a shipped tag, so the fork gets always-on
+// renderer/preload drift detection (the fork ships full app releases, no OTA
+// renderer deploys against frozen preloads).
 
 import { execFileSync } from "node:child_process";
 import fs from "node:fs";
@@ -324,16 +328,20 @@ export const readBridgeMembers = (fileName, text) => {
 };
 
 const listSourceFiles = () =>
-  SOURCE_ROOTS.flatMap((root) =>
-    fs
+  SOURCE_ROOTS.flatMap((root) => {
+    // Lean fork: optional renderer bundles (big-picture) may not exist in this
+    // tree. Skip missing roots instead of crashing the whole bridge check.
+    if (!fs.existsSync(root)) return [];
+
+    return fs
       .readdirSync(root, { recursive: true })
       .filter(
         (file) =>
           /\.tsx?$/.test(file) && !/\.(d|test|spec|stories)\.tsx?$/.test(file)
       )
       .sort((a, b) => a.localeCompare(b))
-      .map((file) => path.join(root, file))
-  );
+      .map((file) => path.join(root, file));
+  });
 
 // The part of `member` the bridge doesn't have, or null when it exists.
 // Anything past a leaf (like `fn.bind`) belongs to the member, not the bridge.
@@ -689,6 +697,47 @@ const print = (usages, log) => {
 
 const main = () => {
   const baseRef = getBaseRef();
+
+  if (baseRef === "local") {
+    // Fork mode: drift-check the renderer against the current worktree
+    // preload, so a call to a member the preload never exposes fails here
+    // instead of blowing up at runtime.
+    const members = readBridgeMembers(
+      "local",
+      fs.readFileSync(PRELOAD_PATH, "utf8")
+    );
+
+    const missing = listSourceFiles().flatMap((file) =>
+      findMissingUsages(file, fs.readFileSync(file, "utf8"), members)
+    );
+
+    const warnings = missing.filter((usage) => usage.guarded);
+    const errors = missing.filter((usage) => !usage.guarded);
+
+    if (warnings.length > 0) {
+      console.warn(
+        "[ota-bridge] Guarded members missing from the local preload (allowed):"
+      );
+      print(warnings, console.warn);
+    }
+
+    if (errors.length > 0) {
+      console.error(
+        [
+          "[ota-bridge] The renderer uses window.electron members that do not exist in the local preload.",
+          'Those calls would throw "is not a function" at runtime.',
+          "Remove these uses or guard them: call with `?.()`, or only after a `typeof window.electron.x === 'function'` check:",
+        ].join("\n")
+      );
+      print(errors, console.error);
+      process.exit(1);
+    }
+
+    console.log(
+      "[ota-bridge] OK: every window.electron member used by the renderer exists in the local preload."
+    );
+    return;
+  }
 
   if (!refExists(baseRef)) {
     console.log(
