@@ -551,3 +551,16 @@
     }
   }
 }
+
+/* ui-ux-pro-max: number-tabular (ticking download stats: speed, size, %, ETA;
+   tabular figures prevent digit jitter) */
+.download-group__progress-percentage,
+.download-group__progress-size,
+.download-group__progress-time,
+.download-group__progress-status,
+.download-group__stat-value,
+.download-group__simple-size,
+.download-group__simple-extracting,
+.download-group__simple-progress-text {
+  font-variant-numeric: tabular-figures;
+}

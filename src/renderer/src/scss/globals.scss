@@ -1,18 +1,59 @@
-$background-color: #121212;
-$dark-background-color: #0d0d0d;
+// ============================================================================
+// globals.scss — the fork's single design-token file (dark-only theme).
+//
+// ui-ux-pro-max: token-architecture — three token layers:
+//   1. PRIMITIVES  raw, meaning-free values; never referenced by components.
+//   2. SEMANTIC     purpose-based aliases + the shared spacing/radius/motion/
+//                   z-index scales that give the app one rhythm.
+//   3. COMPONENT    values owned by a single component family.
+//
+// The palette is EXACTLY the pre-tokenization palette: every legacy exported
+// name keeps its value (now an alias of a primitive) and every legacy export
+// still compiles for all `@use` consumers. This pass only ADDS tokens.
+// ============================================================================
 
-$muted-color: #f0f1f7;
-$body-color: #d0d1d7;
+// ============================================================================
+// LAYER 1 — PRIMITIVES (raw values)
+// ============================================================================
+$gray-50: #f0f1f7;
+$gray-200: #d0d1d7;
+$gray-900: #121212;
+$gray-950: #0d0d0d;
+$white: #ffffff;
 
-$border-color: rgba(255, 255, 255, 0.08);
-$success-color: #1c9749;
-$danger-color: #801d1e;
-$error-color: #e11d48;
-$warning-color: #ffc107;
+$teal-500: #16b195;
+$blue-600: #3e62c0;
+$cyan-400: #30edc5;
 
-$brand-teal: #16b195;
-$brand-blue: #3e62c0;
+$green-600: #1c9749;
+$amber-500: #ffc107;
+$rose-500: #e11d48;
+$red-800: #801d1e;
+$red-400: #f6746b;
 
+// ============================================================================
+// LAYER 2 — SEMANTIC (existing names kept as aliases; additions only)
+// ============================================================================
+
+// Backgrounds, text and borders
+$background-color: $gray-900;
+$dark-background-color: $gray-950;
+$muted-color: $gray-50;
+$body-color: $gray-200;
+$border-color: rgba($white, 0.08);
+
+// Status colors
+$success-color: $green-600;
+$danger-color: $red-800;
+$error-color: $rose-500;
+$warning-color: $amber-500;
+
+// Brand colors
+$brand-teal: $teal-500;
+$brand-blue: $blue-600;
+$platinum-cyan: $cyan-400;
+
+// Classics (value kept as-is)
 $classics-rainbow: conic-gradient(
   from 0deg,
   #fb0026 5deg,
@@ -22,11 +63,72 @@ $classics-rainbow: conic-gradient(
   #fc5812 290deg,
   #fb0026 365deg
 );
+$classics-washed: $red-400;
 
-$platinum-cyan: #30edc5;
+// ui-ux-pro-max: focus-states — shared keyboard focus ring + offset
+$focus-ring-color: $brand-teal;
+$color-ring-offset: $gray-950;
 
-$classics-washed: #f6746b;
+// Spacing scale — $spacing-unit (8px) is the base; $spacing-N = N × unit for
+// every N ≥ 2, with $spacing-1 as the 4px half-step micro-gap.
+$spacing-unit: 8px;
+$spacing-1: 4px;
+$spacing-2: 16px;
+$spacing-3: 24px;
+$spacing-4: 32px;
+$spacing-5: 40px;
+$spacing-6: 48px;
+$spacing-7: 56px;
+$spacing-8: 64px;
+$spacing-9: 72px;
+$spacing-10: 80px;
+$spacing-11: 88px;
+$spacing-12: 96px;
 
+// Radii scale
+$radius-sm: 2px;
+$radius: 4px;
+$radius-md: 6px;
+$radius-lg: 8px;
+$radius-full: 9999px;
+
+// ui-ux-pro-max: motion-consistency — one duration/easing rhythm everywhere
+$motion-fast: 150ms;
+$motion-normal: 200ms;
+$motion-slow: 300ms;
+$motion-ease-out: cubic-bezier(0, 0, 0.2, 1);
+
+// Elevation (z-index) scale — app-wide stacking layers
+$z-index-sticky: 1100;
+$z-index-modal: 1200;
+$z-index-popover: 1300;
+$z-index-tooltip: 1400;
+
+// Shared state opacities
+$disabled-opacity: 0.5;
+$active-opacity: 0.7;
+
+// Typography scale
+$body-font-size: 14px;
+$hint-font-size: 13px;
+$small-font-size: 12px;
+
+// ============================================================================
+// LAYER 3 — COMPONENT tokens (owned by one component family)
+// ============================================================================
+
+// Per-component elevations (legacy values, untouched)
+$toast-z-index: 150;
+$bottom-panel-z-index: 3;
+$title-bar-z-index: 4;
+$backdrop-z-index: 4;
+$modal-z-index: 5;
+
+// Container-query name of the app shell
+$app-container: app-container;
+
+// Platinum gradient for achievement bars (references the semantic tokens
+// above, so it stays below their definitions).
 @mixin platinum-gradient {
   background-image:
     linear-gradient(
@@ -50,20 +152,3 @@ $classics-washed: #f6746b;
       $brand-teal 100%
     );
 }
-
-$disabled-opacity: 0.5;
-$active-opacity: 0.7;
-
-$spacing-unit: 8px;
-
-$toast-z-index: 150;
-$bottom-panel-z-index: 3;
-$title-bar-z-index: 4;
-$backdrop-z-index: 4;
-$modal-z-index: 5;
-
-$body-font-size: 14px;
-$hint-font-size: 13px;
-$small-font-size: 12px;
-
-$app-container: app-container;
