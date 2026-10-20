@@ -9,10 +9,22 @@
  *
  *   node scripts/run-quality-chain.mjs [--fast]
  *
- * --fast skips the test-suite stage (use only when iterating on docs).
+ * Pieces (in order):
+ *   1. type graph — main process        (tsc --noEmit)
+ *   2. type graph — renderer + preload  (tsc --noEmit)
+ *   3. static analysis                  (eslint, 0 errors required)
+ *   4. locale parity                    (en ↔ pt-BR flattened key sets)
+ *   5. renderer ↔ preload drift         (check:ota-bridge --base local)
+ *   6. stylesheet compilation           (sass over every scss root)
+ *   7. unit + chain scenarios           (node --test, incl. src/test-chains)
+ *   8. production build + artifact smoke (electron-vite build → smoke-launch)
+ *   9. formatting                       (prettier --check .)
+ *
+ * --fast skips stages 7 and 8 (use only when iterating on docs).
  */
 import { spawnSync } from "node:child_process";
 import fs from "node:fs";
+import os from "node:os";
 import path from "node:path";
 
 const REPO = path.resolve(fs.realpathSync(new URL(".", import.meta.url)), "..");
@@ -21,6 +33,18 @@ const FAST = process.argv.includes("--fast");
 
 const yarn = (script) => {
   const result = spawnSync("corepack", ["yarn", "run", script], {
+    cwd: REPO,
+    encoding: "utf8",
+    maxBuffer: 1024 * 1024 * 128,
+  });
+  return {
+    code: result.status ?? 1,
+    output: `${result.stdout ?? ""}${result.stderr ?? ""}`,
+  };
+};
+
+const nodeScript = (relativePath, args = []) => {
+  const result = spawnSync("node", [path.join(REPO, relativePath), ...args], {
     cwd: REPO,
     encoding: "utf8",
     maxBuffer: 1024 * 1024 * 128,
@@ -64,54 +88,109 @@ const i18nParity = () => {
   return { code: ok ? 0 : 1, output: lines.join("\n") };
 };
 
+/**
+ * SCSS is not covered by tsc/eslint — this piece compiles every stylesheet
+ * root (directory mode skips _partials) the same way electron-vite would,
+ * so a broken token/import fails the chain before the build stage.
+ */
+const scssCompilation = () => {
+  const destination = fs
+    .mkdtempSync(path.join(os.tmpdir(), "hydra-scss-chain-"))
+    .replaceAll("\\", "/");
+  try {
+    const sassBinary = path.join("node_modules", ".bin", "sass");
+    const result = spawnSync(
+      sassBinary,
+      ["--no-source-map", "--quiet", `src/renderer/src:${destination}`],
+      { cwd: REPO, encoding: "utf8", maxBuffer: 1024 * 1024 * 32 }
+    );
+    const compiled = fs.existsSync(destination)
+      ? fs
+          .readdirSync(destination, { recursive: true, withFileTypes: true })
+          .filter((entry) => entry.isFile() && entry.name.endsWith(".css"))
+          .length
+      : 0;
+    const lines = [
+      `${result.stdout ?? ""}${result.stderr ?? ""}`.trim(),
+      `scss roots compiled: ${compiled} (sanity floor: 80)`,
+    ];
+    const ok = (result.status ?? 1) === 0 && compiled >= 80;
+    return { code: ok ? 0 : 1, output: lines.filter(Boolean).join("\n") };
+  } finally {
+    fs.rmSync(destination, { recursive: true, force: true });
+  }
+};
+
+/**
+ * The definitive "it compiles as a product" piece: electron-vite production
+ * build followed by the post-build smoke (bundles exist, preload is where
+ * the runtime expects it, no upstream auto-update feed leaked into main).
+ */
+const productionBuildAndSmoke = () => {
+  const compile = yarn("compile");
+  if (compile.code !== 0) return compile;
+  const smoke = nodeScript(path.join("scripts", "smoke-launch.cjs"), [
+    "--bundles-only",
+  ]);
+  return {
+    code: smoke.code,
+    output: `${compile.output}\n${smoke.output}`,
+  };
+};
+
+const HEAVY_STAGES = FAST
+  ? []
+  : [
+      {
+        title: "unit + chain scenarios",
+        detail: "yarn test (incl. src/test-chains puzzle)",
+        run: () => yarn("test"),
+      },
+      {
+        title: "production build + artifact smoke",
+        detail: "electron-vite build → scripts/smoke-launch.cjs --bundles-only",
+        run: productionBuildAndSmoke,
+      },
+    ];
+
 const STAGES = [
   {
-    id: "1/7",
     title: "type graph — main process",
     detail: "typecheck:node (tsc --noEmit)",
     run: () => yarn("typecheck:node"),
   },
   {
-    id: "2/7",
     title: "type graph — renderer + preload",
     detail: "typecheck:web (tsc --noEmit)",
     run: () => yarn("typecheck:web"),
   },
   {
-    id: "3/7",
     title: "static analysis",
     detail: "eslint (0 errors required)",
     run: () => yarn("lint"),
   },
   {
-    id: "4/7",
     title: "locale parity (en + pt-BR)",
     detail: "flattened key sets must be identical",
     run: i18nParity,
   },
   {
-    id: "5/7",
     title: "renderer ↔ preload drift",
     detail: "check:ota-bridge --base local",
     run: () => yarn("check:ota-bridge"),
   },
-  ...(FAST
-    ? []
-    : [
-        {
-          id: "6/7",
-          title: "unit + chain scenarios",
-          detail: "yarn test (incl. src/test-chains puzzle)",
-          run: () => yarn("test"),
-        },
-      ]),
   {
-    id: FAST ? "6/6" : "7/7",
+    title: "stylesheet compilation",
+    detail: "sass directory mode over every scss root",
+    run: scssCompilation,
+  },
+  ...HEAVY_STAGES,
+  {
     title: "formatting",
     detail: "prettier --check .",
     run: () => yarn("format-check"),
   },
-];
+].map((stage, index, all) => ({ ...stage, id: `${index + 1}/${all.length}` }));
 
 const tail = (text, lines = 12) =>
   text

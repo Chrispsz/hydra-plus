@@ -1,8 +1,9 @@
 # Hydra Plus — Smoke Test Roteiro
 
 > O **quality chain** automatizado (`yarn test:chain`) cobre o que roda headless:
-> tipos, lint, 667 testes (unit + cenários encadeados), paridade de idiomas,
-> drift renderer↔preload e formatação. Este roteiro cobre o resto: **uso real**
+> tipos, lint, SCSS, 686 testes (unit + cenários encadeados), paridade de
+> idiomas, drift renderer↔preload, **build de produção + smoke do artefato**
+> e formatação. Este roteiro cobre o resto: **uso real**
 > do app compilado, numa máquina de verdade com GPU, disco e rede.
 >
 > Tempo estimado: ~45 min. Marque cada item ✅ ou anote o bug com print.
@@ -53,13 +54,14 @@
 
 ## 4. Nuvem Drive (estabilidade F1)
 
-| #   | Passo                                | Esperado                                                                           |
-| --- | ------------------------------------ | ---------------------------------------------------------------------------------- |
-| 4.1 | Conectar Google Drive                | OAuth próprio do fork conclui; painel de higiene visível                           |
-| 4.2 | **Desligar a rede** e pedir sync     | erro claro + retry; **não trava** o app (timeouts F1)                              |
-| 4.3 | Sync de jogo grande (~1 GB de saves) | dedup de blobs entre jogos visível no uso do Drive                                 |
-| 4.4 | Segunda máquina: restaurar snapshot  | save baixa, hash verificado, restaurado no lugar certo; conflito oferece resolução |
-| 4.5 | Rodar o jogo com o Drive deslogado   | jogo abre normal; lifecycle não trava (erro de auth tratado)                       |
+| #   | Passo                                                                           | Esperado                                                                                                                     |
+| --- | ------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| 4.1 | Conectar Google Drive                                                           | OAuth próprio do fork conclui; painel de higiene visível                                                                     |
+| 4.2 | **Desligar a rede** e pedir sync                                                | erro claro + retry; **não trava** o app (timeouts F1)                                                                        |
+| 4.3 | Sync de jogo grande (~1 GB de saves)                                            | dedup de blobs entre jogos visível no uso do Drive                                                                           |
+| 4.4 | Segunda máquina: restaurar snapshot                                             | save baixa, hash verificado, restaurado no lugar certo; conflito oferece resolução                                           |
+| 4.5 | Rodar o jogo com o Drive deslogado                                              | jogo abre normal; lifecycle não trava (erro de auth tratado)                                                                 |
+| 4.6 | **Fechar o app com jogo em sessão**; de novo: `kill -9` no app durante a sessão | playtime da última sessão persiste no relançar; um worker de processos travado recicla em ≤10s (nunca fica "Running" eterno) |
 
 ## 5. Relatório
 

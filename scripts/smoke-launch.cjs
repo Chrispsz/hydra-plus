@@ -12,6 +12,9 @@
  *   3. produced at least one distributable artifact in dist/;
  *   4. has a package.json that parses and is named "hydra-plus".
  *
+ * Optional: `--bundles-only` skips check 3 — used by the quality chain after
+ * a compile-only build (packaging into dist/ is a release-time action).
+ *
  * Exits with code 1 if any check fails. No external dependencies.
  */
 
@@ -26,6 +29,7 @@ const FORBIDDEN_UPSTREAM_UPDATE_FEED = "hydralauncher/hydra";
  */
 const ALLOWED_UPSTREAM_SUBSTRINGS = ["hydralauncher/hydra-common-redist"];
 const EXPECTED_PACKAGE_NAME = "hydra-plus";
+const BUNDLES_ONLY = process.argv.includes("--bundles-only");
 
 const OUT_FILES = [
   path.join("out", "main", "index.js"),
@@ -105,7 +109,7 @@ function listDistArtifacts(distDir) {
 
 function main() {
   console.log(
-    `Smoke test for ${EXPECTED_PACKAGE_NAME} (cwd: ${process.cwd()})`
+    `Smoke test for ${EXPECTED_PACKAGE_NAME} (cwd: ${process.cwd()})${BUNDLES_ONLY ? " [bundles-only]" : ""}`
   );
 
   // (a) electron-vite output bundles must exist
@@ -153,7 +157,11 @@ function main() {
     distIsDir = false;
   }
 
-  if (!distIsDir) {
+  if (BUNDLES_ONLY) {
+    console.log(
+      "SKIP: dist/ artifact check (--bundles-only: compile without packaging)"
+    );
+  } else if (!distIsDir) {
     check(
       "dist/ contains at least one artifact (.exe/.zip/.deb/.rpm/.tar.gz/.AppImage)",
       false,
