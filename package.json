@@ -23,6 +23,7 @@
     "typecheck:web": "tsc --noEmit -p tsconfig.web.json --composite false",
     "typecheck": "npm run typecheck:node && npm run typecheck:web",
     "check:ota-bridge": "node scripts/check-ota-bridge.mjs --base local",
+    "test:chain": "node scripts/run-quality-chain.mjs",
     "build:native": "node ./scripts/build-native-addon.cjs",
     "start": "electron-vite preview",
     "dev": "electron-vite dev",
