@@ -9,18 +9,9 @@ import path from "node:path";
 import { NativeAddon } from "@main/services/native-addon";
 import { processReferencesExecutable } from "@main/services/linux-process-match";
 import { isWindowsBatchFile } from "@main/helpers/windows-batch-command";
+import { buildKillCommand } from "@main/helpers/kill-command";
 
-const getKillCommand = (pid: number) => {
-  if (process.platform == "win32") {
-    // /T terminates the whole process tree: game roots spawned by
-    // launchers (Online-Fix, Proton) leave child processes alive
-    // otherwise, and the process watcher then reports the game as closed
-    // while its children are still writing saves.
-    return `taskkill /PID ${pid} /T /F`;
-  }
-
-  return `kill -9 ${pid}`;
-};
+const getKillCommand = (pid: number) => buildKillCommand(pid);
 
 const closeGame = async (
   _event: Electron.IpcMainInvokeEvent,

@@ -4,11 +4,7 @@ import { getDirectorySize } from "@main/events/helpers/get-directory-size";
 import { findGameExecutableInFolder } from "@main/helpers/find-game-executable";
 import { updateGameExecutablePath } from "@main/helpers/update-executable-path";
 import { db, downloadsSublevel, gamesSublevel, levelKeys } from "@main/level";
-import {
-  Downloader,
-  FILE_EXTENSIONS_TO_EXTRACT,
-  removeSymbolsFromName,
-} from "@shared";
+import { FILE_EXTENSIONS_TO_EXTRACT, removeSymbolsFromName } from "@shared";
 import type { ExtractionFailure, GameShop, UserPreferences } from "@types";
 import axios from "axios";
 import createDesktopShortcut from "create-desktop-shortcuts";
@@ -17,6 +13,11 @@ import path from "node:path";
 import pngToIco from "png-to-ico";
 import sharp from "sharp";
 import { ExtractionProgress, SevenZip } from "./7zip";
+import {
+  resolveResetStatus,
+  shouldAbortProgressRewrite,
+  shouldSkipRegistryRewrite,
+} from "./download/download-registry-guards";
 import { getPathType } from "./extraction-path";
 import { listArchiveFiles } from "./archive-entry";
 import { getWindowsVbsPath } from "@main/helpers/shortcut-launch";
@@ -71,7 +72,7 @@ export class GameFilesManager {
 
     if (!download) return;
 
-    if (download.status === "removed") {
+    if (shouldSkipRegistryRewrite(download)) {
       // The download was cancelled/removed while the extraction was
       // running: rewriting the registry would resurrect it in the list.
       logger.log(
@@ -80,12 +81,7 @@ export class GameFilesManager {
       return;
     }
 
-    const status =
-      download.progress === 1
-        ? download.shouldSeed && download.downloader === Downloader.Torrent
-          ? "seeding"
-          : "complete"
-        : download.status;
+    const status = resolveResetStatus(download);
 
     await downloadsSublevel.put(this.gameKey, {
       ...download,
@@ -330,7 +326,7 @@ export class GameFilesManager {
 
     if (!download) return;
 
-    if (download.status === "removed") {
+    if (shouldSkipRegistryRewrite(download)) {
       // The download was cancelled/removed while the extraction was
       // running: do not resurrect its registry entry.
       logger.log(
@@ -798,7 +794,7 @@ export class GameFilesManager {
 
         const currentDownload = await downloadsSublevel.get(this.gameKey);
 
-        if (!currentDownload || currentDownload.status === "removed") {
+        if (shouldAbortProgressRewrite(currentDownload)) {
           // The download was cancelled/removed (or its registry purged)
           // while the extraction was running: abort silently instead of
           // resurrecting the record with stale data.

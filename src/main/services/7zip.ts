@@ -5,6 +5,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { logger } from "./logger";
 import { listArchiveEntries, readArchiveEntry } from "./archive-entry";
+import { ChildProcessRegistry } from "../helpers/extraction-child-registry";
 
 export const binaryName = {
   linux: "7zzs",
@@ -24,33 +25,10 @@ export interface ExtractionResult {
 }
 
 export class SevenZip {
-  /** Handles of currently running extractions, so quit/cancel can stop them. */
-  private static readonly activeExtractionChildren = new Set<
-    ReturnType<typeof spawn>
-  >();
+  private static readonly activeExtractionChildren = new ChildProcessRegistry();
 
   public static cancelActiveExtraction(): void {
-    if (this.activeExtractionChildren.size === 0) return;
-
-    for (const child of this.activeExtractionChildren) {
-      try {
-        // Extraction children are spawned detached; on POSIX kill the whole
-        // process group so the 7z child cannot survive the app quit.
-        if (process.platform !== "win32" && child.pid) {
-          try {
-            process.kill(-child.pid);
-          } catch {
-            child.kill();
-          }
-        } else {
-          child.kill();
-        }
-      } catch {
-        // Already gone.
-      }
-    }
-
-    this.activeExtractionChildren.clear();
+    this.activeExtractionChildren.cancelAll();
   }
 
   private static readonly binaryPath = app.isPackaged
@@ -146,10 +124,10 @@ export class SevenZip {
         stream._childProcess = child;
         this.activeExtractionChildren.add(child);
         stream.once("end", () => {
-          this.activeExtractionChildren.delete(child);
+          this.activeExtractionChildren.remove(child);
         });
         stream.once("error", () => {
-          this.activeExtractionChildren.delete(child);
+          this.activeExtractionChildren.remove(child);
         });
 
         stream.on("progress", (progress) => {
