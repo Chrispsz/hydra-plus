@@ -17,7 +17,8 @@
  *   5. renderer ↔ preload drift         (check:ota-bridge --base local)
  *   6. stylesheet compilation           (sass over every scss root)
  *   7. unit + chain scenarios           (node --test, incl. src/test-chains)
- *   8. production build + artifact smoke (electron-vite build → smoke-launch)
+ *   8. production build + boot smoke    (electron-vite build → package --dir
+ *                                        → smoke incl. packaged-boot probe)
  *   9. formatting                       (prettier --check .)
  *
  * --fast skips stages 7 and 8 (use only when iterating on docs).
@@ -122,19 +123,25 @@ const scssCompilation = () => {
 };
 
 /**
- * The definitive "it compiles as a product" piece: electron-vite production
- * build followed by the post-build smoke (bundles exist, preload is where
- * the runtime expects it, no upstream auto-update feed leaked into main).
+ * The definitive "it boots as a product" piece: electron-vite production
+ * build, unpacked packaging, then the smoke (bundles exist, preload is where
+ * the runtime expects it, no upstream auto-update feed leaked into main) plus
+ * the Linux boot probe — the packaged binary must survive module load for
+ * 12s without a main-process JavaScript exception. This is the piece that
+ * catches bugs file checks cannot see (an inlined-undefined env var once
+ * bricked every packaged build at boot while all file checks stayed green).
  */
 const productionBuildAndSmoke = () => {
   const compile = yarn("compile");
   if (compile.code !== 0) return compile;
+  const pack = yarn("package:dir");
+  if (pack.code !== 0) return pack;
   const smoke = nodeScript(path.join("scripts", "smoke-launch.cjs"), [
     "--bundles-only",
   ]);
   return {
     code: smoke.code,
-    output: `${compile.output}\n${smoke.output}`,
+    output: `${compile.output}\n${pack.output}\n${smoke.output}`,
   };
 };
 
@@ -147,8 +154,9 @@ const HEAVY_STAGES = FAST
         run: () => yarn("test"),
       },
       {
-        title: "production build + artifact smoke",
-        detail: "electron-vite build → scripts/smoke-launch.cjs --bundles-only",
+        title: "production build + boot smoke",
+        detail:
+          "electron-vite build → electron-builder --dir → smoke (incl. packaged-boot probe)",
         run: productionBuildAndSmoke,
       },
     ];

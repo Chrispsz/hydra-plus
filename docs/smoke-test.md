@@ -2,9 +2,10 @@
 
 > O **quality chain** automatizado (`yarn test:chain`) cobre o que roda headless:
 > tipos, lint, SCSS, 686 testes (unit + cenários encadeados), paridade de
-> idiomas, drift renderer↔preload, **build de produção + smoke do artefato**
-> e formatação. Este roteiro cobre o resto: **uso real**
-> do app compilado, numa máquina de verdade com GPU, disco e rede.
+> idiomas, drift renderer↔preload, **build de produção + empacotamento +
+> boot probe do binário** (o app empacotado precisa sobreviver ao load sem
+> exceção no processo principal) e formatação. Este roteiro cobre o resto:
+> **uso real** do app compilado, numa máquina de verdade com GPU, disco e rede.
 >
 > Tempo estimado: ~45 min. Marque cada item ✅ ou anote o bug com print.
 

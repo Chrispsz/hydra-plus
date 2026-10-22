@@ -20,6 +20,7 @@
 
 const fs = require("node:fs");
 const path = require("node:path");
+const cp = require("node:child_process");
 
 const FORBIDDEN_UPSTREAM_UPDATE_FEED = "hydralauncher/hydra";
 /**
@@ -30,6 +31,7 @@ const FORBIDDEN_UPSTREAM_UPDATE_FEED = "hydralauncher/hydra";
 const ALLOWED_UPSTREAM_SUBSTRINGS = ["hydralauncher/hydra-common-redist"];
 const EXPECTED_PACKAGE_NAME = "hydra-plus";
 const BUNDLES_ONLY = process.argv.includes("--bundles-only");
+const BOOT_PROBE_TIMEOUT_MS = 12_000;
 
 const OUT_FILES = [
   path.join("out", "main", "index.js"),
@@ -105,6 +107,55 @@ function listDistArtifacts(distDir) {
 
   walk(distDir);
   return artifacts;
+}
+
+/**
+ * (e) Boot probe — the artifact must survive module load.
+ *
+ * File-existence checks cannot catch a bundle that throws at import time
+ * (this exact class of bug shipped once: an inlined `undefined` env var
+ * crashed the packaged app before a single window opened). The probe runs
+ * the packaged binary headless for up to 12s and fails on main-process
+ * JavaScript fatals only — dbus/X noise from displayless runners is
+ * tolerated. SIGTERM at timeout is expected (the app is supposed to keep
+ * running). On a dev machine this briefly touches the real profile dir.
+ */
+function bootProbe() {
+  if (process.platform !== "linux") {
+    console.log(
+      `SKIP: boot probe (linux-only; this host is ${process.platform})`
+    );
+    return;
+  }
+
+  const binary = path.join("dist", "linux-unpacked", "hydra-plus");
+  if (!isFile(binary)) {
+    console.log(
+      "SKIP: boot probe (dist/linux-unpacked/hydra-plus not built — run `yarn package:dir` or a packaging build first)"
+    );
+    return;
+  }
+
+  const result = cp.spawnSync(binary, ["--no-sandbox", "--disable-gpu"], {
+    encoding: "utf8",
+    maxBuffer: 8 * 1024 * 1024,
+    timeout: BOOT_PROBE_TIMEOUT_MS,
+  });
+
+  const output = `${result.stdout ?? ""}${result.stderr ?? ""}`;
+  const fatalMatch = output.match(
+    /A JavaScript error occurred[\s\S]{0,400}|Uncaught (?:Exception|Error)[\s\S]{0,400}/
+  );
+  check(
+    "packaged app boots (no main-process exception within 12s)",
+    !fatalMatch,
+    fatalMatch
+      ? `main process crashed at boot:\n      ${fatalMatch[0]
+          .split("\n")
+          .slice(0, 6)
+          .join("\n      ")}`
+      : "module load + early init survived the probe window"
+  );
 }
 
 function main() {
@@ -197,6 +248,8 @@ function main() {
       `got: "${packageName}"`
     );
   }
+
+  bootProbe();
 
   if (failures.length > 0) {
     console.log(`\nSmoke test FAILED with ${failures.length} problem(s):`);

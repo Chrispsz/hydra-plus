@@ -14,7 +14,12 @@ export const defaultDownloadsPath = path.join(
   "Hydra"
 );
 
-export const isStaging = import.meta.env.MAIN_VITE_API_URL.includes("staging");
+// Boot-safety: the API URL can be absent in local/unconfigured builds
+// (.env.example ships it empty and the file itself is optional) — a missing
+// value must degrade to "not staging", never throw at module load and brick
+// the packaged app before a single window opens.
+export const isStaging =
+  import.meta.env.MAIN_VITE_API_URL?.includes("staging") ?? false;
 
 export const windowsStartMenuPath = path.join(
   SystemPath.getPath("appData"),
