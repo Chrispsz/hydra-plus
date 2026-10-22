@@ -111,8 +111,32 @@ const spawnDetachedSleep = (seconds: number): ChildProcess => {
 const settle = (ms = 50) =>
   new Promise<void>((resolve) => setTimeout(resolve, ms));
 
-const awaitExit = (child: ChildProcess) =>
-  new Promise<void>((resolve) => child.once("exit", resolve));
+const awaitExit = (child: ChildProcess, timeoutMs = 10_000) => {
+  if (child.exitCode !== null || child.signalCode !== null) {
+    // The exit event was already emitted — the CI runner can reap several
+    // spawned children in the same tick, so by the time a sequential loop
+    // attaches the next listener the event is gone and a bare once()
+    // would hang the whole file. The durable exit fields are the source
+    // of truth; the event is not repeatable.
+    return Promise.resolve();
+  }
+  return new Promise<void>((resolve) => {
+    // Reffed on purpose: the deadline guarantees this helper ALWAYS
+    // settles, instead of the observed CI failure mode — a wedged child
+    // stalling the runner ~30s until "Promise resolution is still
+    // pending but the event loop has already resolved" cancels the
+    // remaining tests in cascade.
+    const timer = setTimeout(() => {
+      child.removeListener("exit", onExit);
+      resolve();
+    }, timeoutMs);
+    const onExit = () => {
+      clearTimeout(timer);
+      resolve();
+    };
+    child.once("exit", onExit);
+  });
+};
 
 /**
  * Mirrors the launchGame guard wiring (launch-game.ts): acquire → run
