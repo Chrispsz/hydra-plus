@@ -86,10 +86,18 @@ jobs:
     secrets: inherit
 
   cleanup:
-    needs: build
-    if: needs.build.result == 'success'
+    needs: [gate, build]
+    # Runs whenever a build was attempted (manual dispatch, or the gate let
+    # it through) regardless of its outcome — a failed monthly build loses
+    # the old artifacts, the next daily gate finds none and retries, which
+    # is exactly the wanted behavior. Skipped when the gate decided the
+    # latest build is fresh, so the 30-day evidence is never deleted.
+    # (needs.build.result is not referenced on purpose: results of
+    # reusable-workflow calls don't propagate reliably to dependents.)
+    if: >-
+      always() &&
+      (needs.gate.result == 'skipped' || needs.gate.outputs.build == 'true')
     runs-on: ubuntu-latest
-
     timeout-minutes: 15
 
     permissions:
