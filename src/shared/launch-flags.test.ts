@@ -3,6 +3,7 @@ import { describe, it } from "node:test";
 
 import {
   LAUNCH_FLAG_CATALOG,
+  getGameOptionsLaunchFlagCatalog,
   getLaunchFlagDefinition,
   mergeLegacyLaunchToggles,
   resolveLaunchFlags,
@@ -60,6 +61,33 @@ describe("launch flag catalog", () => {
     assert.equal(getLaunchFlagDefinition("dxvk-async")?.value, "DXVK_ASYNC=1");
     assert.equal(getLaunchFlagDefinition("gamemode")?.value, "gamemoderun");
     assert.equal(getLaunchFlagDefinition("não-existe"), undefined);
+  });
+});
+
+describe("getGameOptionsLaunchFlagCatalog", () => {
+  it("hides the flags owned by the legacy performance-tool toggles", () => {
+    const offeredIds = getGameOptionsLaunchFlagCatalog().map(
+      (definition) => definition.id
+    );
+
+    assert.equal(offeredIds.includes("mangohud"), false);
+    assert.equal(offeredIds.includes("gamemode"), false);
+  });
+
+  it("keeps every other catalog entry", () => {
+    const offeredIds = new Set(
+      getGameOptionsLaunchFlagCatalog().map((definition) => definition.id)
+    );
+
+    for (const definition of LAUNCH_FLAG_CATALOG) {
+      const expected = !["mangohud", "gamemode"].includes(definition.id);
+
+      assert.equal(
+        offeredIds.has(definition.id),
+        expected,
+        `${definition.id} should${expected ? "" : " not"} be offered`
+      );
+    }
   });
 });
 

@@ -1,7 +1,7 @@
 import { useTranslation } from "react-i18next";
 
 import { CheckboxField } from "@renderer/components";
-import { LAUNCH_FLAG_CATALOG } from "@shared/launch-flags";
+import { getGameOptionsLaunchFlagCatalog } from "@shared/launch-flags";
 import { Tooltip } from "react-tooltip";
 
 import { isLaunchFlagDisabled } from "./launch-flags-selection";
@@ -16,8 +16,14 @@ interface LaunchFlagsSectionProps {
 
 /**
  * Per-game launch flags (Linux compatibility context only): one checkbox
- * per catalog entry, labels and descriptions come from the
+ * per offered catalog entry, labels and descriptions come from the
  * `launch_flags` i18n namespace keyed by the catalog id.
+ *
+ * The `mangohud` and `gamemode` catalog entries are deliberately NOT
+ * offered here — their per-game UI is the performance-tool toggles above
+ * ("run with GameMode/MangoHud"), which also carry the global-setting
+ * interplay. Ids persisted by 4.13.0 still resolve at launch time
+ * (`mergeLegacyLaunchToggles` keeps both systems working).
  *
  * Wrapper flags whose host tool is unavailable render disabled with the
  * same "not available in your PATH" tooltips the legacy MangoHud/GameMode
@@ -44,7 +50,7 @@ export function LaunchFlagsSection({
       </div>
 
       <ul className="game-options-modal__launch-flags-list">
-        {LAUNCH_FLAG_CATALOG.map((definition) => {
+        {getGameOptionsLaunchFlagCatalog().map((definition) => {
           const disabled = isLaunchFlagDisabled(definition, {
             mangohud: mangohudAvailable,
             gamemode: gamemodeAvailable,

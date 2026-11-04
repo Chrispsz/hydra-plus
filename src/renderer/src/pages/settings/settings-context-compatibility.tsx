@@ -293,7 +293,7 @@ export function SettingsContextCompatibility() {
 
             <div className="settings-context-compatibility__section settings-context-compatibility__global-toggles">
               <h3 className="settings-behavior__proton-title">
-                {t("behavior")}
+                {t("performance_tools")}
               </h3>
 
               <div className="settings-behavior__gamemode-toggle">

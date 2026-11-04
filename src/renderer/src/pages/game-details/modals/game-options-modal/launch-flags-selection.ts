@@ -4,6 +4,13 @@ import type { LaunchFlagDefinition } from "@shared/launch-flags";
  * Pure selection helpers for the launch flags section of the game options
  * modal. Kept free of React imports so they can be unit-tested with the
  * node test runner (see launch-flags-selection.test.ts).
+ *
+ * Runtime imports in this module must avoid the `@shared` path alias:
+ * ts-node/esm does not apply tsconfig `paths` to ESM specifiers, so a
+ * value import would break the node test runner (type-only imports are
+ * erased at compile time and therefore safe). The offered-flags policy
+ * lives next to the catalog: `getGameOptionsLaunchFlagCatalog`
+ * (@shared/launch-flags).
  */
 
 /**

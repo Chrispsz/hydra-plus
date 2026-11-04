@@ -163,7 +163,27 @@ export function CompatibilitySettingsSection({
 
       <div className="game-options-modal__section">
         <div className="game-options-modal__header">
-          <h2>{t("additional_options")}</h2>
+          <h2>{t("proton_version")}</h2>
+          <h4 className="game-options-modal__header-description">
+            {t("proton_version_description")}
+          </h4>
+        </div>
+
+        <ProtonPathPicker
+          versions={protonVersions}
+          selectedPath={selectedProtonPath}
+          onChange={onChangeProtonVersion}
+          radioName={`proton-version-${game.objectId}`}
+          autoLabel={protonVersionAutoLabel}
+          autoSourceDescription={protonSourceUmuDefault}
+          steamSourceDescription={protonSourceSteam}
+          compatibilityToolsSourceDescription={protonSourceCompatibilityTools}
+        />
+      </div>
+
+      <div className="game-options-modal__section">
+        <div className="game-options-modal__header">
+          <h2>{t("performance_tools")}</h2>
         </div>
 
         <div className="game-options-modal__gamemode-toggle">
@@ -259,26 +279,6 @@ export function CompatibilitySettingsSection({
             <Tooltip id={mangohudTooltipId} />
           )}
         </div>
-      </div>
-
-      <div className="game-options-modal__section">
-        <div className="game-options-modal__header">
-          <h2>{t("proton_version")}</h2>
-          <h4 className="game-options-modal__header-description">
-            {t("proton_version_description")}
-          </h4>
-        </div>
-
-        <ProtonPathPicker
-          versions={protonVersions}
-          selectedPath={selectedProtonPath}
-          onChange={onChangeProtonVersion}
-          radioName={`proton-version-${game.objectId}`}
-          autoLabel={protonVersionAutoLabel}
-          autoSourceDescription={protonSourceUmuDefault}
-          steamSourceDescription={protonSourceSteam}
-          compatibilityToolsSourceDescription={protonSourceCompatibilityTools}
-        />
       </div>
 
       <LaunchFlagsSection

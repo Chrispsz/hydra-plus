@@ -173,6 +173,24 @@ export const getLaunchFlagDefinition = (
 ): LaunchFlagDefinition | undefined => LAUNCH_FLAG_BY_ID.get(id);
 
 /**
+ * Flag ids whose per-game UI is the legacy compatibility toggles rendered
+ * in the game options modal ("run with GameMode/MangoHud"). Those toggles
+ * own the global-setting interplay and, for MangoHud, the env-based
+ * (`MANGOHUD=1`) enablement that matches this app's Proton launches — so
+ * the duplicated catalog checkboxes stay hidden from the flags list.
+ * Persisted ids still resolve at launch time (see
+ * `mergeLegacyLaunchToggles` below).
+ */
+const LEGACY_TOGGLE_FLAG_IDS = new Set(["mangohud", "gamemode"]);
+
+/** Catalog entries offered in the game options launch flags section. */
+export const getGameOptionsLaunchFlagCatalog =
+  (): readonly LaunchFlagDefinition[] =>
+    LAUNCH_FLAG_CATALOG.filter(
+      (definition) => !LEGACY_TOGGLE_FLAG_IDS.has(definition.id)
+    );
+
+/**
  * Resolves catalog launch flag ids into environment assignments and
  * wrapper commands. Unknown ids are ignored (and reported) so a stale
  * record from an older catalog can never break a launch.
