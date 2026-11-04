@@ -5,7 +5,7 @@ import { SyncIcon } from "@primer/octicons-react";
 import { formatBytes } from "@shared";
 
 import { Button, ConfirmationModal, SelectField } from "@renderer/components";
-import { useDate } from "@renderer/hooks";
+import { useAppSelector, useDate } from "@renderer/hooks";
 import { logger } from "@renderer/logger";
 import type {
   ProtonInstallProgress,
@@ -39,6 +39,10 @@ export function SettingsProtonManager() {
   const { formatDate } = useDate();
 
   const isLinux = window.electron.platform === "linux";
+
+  const userPreferences = useAppSelector(
+    (state) => state.userPreferences.value
+  );
 
   const [providers, setProviders] = useState<ProtonProvider[]>([]);
   const [selectedProviderId, setSelectedProviderId] = useState("");
@@ -462,12 +466,19 @@ export function SettingsProtonManager() {
           <ul className="settings-proton-manager__list">
             {installedVersions.map((version) => (
               <li key={version.path} className="settings-proton-manager__item">
-                <span
-                  className="settings-proton-manager__item-name"
-                  title={version.path}
-                >
-                  {version.name}
-                </span>
+                <div className="settings-proton-manager__item-info settings-proton-manager__item-info--installed">
+                  <span
+                    className="settings-proton-manager__item-name"
+                    title={version.path}
+                  >
+                    {version.name}
+                  </span>
+                  {userPreferences?.defaultProtonPath === version.path && (
+                    <span className="settings-proton-manager__item-badge">
+                      {t("default_badge")}
+                    </span>
+                  )}
+                </div>
                 {isRemovableProtonVersion(version) && (
                   <Button
                     type="button"

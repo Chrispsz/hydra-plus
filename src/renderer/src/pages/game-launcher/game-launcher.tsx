@@ -154,7 +154,9 @@ export default function GameLauncher() {
       case "checking":
         return t("preflight_checking");
       case "downloading":
-        return t("preflight_downloading");
+        return preflightDetail
+          ? t("preflight_downloading_detail", { detail: preflightDetail })
+          : t("preflight_downloading");
       case "installing":
         return preflightDetail
           ? t("preflight_installing_detail", { detail: preflightDetail })

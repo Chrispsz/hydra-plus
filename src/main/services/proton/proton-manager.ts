@@ -34,14 +34,22 @@ import {
 import { getProtonProviderById, toProtonProviderList } from "./providers";
 import { ProtonReleaseCatalog } from "./release-catalog";
 import { createProgressThrottle } from "./progress-throttle";
+import {
+  getNewestInstalledCachyOsProtonPath,
+  setDefaultProtonPath,
+} from "./default-proton";
+import { toProtonPreflightProgress } from "./default-proton-selection";
 
 /**
  * Coordinator for the Proton build manager: provider registry, release
- * browsing, one-at-a-time installs with pushed progress, and safe
- * removal of installed builds.
+ * browsing, one-at-a-time installs with pushed progress, safe removal
+ * of installed builds and the launch-time default-runtime policy.
  */
 
 const PROTON_USER_AGENT = `Hydra/${appVersion}`;
+
+/** The fork's default runtime provider (see ensureDefaultProtonForLaunch). */
+const DEFAULT_PROTON_PROVIDER_ID = "proton-cachyos";
 
 const PROTON_ERROR_CODES = new Set([
   "canceled",
@@ -166,11 +174,86 @@ export class ProtonManager {
     return { ok: true };
   }
 
-  private static async executeInstallJob(job: ActiveProtonJob): Promise<void> {
+  /**
+   * Launch-time default runtime — the fork's replacement for umu's own
+   * default-Proton download: the newest INSTALLED CachyOS build, or an
+   * automatic install of the LATEST CachyOS release when none exists
+   * (the job mirrors its progress into the game launcher window as
+   * preflight progress). GE-Proton stays a manual choice — per-game or
+   * as the saved default — and umu-run itself remains the launch
+   * wrapper.
+   *
+   * Resolves null when the runtime cannot be ensured (busy job, no
+   * release available, install failure); the caller then falls back to
+   * umu's default Proton exactly as before.
+   */
+  public static async ensureDefaultProtonForLaunch(): Promise<string | null> {
+    if (process.platform !== "linux") return null;
+
+    const installedPath = await getNewestInstalledCachyOsProtonPath();
+    if (installedPath) return installedPath;
+
+    const provider = getProtonProviderById(DEFAULT_PROTON_PROVIDER_ID);
+    if (!provider) return null;
+
+    if (this.activeJob) {
+      // A job is already running (usually a user-triggered install in
+      // Settings): this launch falls back to umu, the next one picks
+      // the installed build up.
+      logger.info(
+        "Skipping the default Proton auto-install: another install is active"
+      );
+      return null;
+    }
+
+    const job: ActiveProtonJob = {
+      providerId: provider.id,
+      tag: "",
+      controller: new AbortController(),
+    };
+    this.activeJob = job;
+
+    let latestTag: string | null = null;
+    try {
+      const { releases } = await this.catalog.getReleases(provider, 1);
+      latestTag = releases[0]?.tag ?? null;
+    } catch (error) {
+      logger.error(
+        "Failed to list CachyOS releases for the default Proton auto-install",
+        { error }
+      );
+    }
+
+    if (!latestTag) {
+      if (this.activeJob === job) this.activeJob = null;
+      return null;
+    }
+
+    job.tag = latestTag;
+    logger.info("Auto-installing the latest CachyOS Proton (default runtime)", {
+      tag: latestTag,
+    });
+
+    // executeInstallJob reports failures through progress events and
+    // clears the active slot in its finally; it resolves null on failure.
+    return this.executeInstallJob(job);
+  }
+
+  private static async executeInstallJob(
+    job: ActiveProtonJob
+  ): Promise<string | null> {
     const provider = getProtonProviderById(job.providerId);
     const sendProgress = createProgressThrottle({
       emit: (payload: ProtonInstallProgress) => {
         WindowManager.sendToAppWindows("on-proton-install-progress", payload);
+
+        // The game launcher window (open during launches) mirrors the
+        // job as preflight progress — "Baixando o Proton <tag>…" in the
+        // splash. A no-op whenever the window does not exist.
+        WindowManager.gameLauncherWindow?.webContents.send(
+          "preflight-progress",
+          toProtonPreflightProgress(payload)
+        );
       },
       minIntervalMs: PROTON_INSTALL_MIN_PROGRESS_INTERVAL_MS,
     });
@@ -190,7 +273,7 @@ export class ProtonManager {
         job.tag
       );
 
-      await runProtonInstallJob({
+      const { installedPath } = await runProtonInstallJob({
         providerId: job.providerId,
         release,
         targetDir,
@@ -200,11 +283,25 @@ export class ProtonManager {
         onProgress: sendProgress,
       });
 
+      // The manager is the fork's "get me a Proton" surface: the build
+      // that just landed becomes the default runtime (per-game choices
+      // are untouched). Best-effort — the install itself already
+      // succeeded.
+      await setDefaultProtonPath(installedPath).catch((error: unknown) => {
+        logger.warn("Failed to set the installed Proton build as default", {
+          installedPath,
+          error,
+        });
+      });
+
       logger.info("Proton install job completed", {
         providerId: job.providerId,
         tag: job.tag,
         targetDir,
+        installedPath,
       });
+
+      return installedPath;
     } catch (error) {
       const errorCode = toProtonErrorCode(error);
 
@@ -221,6 +318,8 @@ export class ProtonManager {
         phase: "error",
         error: errorCode,
       });
+
+      return null;
     } finally {
       if (this.activeJob === job) {
         this.activeJob = null;

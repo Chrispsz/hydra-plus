@@ -21,6 +21,7 @@ export * from "./library-collection";
 export * from "./wine";
 export * from "./umu";
 export * from "./proton-launcher";
+export * from "./proton/proton-manager";
 export * from "./portable-updater";
 export * from "./update-maintenance";
 export * from "./lock";

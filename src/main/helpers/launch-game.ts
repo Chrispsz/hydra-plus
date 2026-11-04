@@ -22,6 +22,7 @@ import {
   logger,
   Umu,
   ProtonRunner,
+  ProtonManager,
   isValidProtonForDirectLaunch,
   PowerSaveBlockerManager,
   Wine,
@@ -675,7 +676,14 @@ const prepareLinuxCompatibilityForLaunch = async (
     objectId
   );
   let context: LinuxCompatibilityLaunchContext = {
-    protonPath: await resolveProtonPathForLaunch(game?.protonPath),
+    protonPath:
+      (await resolveProtonPathForLaunch(game?.protonPath)) ??
+      // No per-game/global choice: the fork's default runtime is the
+      // newest installed CachyOS build — auto-installed (latest release,
+      // progress in the game launcher window) on first need. umu's own
+      // default Proton stays as the last-resort fallback when this
+      // resolves null.
+      (await ProtonManager.ensureDefaultProtonForLaunch()),
     winePrefixPath: await Wine.resolvePrefixPath(requestedWinePrefixPath),
   };
   logger.info("[Cloud Save] Resolved authoritative launch prefix", {

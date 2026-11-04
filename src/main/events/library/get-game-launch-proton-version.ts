@@ -1,6 +1,7 @@
 import path from "node:path";
 import type { GameShop, UserPreferences } from "@types";
 import { Umu } from "@main/services";
+import { getNewestInstalledCachyOsProtonPath } from "@main/services/proton/default-proton";
 import { db, gamesSublevel, levelKeys } from "@main/level";
 import { registerEvent } from "../register-event";
 
@@ -31,7 +32,11 @@ const getGameLaunchProtonVersion = async (
     return path.basename(defaultProtonPath);
   }
 
-  return null;
+  // Read-only view of the launch fallback: the newest installed CachyOS
+  // build (the launch itself may auto-install it when none exists —
+  // never triggered from here).
+  const fallbackProtonPath = await getNewestInstalledCachyOsProtonPath();
+  return fallbackProtonPath ? path.basename(fallbackProtonPath) : null;
 };
 
 registerEvent("getGameLaunchProtonVersion", getGameLaunchProtonVersion);

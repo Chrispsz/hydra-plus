@@ -17,6 +17,9 @@ import { verifyProtonArchive } from "./verification.js";
  * validate → promote → metadata. Every side-effectful step is an
  * injected dependency, so the whole flow is testable with temp
  * directories and fake download/extract steps (no network).
+ *
+ * Resolves with the absolute installed path once the build is promoted
+ * into the compatibility tools directory.
  */
 
 export const PROTON_INSTALL_MIN_PROGRESS_INTERVAL_MS = 200;
@@ -53,7 +56,7 @@ export interface ProtonInstallJobOptions {
 
 export const runProtonInstallJob = async (
   options: ProtonInstallJobOptions
-): Promise<void> => {
+): Promise<{ installedPath: string }> => {
   const { providerId, release, targetDir, workspaceDir, deps, signal } =
     options;
 
@@ -130,6 +133,8 @@ export const runProtonInstallJob = async (
     stagingDir = null;
 
     emitPhase("done");
+
+    return { installedPath: path.join(targetDir, releaseDirName) };
   } catch (error) {
     if (stagingDir !== null) {
       await fs.promises

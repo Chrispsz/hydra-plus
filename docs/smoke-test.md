@@ -45,13 +45,15 @@
 
 ## 3. Proton+ (F2)
 
-| #   | Passo                                               | Esperado                                                                     |
-| --- | --------------------------------------------------- | ---------------------------------------------------------------------------- |
-| 3.1 | Configurações → Proton Manager → atualizar catálogo | releases GE-Proton/CachyOS listados                                          |
-| 3.2 | Instalar um build                                   | barra de progresso, sha256 verificado, aparece em "instalados"               |
-| 3.3 | Remover o build em uso por um jogo                  | bloqueado com explicação clara                                               |
-| 3.4 | Opções do jogo → flags de launch (Linux)            | flags com tooltip de disponibilidade; mangohud/gamescope aplicam ao launchar |
-| 3.5 | Fechar o app **durante** um download de build       | reabrir: instalação não fica "meio-promotada" (rollback)                     |
+| #   | Passo                                               | Esperado                                                                                              |
+| --- | --------------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| 3.1 | Configurações → Proton Manager → atualizar catálogo | releases GE-Proton/CachyOS listados                                                                   |
+| 3.2 | Instalar um build                                   | barra de progresso, sha256 verificado, aparece em "instalados" com badge "Padrão"                     |
+| 3.3 | Remover o build em uso por um jogo                  | bloqueado com explicação clara                                                                        |
+| 3.4 | Opções do jogo → flags de launch (Linux)            | flags com tooltip de disponibilidade; mangohud/gamescope aplicam ao launchar                          |
+| 3.5 | Fechar o app **durante** um download de build       | reabrir: instalação não fica "meio-promotada" (rollback)                                              |
+| 3.6 | Linux sem NENHUM Proton: launchar um jogo .exe      | splash "Baixando o Proton \<tag\>…" → CachyOS mais recente instala, vira padrão e o jogo abre com ele |
+| 3.7 | Seletores "Automático" (settings e opções do jogo)  | descrição "Proton CachyOS mais recente (baixa automaticamente)"; GE continua instalável manualmente   |
 
 ## 4. Nuvem Drive (estabilidade F1)
 

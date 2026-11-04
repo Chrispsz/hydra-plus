@@ -80,7 +80,7 @@ describe("runProtonInstallJob", () => {
 
     const phases: ProtonInstallProgress["phase"][] = [];
 
-    await runProtonInstallJob({
+    const { installedPath } = await runProtonInstallJob({
       providerId: "ge-proton",
       release: makeRelease(archive),
       targetDir,
@@ -113,6 +113,7 @@ describe("runProtonInstallJob", () => {
     ]);
 
     const installedDir = path.join(targetDir, "GE-Proton9-20");
+    assert.equal(installedPath, installedDir);
     assert.equal(fs.existsSync(path.join(installedDir, "proton")), true);
     assert.equal(
       fs.existsSync(path.join(installedDir, "toolmanifest.vdf")),

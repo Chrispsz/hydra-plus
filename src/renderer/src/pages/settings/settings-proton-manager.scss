@@ -109,6 +109,25 @@
     white-space: nowrap;
   }
 
+  &__item-info--installed {
+    display: flex;
+    align-items: center;
+    gap: calc(globals.$spacing-unit / 2);
+    min-width: 0;
+  }
+
+  &__item-badge {
+    flex-shrink: 0;
+    padding: 2px calc(globals.$spacing-unit / 2);
+    border: solid 1px globals.$border-color;
+    border-radius: globals.$radius-full;
+    color: globals.$muted-color;
+    font-size: globals.$small-font-size;
+    line-height: 1.4;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
   &__item-meta {
     color: globals.$muted-color;
     font-size: globals.$small-font-size;

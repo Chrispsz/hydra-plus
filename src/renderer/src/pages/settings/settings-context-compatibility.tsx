@@ -176,7 +176,7 @@ export function SettingsContextCompatibility() {
     ns: ["settings", "game_details"],
   });
 
-  const protonSourceUmuDefault = t("proton_source_umu_default", {
+  const protonSourceCachyOsAuto = t("proton_source_cachyos_auto", {
     ns: ["settings", "game_details"],
   });
 
@@ -283,7 +283,7 @@ export function SettingsContextCompatibility() {
                 }}
                 radioName="default-proton-version"
                 autoLabel={protonVersionAutoLabel}
-                autoSourceDescription={protonSourceUmuDefault}
+                autoSourceDescription={protonSourceCachyOsAuto}
                 steamSourceDescription={protonSourceSteam}
                 compatibilityToolsSourceDescription={
                   protonSourceCompatibilityTools

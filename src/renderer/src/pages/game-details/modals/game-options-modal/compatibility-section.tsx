@@ -79,12 +79,12 @@ export function CompatibilitySettingsSection({
 
   const protonVersionAutoLabel = t("proton_version_auto", {
     ns: ["game_details", "settings"],
-    defaultValue: "Auto (global default or umu default)",
+    defaultValue: "Auto (global default or latest Proton CachyOS)",
   });
 
-  const protonSourceUmuDefault = t("proton_source_umu_default", {
+  const protonSourceCachyOsAuto = t("proton_source_cachyos_auto", {
     ns: ["game_details", "settings"],
-    defaultValue: "umu default selection",
+    defaultValue: "Latest Proton CachyOS (downloads automatically)",
   });
 
   const protonSourceSteam = t("proton_source_steam", {
@@ -175,7 +175,7 @@ export function CompatibilitySettingsSection({
           onChange={onChangeProtonVersion}
           radioName={`proton-version-${game.objectId}`}
           autoLabel={protonVersionAutoLabel}
-          autoSourceDescription={protonSourceUmuDefault}
+          autoSourceDescription={protonSourceCachyOsAuto}
           steamSourceDescription={protonSourceSteam}
           compatibilityToolsSourceDescription={protonSourceCompatibilityTools}
         />
