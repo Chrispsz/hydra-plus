@@ -1,0 +1,158 @@
+name: Improvement Agent
+
+# Daily improvement loop (see scripts/improvement-agent.mjs):
+#
+# - quality: re-measures typecheck/tests/lint on main so the report is
+#   always fresh, even on days without pushes
+# - report: publishes a PT-BR daily report to the `reports` branch (a true
+#   fork has no Issues of its own — the issues API answers 410 — so the
+#   diary lives on a branch and `main` stays free of bot commits). The
+#   report also lands in the run summary and covers upstream Hydra
+#   activity with port suggestions, repository pulse and the monthly-build
+#   countdown
+#
+# Scheduled workflows are disabled by default on forks — enable this
+# workflow once via the Actions tab (or the API) after merging.
+
+concurrency:
+  group: improvement-agent
+  cancel-in-progress: false
+
+on:
+  workflow_dispatch:
+  schedule:
+    # 03:30 UTC = 00:30 in São Paulo (no DST in the fork's audience TZ).
+    # Off the top of the hour to dodge GitHub's cron congestion.
+    - cron: "30 3 * * *"
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  quality:
+    runs-on: ubuntu-24.04
+
+    timeout-minutes: 30
+
+    outputs:
+      typecheck: ${{ steps.typecheck.outputs.result }}
+      tests: ${{ steps.tests.outputs.result }}
+      tests_summary: ${{ steps.tests.outputs.summary }}
+      lint: ${{ steps.lint.outputs.result }}
+      lint_summary: ${{ steps.lint.outputs.summary }}
+
+    steps:
+      - name: Check out Git repository
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+
+      - name: Install Node.js
+        uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
+        with:
+          node-version: 22.21.0
+          cache: "yarn"
+
+      - name: Enable Corepack (Yarn)
+        run: corepack enable
+
+      - name: Install dependencies
+        run: yarn --frozen-lockfile --ignore-scripts
+
+      # Gates record pass/fail instead of failing their step so every
+      # result reaches the report job; the dedicated step at the end
+      # fails the job once anything is red.
+      - name: Typecheck
+        id: typecheck
+        run: |
+          if yarn typecheck; then
+            echo "result=pass" >> "$GITHUB_OUTPUT"
+          else
+            echo "result=fail" >> "$GITHUB_OUTPUT"
+            echo "GATE_FAILED=true" >> "$GITHUB_ENV"
+          fi
+
+      - name: Test
+        id: tests
+        run: |
+          set +e
+          yarn test > /tmp/test.log 2>&1
+          status=$?
+          set -e
+          # The node:test summary lives in the last lines of the output.
+          summary="$(tail -20 /tmp/test.log \
+            | grep -E '(tests|pass|fail|skipped) [0-9]+' \
+            | sed 's/^[^0-9a-zA-Z]*//' \
+            | awk 'NR>1{printf " · "} {printf "%s", $0} END{if(NR)print ""}' || true)"
+          echo "summary=${summary:-log indisponível}" >> "$GITHUB_OUTPUT"
+          if [ "$status" -eq 0 ]; then
+            echo "result=pass" >> "$GITHUB_OUTPUT"
+          else
+            echo "result=fail" >> "$GITHUB_OUTPUT"
+            echo "GATE_FAILED=true" >> "$GITHUB_ENV"
+          fi
+
+      - name: Lint
+        id: lint
+        run: |
+          set +e
+          yarn lint > /tmp/lint.log 2>&1
+          status=$?
+          set -e
+          summary="$(grep -E '[0-9]+ problems? \([0-9]+ errors?' /tmp/lint.log | tail -1 || true)"
+          echo "summary=${summary:-log indisponível}" >> "$GITHUB_OUTPUT"
+          if [ "$status" -eq 0 ]; then
+            echo "result=pass" >> "$GITHUB_OUTPUT"
+          else
+            echo "result=fail" >> "$GITHUB_OUTPUT"
+            echo "GATE_FAILED=true" >> "$GITHUB_ENV"
+          fi
+
+      - name: Fail the job if a gate failed
+        if: env.GATE_FAILED == 'true'
+        run: |
+          echo "Um ou mais gates de qualidade falharam — detalhes no relatório."
+          exit 1
+
+  report:
+    needs: quality
+    # always(): the report is the most interesting exactly when quality fails.
+    if: always()
+
+    runs-on: ubuntu-24.04
+
+    timeout-minutes: 15
+
+    permissions:
+      # The agent commits the daily report to the `reports` branch.
+      contents: write
+
+    steps:
+      - name: Check out Git repository
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          # Full fork history: the agent matches upstream commit subjects
+          # against it to tell "already ported" from "worth porting".
+          fetch-depth: 0
+
+      - name: Fetch upstream Hydra
+        run: |
+          git remote add upstream https://github.com/hydralauncher/hydra.git
+          git fetch upstream main --depth=500
+
+      - name: Install Node.js
+        uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
+        with:
+          node-version: 22.21.0
+
+      - name: Run improvement agent
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          HEAD_SHA: ${{ github.sha }}
+          QUALITY_RESULT: ${{ needs.quality.result }}
+          QUALITY_TYPECHECK: ${{ needs.quality.outputs.typecheck }}
+          QUALITY_TESTS: ${{ needs.quality.outputs.tests }}
+          QUALITY_TESTS_SUMMARY: ${{ needs.quality.outputs.tests_summary }}
+          QUALITY_LINT: ${{ needs.quality.outputs.lint }}
+          QUALITY_LINT_SUMMARY: ${{ needs.quality.outputs.lint_summary }}
+        run: node scripts/improvement-agent.mjs

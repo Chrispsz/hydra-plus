@@ -1,0 +1,126 @@
+name: Monthly Build
+
+# The 30-day build heartbeat requested for the fork:
+#
+# - runs on a daily schedule, but the gate job only lets the build through
+#   when the newest hydra-plus-nightly-* artifact is at least 30 days old
+#   (or none exists yet) — so exactly one build per ~30 days without
+#   trusting cron's day-of-month arithmetic
+# - manual dispatch skips the gate and always builds
+# - artifacts use the nightly flavor (7-day default retention is raised to
+#   35 days in reusable-build.yml so the gate always has evidence to read)
+#
+# Scheduled workflows are disabled by default on forks — enable this
+# workflow once via the Actions tab (or the API) after merging.
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  # A gate run must never kill a build still in progress from the previous
+  # window (builds can take up to 2h).
+  cancel-in-progress: false
+
+on:
+  workflow_dispatch:
+  schedule:
+    # 04:30 UTC = 01:30 in São Paulo, after the improvement agent has run.
+    - cron: "30 4 * * *"
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  gate:
+    if: github.event_name == 'schedule'
+    runs-on: ubuntu-latest
+
+    timeout-minutes: 10
+
+    outputs:
+      build: ${{ steps.decide.outputs.build }}
+      last_build: ${{ steps.decide.outputs.last_build }}
+
+    steps:
+      - name: Decide whether 30 days passed since the last nightly build
+        id: decide
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+
+          # Newest-first listing: any surviving nightly artifact is on page 1.
+          last_build="$(gh api "repos/${REPO}/actions/artifacts?per_page=100" \
+            --jq '[.artifacts[] | select(.name | startswith("hydra-plus-nightly-")) | .created_at] | max // empty')"
+
+          if [ -z "$last_build" ]; then
+            echo "No previous nightly artifact found — building."
+            echo "build=true" >> "$GITHUB_OUTPUT"
+            echo "last_build=never" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          echo "last_build=${last_build}" >> "$GITHUB_OUTPUT"
+
+          last_s="$(date -u -d "${last_build}" +%s)"
+          cutoff_s="$(date -u -d '30 days ago' +%s)"
+
+          if [ "$last_s" -lt "$cutoff_s" ]; then
+            echo "Last nightly build (${last_build}) is older than 30 days — building."
+            echo "build=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "Last nightly build (${last_build}) is fresh enough — skipping."
+            echo "build=false" >> "$GITHUB_OUTPUT"
+          fi
+
+  build:
+    needs: gate
+    # Manual dispatch skips the gate (result 'skipped'); a scheduled run
+    # builds only when the gate said so.
+    if: >-
+      always() &&
+      (needs.gate.result == 'skipped' || needs.gate.outputs.build == 'true')
+    uses: ./.github/workflows/reusable-build.yml
+    with:
+      flavor: nightly
+    secrets: inherit
+
+  cleanup:
+    needs: build
+    if: needs.build.result == 'success'
+    runs-on: ubuntu-latest
+
+    timeout-minutes: 15
+
+    permissions:
+      actions: write
+
+    steps:
+      - name: Remove old nightly artifacts
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          RUN_ID: ${{ github.run_id }}
+        run: |
+          set -euo pipefail
+
+          # There is no official actions/remove-artifacts action, so use a
+          # simple gh api loop: delete every "hydra-plus-nightly-*" artifact
+          # that was not produced by this run (artifacts of the current run
+          # are kept — they anchor the next 30-day gate).
+          deleted=0
+          for artifact_id in $(gh api --paginate \
+            "repos/${REPO}/actions/artifacts?per_page=100" \
+            --jq '.artifacts[]
+                  | select(.name | startswith("hydra-plus-nightly-"))
+                  | select(.workflow_run.id != '"${RUN_ID}"')
+                  | .id'); do
+            if gh api -X DELETE "repos/${REPO}/actions/artifacts/${artifact_id}"; then
+              echo "Deleted old nightly artifact ${artifact_id}"
+              deleted=$((deleted + 1))
+            else
+              echo "::warning::Failed to delete artifact ${artifact_id}"
+            fi
+          done
+
+          echo "Removed ${deleted} old nightly artifact(s)."

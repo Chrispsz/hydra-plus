@@ -139,7 +139,10 @@ jobs:
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
         with:
           name: hydra-plus-${{ inputs.flavor }}-${{ matrix.os }}
-          retention-days: ${{ inputs.flavor == 'ci' && 3 || 7 }}
+          # ci artifacts only need to cover a PR's life; nightly artifacts
+          # anchor the Monthly Build 30-day gate, so they outlive a full
+          # cycle (deleted earlier by the cleanup job of the next build).
+          retention-days: ${{ inputs.flavor == 'ci' && 3 || (inputs.flavor == 'nightly' && 35 || 7) }}
           compression-level: 0
           path: |
             dist/*-portable.exe
