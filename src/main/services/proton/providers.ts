@@ -6,12 +6,14 @@ import type { ProtonProvider } from "@types";
  * Adding a new provider is a single data entry: the release discovery,
  * download, verification and installation pipeline is provider-agnostic
  * and only needs `repo` plus an asset-name convention compatible with
- * `matchesReleaseAsset` (asset stem equal to the tag, optionally with a
- * `-x86_64` variant suffix).
+ * `matchesReleaseAsset` (asset stem equal to the tag, its `-x86_64`
+ * variant, or its `proton-` prefixed `-x86_64` form — CachyOS's current
+ * scheme).
  *
  * NOTE (follow-up): CachyOS also publishes v3/v4 build variant assets
- * (`<tag>-v3-x86_64`); variant matching is intentionally out of scope for
- * now — only the default x86_64 asset is offered.
+ * (`proton-<tag>-x86_64_v3`) and arm64 builds; variant matching is
+ * intentionally out of scope for now — only the default x86_64 asset
+ * is offered.
  */
 export interface ProtonProviderDefinition {
   id: string;

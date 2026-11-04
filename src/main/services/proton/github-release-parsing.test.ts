@@ -127,6 +127,50 @@ describe("GitHub release asset matching", () => {
     );
   });
 
+  it("matches CachyOS releases after the tag rename (proton-<tag>-x86_64)", () => {
+    // Since the 11.0 series CachyOS tags drop the proton- prefix
+    // (cachyos-11.0-20261015-slr) while asset names keep it.
+    assert.equal(
+      matchesReleaseAsset(
+        "proton-cachyos-11.0-20261015-slr-x86_64.tar.xz",
+        "cachyos-11.0-20261015-slr"
+      ),
+      true
+    );
+    assert.equal(
+      matchesReleaseAsset(
+        "proton-cachyos-11.0-20261015-slr-x86_64.tar.xz",
+        "CACHYOS-11.0-20261015-SLR"
+      ),
+      true
+    );
+
+    // arm64 and x86_64_v3 variants never match.
+    assert.equal(
+      matchesReleaseAsset(
+        "proton-cachyos-11.0-20261015-slr-arm64.tar.xz",
+        "cachyos-11.0-20261015-slr"
+      ),
+      false
+    );
+    assert.equal(
+      matchesReleaseAsset(
+        "proton-cachyos-11.0-20261015-slr-x86_64_v3.tar.xz",
+        "cachyos-11.0-20261015-slr"
+      ),
+      false
+    );
+
+    // Checksum sidecars are not installable archives.
+    assert.equal(
+      matchesReleaseAsset(
+        "proton-cachyos-11.0-20261015-slr-x86_64.sha512sum",
+        "cachyos-11.0-20261015-slr"
+      ),
+      false
+    );
+  });
+
   it("strips only the archive extension", () => {
     assert.equal(
       stripArchiveExtension("GE-Proton9-20.tar.gz"),
@@ -180,6 +224,69 @@ describe("parseGitHubReleasesPage", () => {
     const [release] = parseGitHubReleasesPage(payload);
     assert.equal(release.digest, undefined);
     assert.equal(release.name, "v1");
+  });
+});
+
+describe("parseGitHubReleasesPage (CachyOS renamed tag scheme)", () => {
+  const cachyOsFixture: GitHubReleasePayload[] = [
+    {
+      tag_name: "cachyos-11.0-20261015-slr",
+      name: "Version 11.0-20261015",
+      draft: false,
+      prerelease: false,
+      published_at: "2026-10-20T00:00:00Z",
+      assets: [
+        {
+          name: "proton-cachyos-11.0-20261015-slr-arm64.sha512sum",
+          size: 312,
+          browser_download_url: "https://example.com/arm64.sum",
+        },
+        {
+          name: "proton-cachyos-11.0-20261015-slr-arm64.tar.xz",
+          size: 400_000_000,
+          browser_download_url: "https://example.com/arm64.tar.xz",
+        },
+        {
+          name: "proton-cachyos-11.0-20261015-slr-x86_64.sha512sum",
+          size: 312,
+          browser_download_url: "https://example.com/x86_64.sum",
+        },
+        {
+          name: "proton-cachyos-11.0-20261015-slr-x86_64.tar.xz",
+          size: 412_000_000,
+          browser_download_url:
+            "https://github.com/CachyOS/proton-cachyos/releases/download/cachyos-11.0-20261015-slr/proton-cachyos-11.0-20261015-slr-x86_64.tar.xz",
+        },
+        {
+          name: "proton-cachyos-11.0-20261015-slr-x86_64_v3.tar.xz",
+          size: 413_000_000,
+          browser_download_url: "https://example.com/x86_64_v3.tar.xz",
+        },
+      ],
+    },
+    {
+      tag_name: "cachyos-11.0-20261015-native",
+      name: "cachyos-11.0-20261015-native",
+      draft: false,
+      prerelease: false,
+      published_at: "2026-10-20T00:00:00Z",
+      assets: [],
+    },
+  ];
+
+  it("selects the default x86_64 asset and drops asset-less releases", () => {
+    const releases = parseGitHubReleasesPage(cachyOsFixture);
+
+    assert.deepEqual(
+      releases.map((release) => release.tag),
+      ["cachyos-11.0-20261015-slr"]
+    );
+    assert.equal(releases[0].sizeBytes, 412_000_000);
+    assert.equal(
+      releases[0].downloadUrl,
+      "https://github.com/CachyOS/proton-cachyos/releases/download/cachyos-11.0-20261015-slr/proton-cachyos-11.0-20261015-slr-x86_64.tar.xz"
+    );
+    assert.equal(releases[0].name, "Version 11.0-20261015");
   });
 });
 

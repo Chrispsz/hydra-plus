@@ -32,9 +32,16 @@ export const stripArchiveExtension = (assetName: string): string =>
   assetName.replace(ARCHIVE_EXTENSION_PATTERN, "");
 
 /**
- * The installable asset stem must equal the release tag (GE-Proton
- * publishes `<tag>.tar.gz`) or the tag's default x86_64 variant
- * (CachyOS publishes `<tag>-x86_64.tar.gz`), compared case-insensitively.
+ * The installable asset stem must equal (case-insensitively) one of:
+ * - the release tag — GE-Proton publishes `<tag>.tar.gz`;
+ * - the tag's default x86_64 variant — legacy CachyOS tags
+ *   (`proton-cachyos-10.x-…`) published `<tag>-x86_64.tar.gz`;
+ * - the `proton-` prefixed form of the tag — CachyOS renamed its tags
+ *   (dropping the prefix, e.g. `cachyos-11.0-…-slr`) while asset names
+ *   kept it: `proton-<tag>-x86_64.tar.xz`.
+ *
+ * Non-default arch/variant assets (`-x86_64_v3`, `-arm64`) and checksum
+ * sidecars never match.
  */
 export const matchesReleaseAsset = (
   assetName: string,
@@ -45,7 +52,11 @@ export const matchesReleaseAsset = (
   const normalizedTag = tag.toLowerCase();
   const stem = stripArchiveExtension(assetName).toLowerCase();
 
-  return stem === normalizedTag || stem === `${normalizedTag}-x86_64`;
+  return (
+    stem === normalizedTag ||
+    stem === `${normalizedTag}-x86_64` ||
+    stem === `proton-${normalizedTag}-x86_64`
+  );
 };
 
 export const selectReleaseAsset = (
