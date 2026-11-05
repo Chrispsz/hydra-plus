@@ -21,6 +21,7 @@ export enum DownloadSourceStatus {
   Matched = "MATCHED",
   Matching = "MATCHING",
   Failed = "FAILED",
+  Dead = "DEAD",
 }
 
 export enum CatalogueCategory {
