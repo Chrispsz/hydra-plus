@@ -1,5 +1,13 @@
 appId: gg.hydraplus.launcher
 productName: Hydra Plus
+electronFuses:
+  runAsNode: false
+  enableNodeOptionsEnvironmentVariable: false
+  enableNodeCliInspectArguments: false
+  enableCookieEncryption: true
+  enableEmbeddedAsarIntegrityValidation: true
+  onlyLoadAppFromAsar: true
+  grantFileProtocolExtraPrivileges: true
 directories:
   buildResources: build
 extraResources:
