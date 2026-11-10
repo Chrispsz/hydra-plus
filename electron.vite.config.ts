@@ -6,6 +6,7 @@ import {
   swcPlugin,
 } from "electron-vite";
 import JavaScriptObfuscator from "javascript-obfuscator";
+import { randomInt } from "node:crypto";
 import { resolve } from "path";
 import { transformWithEsbuild, type Plugin } from "vite";
 import svgr from "vite-plugin-svgr";
@@ -25,7 +26,7 @@ const mangleIdentifiers = (): Plugin => ({
   },
 });
 
-const buildSeed = Math.floor(Math.random() * 2 ** 31);
+const buildSeed = randomInt(2 ** 31);
 
 const obfuscate = (): Plugin => ({
   name: "hydra:obfuscate",
@@ -60,8 +61,46 @@ const obfuscate = (): Plugin => ({
   },
 });
 
+// Ported inline from upstream e0a7a7973 (src/big-picture/
+// vite-content-security-policy.ts). The fork has no Big Picture build and no
+// theme editor, so the plugin lives here and the Monaco CDN path (theme
+// editor only, upstream) is deliberately NOT an allowed script source.
+const contentSecurityPolicy = (
+  externalResourcesUrl: string | undefined
+): Plugin => ({
+  name: "hydra:content-security-policy",
+  transformIndexHtml: (_html, context) => {
+    const scriptSources = [
+      "'self'",
+      ...(externalResourcesUrl ? [new URL(externalResourcesUrl).origin] : []),
+      // React Refresh injects an inline preamble that only exists on the dev
+      // server.
+      ...(context.server ? ["'unsafe-inline'"] : []),
+    ];
+
+    return [
+      {
+        tag: "meta",
+        attrs: {
+          "http-equiv": "Content-Security-Policy",
+          content: [
+            "default-src 'self' 'unsafe-inline' * data: local: blob:",
+            `script-src ${scriptSources.join(" ")}`,
+            "worker-src 'self' blob:",
+            "object-src 'none'",
+            "base-uri 'self'",
+            "media-src 'self' 'unsafe-inline' * data: local: blob:",
+          ].join("; "),
+        },
+        injectTo: "head-prepend",
+      },
+    ];
+  },
+});
+
 export default defineConfig(({ mode }) => {
-  loadEnv(mode);
+  const env = loadEnv(mode);
+  const csp = contentSecurityPolicy(env.RENDERER_VITE_EXTERNAL_RESOURCES_URL);
 
   const isProduction = mode === "production";
   const minify = isProduction ? "esbuild" : false;
@@ -123,7 +162,7 @@ export default defineConfig(({ mode }) => {
           "@shared/*": resolve("src/shared"),
         },
       },
-      plugins: [svgr(), react()],
+      plugins: [svgr(), react(), csp],
     },
   };
 });

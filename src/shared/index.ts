@@ -159,3 +159,5 @@ export const filterDownloadableRepacks = <T extends Pick<GameRepack, "uris">>(
       Array.isArray(repack.uris) &&
       getDownloadersForUris(repack.uris).length > 0
   );
+
+export * from "./html-sanitizer";
