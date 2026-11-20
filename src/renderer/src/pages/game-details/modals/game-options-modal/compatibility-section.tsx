@@ -1,4 +1,5 @@
 import { useTranslation } from "react-i18next";
+import { type ReactNode } from "react";
 
 import {
   Button,
@@ -11,6 +12,12 @@ import type { LibraryGame, ProtonVersion } from "@types";
 import { FileDirectoryIcon, LinkExternalIcon } from "@primer/octicons-react";
 import { Tooltip } from "react-tooltip";
 import { LaunchFlagsSection } from "./launch-flags-section";
+
+// Labels that don't fit their button end in "…"; the button's title shows
+// the full text on hover.
+function ButtonLabel({ children }: Readonly<{ children: ReactNode }>) {
+  return <span className="game-options-modal__button-label">{children}</span>;
+}
 
 interface CompatibilitySettingsSectionProps {
   game: LibraryGame;
@@ -150,8 +157,9 @@ export function CompatibilitySettingsSection({
               theme="outline"
               onClick={onOpenWinetricks}
               disabled={!winetricksAvailable}
+              title={t("open_winetricks")}
             >
-              {t("open_winetricks")}
+              <ButtonLabel>{t("open_winetricks")}</ButtonLabel>
             </Button>
           </span>
 

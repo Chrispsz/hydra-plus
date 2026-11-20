@@ -103,7 +103,30 @@ $disc-menu-transition-duration: 0.15s;
   &__row {
     display: flex;
     gap: globals.$spacing-unit;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
+
+    > button,
+    > .game-options-modal__tool-button-wrapper > button {
+      flex: 1 1 auto;
+      padding-left: calc(globals.$spacing-unit * 1.5);
+      padding-right: calc(globals.$spacing-unit * 1.5);
+      white-space: nowrap;
+      // Long labels give up space first; short ones like "Steam" stay whole.
+      min-width: 6.5rem;
+      overflow: hidden;
+
+      > svg {
+        flex-shrink: 0;
+      }
+    }
+  }
+
+  // Labels that don't fit their button end in "…"; the button's title shows
+  // the full text on hover.
+  &__button-label {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   &__tool-button-wrapper {

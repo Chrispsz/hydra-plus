@@ -7,6 +7,12 @@ import type { LibraryGame, ShortcutLocation } from "@types";
 import { FileIcon } from "@primer/octicons-react";
 import { HardDrive, X, FolderOpen } from "lucide-react";
 
+// Labels that don't fit their button end in "…"; the button's title shows
+// the full text on hover.
+function ButtonLabel({ children }: Readonly<{ children: ReactNode }>) {
+  return <span className="game-options-modal__button-label">{children}</span>;
+}
+
 interface DriveInfo {
   root: string;
   label: string;
@@ -205,9 +211,10 @@ export function GeneralSettingsSection({
           onClick={onDeleteSteamShortcut}
           theme="danger"
           disabled={creatingSteamShortcut}
+          title={t("delete_steam_shortcut")}
         >
           <SteamLogo />
-          {t("delete_steam_shortcut")}
+          <ButtonLabel>{t("delete_steam_shortcut")}</ButtonLabel>
         </Button>
       );
     } else if (hasShortcutLaunchTarget) {
@@ -216,9 +223,10 @@ export function GeneralSettingsSection({
           onClick={onCreateSteamShortcut}
           theme="outline"
           disabled={creatingSteamShortcut}
+          title={t("create_steam_shortcut")}
         >
           <SteamLogo />
-          {t("create_steam_shortcut")}
+          <ButtonLabel>{t("create_steam_shortcut")}</ButtonLabel>
         </Button>
       );
     }
@@ -640,8 +648,9 @@ export function GeneralSettingsSection({
                 <Button
                   onClick={() => onCreateShortcut("desktop")}
                   theme="outline"
+                  title={t("create_shortcut")}
                 >
-                  {t("create_shortcut")}
+                  <ButtonLabel>{t("create_shortcut")}</ButtonLabel>
                 </Button>
               )}
               {steamShortcutButton}
@@ -649,8 +658,9 @@ export function GeneralSettingsSection({
                 <Button
                   onClick={() => onCreateShortcut("start_menu")}
                   theme="outline"
+                  title={t("create_start_menu_shortcut")}
                 >
-                  {t("create_start_menu_shortcut")}
+                  <ButtonLabel>{t("create_start_menu_shortcut")}</ButtonLabel>
                 </Button>
               )}
             </div>

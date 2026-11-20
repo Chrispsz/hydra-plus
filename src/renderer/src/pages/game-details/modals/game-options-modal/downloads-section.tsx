@@ -1,7 +1,14 @@
 import { useTranslation } from "react-i18next";
+import { type ReactNode } from "react";
 
 import { Button } from "@renderer/components";
 import type { LibraryGame } from "@types";
+
+// Labels that don't fit their button end in "…"; the button's title shows
+// the full text on hover.
+function ButtonLabel({ children }: Readonly<{ children: ReactNode }>) {
+  return <span className="game-options-modal__button-label">{children}</span>;
+}
 
 interface DownloadsSettingsSectionProps {
   game: LibraryGame;
@@ -44,16 +51,18 @@ export function DownloadsSettingsSection({
           onClick={onOpenRepacks}
           theme="outline"
           disabled={deleting || isGameDownloading || !repacksLength}
+          title={t("open_download_options")}
         >
-          {t("open_download_options")}
+          <ButtonLabel>{t("open_download_options")}</ButtonLabel>
         </Button>
         {game.download?.downloadPath && (
           <Button
             onClick={onOpenDownloadFolder}
             theme="outline"
             disabled={deleting}
+            title={t("open_download_location")}
           >
-            {t("open_download_location")}
+            <ButtonLabel>{t("open_download_location")}</ButtonLabel>
           </Button>
         )}
       </div>
