@@ -65,6 +65,13 @@ const obfuscate = (): Plugin => ({
 // vite-content-security-policy.ts). The fork has no Big Picture build and no
 // theme editor, so the plugin lives here and the Monaco CDN path (theme
 // editor only, upstream) is deliberately NOT an allowed script source.
+// The external resources bundle loads the Chatwoot support chat SDK and the
+// Formbricks survey SDK from these hosts (upstream 0efc3fadb).
+const EXTERNAL_RESOURCES_SCRIPT_ORIGINS = [
+  "https://chatwoot.hydralauncher.gg",
+  "https://forms.hydralauncher.gg",
+];
+
 const contentSecurityPolicy = (
   externalResourcesUrl: string | undefined
 ): Plugin => ({
@@ -73,6 +80,7 @@ const contentSecurityPolicy = (
     const scriptSources = [
       "'self'",
       ...(externalResourcesUrl ? [new URL(externalResourcesUrl).origin] : []),
+      ...EXTERNAL_RESOURCES_SCRIPT_ORIGINS,
       // React Refresh injects an inline preamble that only exists on the dev
       // server.
       ...(context.server ? ["'unsafe-inline'"] : []),
